@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portafile — Founder Dashboard (local)</title>
+<style>
+:root{--espresso:#2A1A12;--ink:#6B5544;--paper:#FAF4EA;--card:#FFFDF8;--crema:#D9A05B;--terra:#C4502F;--green:#5B7065;--red:#B3261E;--line:#E7DACA}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--espresso);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
+.wrap{max-width:1060px;margin:0 auto;padding:20px 22px 60px}
+h1{font-family:"Iowan Old Style",Palatino,Georgia,serif;font-size:26px;margin:8px 0}
+h2{font-size:17px;margin:26px 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.gates{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.gate{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--card)}
+.gate .num{font-size:30px;font-weight:800}
+.gate .lbl{font-size:13px;color:var(--ink)}
+.pass{border-color:var(--green)} .pass .num{color:var(--green)}
+.fail{border-color:var(--red)} .fail .num{color:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--ink);font-weight:600;font-size:12.5px;text-transform:uppercase}
+input,select,button{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--espresso)}
+button{background:var(--terra);color:#fff;border:0;cursor:pointer;font-weight:650}
+button.ghost{background:transparent;color:var(--terra);border:1px solid var(--terra)}
+button.mini{padding:2px 8px;font-size:12px;background:transparent;color:var(--red);border:1px solid var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.tiny{font-size:12.5px;color:var(--ink)}
+.due{color:var(--red);font-weight:700}
+.bar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.money{font-weight:800;font-size:22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="bar">
+  <h1>Portafile — Founder Dashboard</h1>
+  <div class="row">
+    <button class="ghost" onclick="doExport()">Export backup</button>
+    <label class="ghost" style="border:1px solid var(--terra);border-radius:8px;padding:7px 10px;color:var(--terra);font-weight:650;cursor:pointer">Import backup<input type="file" accept=".json" style="display:none" onchange="doImport(this)"></label>
+  </div>
+</div>
+<p class="tiny">Local file, local data (this browser's localStorage). Never deploy this. Export a backup after real entries.</p>
+
+<div class="card">
+  <div class="row">
+    <label>Launch date (day you post the threads): <input type="date" id="launchDate" onchange="setLaunch(this.value)"></label>
+    <label>Shops engaged in last 10 days (dial-in/price touched): <input type="number" id="engaged" min="0" style="width:70px" onchange="setNum('engaged',this.value)"></label>
+    <label>Roaster conversations: <input type="number" id="roasters" min="0" style="width:70px" onchange="setNum('roasters',this.value)"></label>
+    <label><input type="checkbox" id="syncShipped" onchange="setSync(this.checked)"> Sync feature shipped</label>
+  </div>
+</div>
+
+<h2>Phase-0 kill gates <span class="tiny" id="clock"></span></h2>
+<div class="gates" id="gates"></div>
+<p class="tiny">Gate 2 (prepays) is individually fatal: zero prepays after real effort = thesis falsified. Gate counts derive from the ledger and email list below — keep those current.</p>
+
+<h2>Prepay / revenue ledger</h2>
+<div class="card">
+  <div class="bar"><div>Total collected: <span class="money" id="rev">$0</span></div>
+  <label class="ghost" style="border:1px solid var(--terra);border-radius:8px;padding:7px 10px;color:var(--terra);font-weight:650;cursor:pointer">Import Stripe CSV<input type="file" accept=".csv" style="display:none" onchange="stripeImport(this)"></label></div>
+  <table id="payTable"></table>
+  <div class="row">
+    <input id="pEmail" placeholder="email"><input id="pName" placeholder="shop / name">
+    <input id="pDate" type="date"><input id="pAmt" type="number" value="99" style="width:80px">
+    <button onclick="addPay()">Add prepay</button>
+  </div>
+  <p class="tiny">Refund deadline = prepay date + 60 days (your terms). Rows turn red when sync is unshipped and the deadline is inside 14 days.</p>
+</div>
+
+<h2>Email list</h2>
+<div class="card">
+  <table id="emailTable"></table>
+  <div class="row">
+    <input id="eEmail" placeholder="email"><input id="eName" placeholder="shop / name">
+    <select id="eStatus"><option>interested</option><option>entered recipes</option><option>paid</option><option>unsubscribed</option></select>
+    <input id="eNotes" placeholder="notes" style="flex:1">
+    <button onclick="addEmail()">Add</button>
+    <button class="ghost" onclick="csvExport()">Export CSV</button>
+  </div>
+  <p class="tiny">"entered recipes" feeds gate 1. Unsubscribed = never email again (10-business-day legal max; do it same day).</p>
+</div>
+
+<h2>Launch-post tracker</h2>
+<div class="card">
+  <table id="postTable"></table>
+  <div class="row">
+    <input id="tWhere" placeholder="community (r/barista…)"><input id="tUrl" placeholder="post URL" style="flex:1">
+    <input id="tDate" type="date"><input id="tRes" placeholder="upvotes/replies" style="width:110px">
+    <input id="tSign" type="number" placeholder="signups" style="width:80px">
+    <button onclick="addPost()">Add</button>
+  </div>
+</div>
+</div>
+
+<script>
+'use strict';
+const KEY = 'portafile-admin-v1';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let S = load();
+function load() {
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.pays)) return s; } catch (e) {}
+  return { launch: '', engaged: 0, roasters: 0, syncShipped: false, pays: [], emails: [], posts: [] };
+}
+function save() { localStorage.setItem(KEY, JSON.stringify(S)); render(); }
+const fmt = d => d ? new Date(d + 'T12:00').toLocaleDateString('en-US', {month:'short', day:'numeric'}) : '—';
+const addDays = (d, n) => { const x = new Date(d + 'T12:00'); x.setDate(x.getDate() + n); return x; };
+const daysSince = d => Math.floor((Date.now() - new Date(d + 'T12:00')) / 864e5);
+
+function render() {
+  document.getElementById('launchDate').value = S.launch;
+  document.getElementById('engaged').value = S.engaged;
+  document.getElementById('roasters').value = S.roasters;
+  document.getElementById('syncShipped').checked = S.syncShipped;
+
+  const shopsWithRecipes = S.emails.filter(e => e.status === 'entered recipes' || e.status === 'paid').length;
+  const prepays = S.pays.length;
+  const day = S.launch ? daysSince(S.launch) : null;
+  document.getElementById('clock').textContent = S.launch ? `— day ${day} since launch` : '— set a launch date to start the clocks';
+  const gates = [
+    { lbl: '15 shops entered real recipes (by day 14)', num: `${shopsWithRecipes}/15`, ok: shopsWithRecipes >= 15, deadline: 14 },
+    { lbl: '10 founding prepays at $99 (by day 30) — FATAL if 0', num: `${prepays}/10`, ok: prepays >= 10, deadline: 30 },
+    { lbl: '≥ half of recipe shops engaged in last 10 days (day 30)', num: `${S.engaged}/${Math.ceil(shopsWithRecipes/2) || '—'}`, ok: shopsWithRecipes > 0 && S.engaged >= shopsWithRecipes/2, deadline: 30 },
+    { lbl: '3 real roaster conversations', num: `${S.roasters}/3`, ok: S.roasters >= 3, deadline: 30 },
+  ];
+  document.getElementById('gates').innerHTML = gates.map(g => {
+    const overdue = day !== null && day > g.deadline && !g.ok;
+    const cls = g.ok ? 'pass' : overdue ? 'fail' : '';
+    const left = day !== null && !g.ok && day <= g.deadline ? `${g.deadline - day}d left` : overdue ? 'MISSED' : g.ok ? 'PASSED' : '';
+    return `<div class="gate ${cls}"><div class="num">${esc(g.num)}</div><div class="lbl">${esc(g.lbl)}</div><div class="tiny">${esc(left)}</div></div>`;
+  }).join('');
+
+  document.getElementById('rev').textContent = '$' + S.pays.reduce((a, p) => a + (+p.amt || 0), 0);
+  document.getElementById('payTable').innerHTML = '<tr><th>email</th><th>shop</th><th>paid</th><th>$</th><th>refund deadline</th><th></th></tr>' +
+    S.pays.map((p, i) => {
+      const dl = addDays(p.date, 60);
+      const urgent = !S.syncShipped && (dl - Date.now()) < 14 * 864e5;
+      return `<tr><td>${esc(p.email)}</td><td>${esc(p.name)}</td><td>${fmt(p.date)}</td><td>${esc(p.amt)}</td><td class="${urgent ? 'due' : ''}">${dl.toLocaleDateString('en-US', {month:'short', day:'numeric'})}${urgent ? ' ⚠ ship sync or refund' : ''}</td><td><button class="mini" onclick="rm('pays',${i})">×</button></td></tr>`;
+    }).join('');
+
+  document.getElementById('emailTable').innerHTML = '<tr><th>email</th><th>shop</th><th>status</th><th>notes</th><th></th></tr>' +
+    S.emails.map((e, i) => `<tr><td>${esc(e.email)}</td><td>${esc(e.name)}</td><td><select onchange="setStatus(${i},this.value)">${['interested','entered recipes','paid','unsubscribed'].map(s => `<option ${s === e.status ? 'selected' : ''}>${s}</option>`).join('')}</select></td><td>${esc(e.notes)}</td><td><button class="mini" onclick="rm('emails',${i})">×</button></td></tr>`).join('');
+
+  document.getElementById('postTable').innerHTML = '<tr><th>community</th><th>posted</th><th>traction</th><th>signups</th><th></th></tr>' +
+    S.posts.map((t, i) => `<tr><td><a href="${esc(t.url)}" rel="noopener">${esc(t.where)}</a></td><td>${fmt(t.date)}</td><td>${esc(t.res)}</td><td>${esc(t.sign)}</td><td><button class="mini" onclick="rm('posts',${i})">×</button></td></tr>`).join('');
+}
+function setLaunch(v) { S.launch = v; save(); }
+function setNum(k, v) { S[k] = Math.max(0, +v || 0); save(); }
+function setSync(v) { S.syncShipped = v; save(); }
+function setStatus(i, v) { S.emails[i].status = v; save(); }
+function rm(list, i) { S[list].splice(i, 1); save(); }
+const val = id => document.getElementById(id).value.trim();
+function addPay() {
+  if (!val('pEmail') || !val('pDate')) return alert('email and date required');
+  S.pays.push({ email: val('pEmail'), name: val('pName'), date: val('pDate'), amt: +val('pAmt') || 99 });
+  autoEmail(val('pEmail'), val('pName'), 'paid'); save();
+}
+function addEmail() {
+  if (!val('eEmail')) return alert('email required');
+  S.emails.push({ email: val('eEmail'), name: val('eName'), status: val('eStatus'), notes: val('eNotes') }); save();
+}
+function autoEmail(email, name, status) {
+  const e = S.emails.find(x => x.email.toLowerCase() === email.toLowerCase());
+  if (e) e.status = status; else S.emails.push({ email, name, status, notes: '' });
+}
+function addPost() {
+  if (!val('tWhere')) return alert('community required');
+  S.posts.push({ where: val('tWhere'), url: val('tUrl'), date: val('tDate'), res: val('tRes'), sign: val('tSign') }); save();
+}
+function doExport() {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' }));
+  a.download = 'portafile-admin-backup.json'; a.click();
+}
+function doImport(inp) {
+  const f = inp.files[0]; if (!f) return;
+  f.text().then(t => {
+    const s = JSON.parse(t);
+    if (!s || !Array.isArray(s.pays) || !Array.isArray(s.emails)) throw new Error('not a dashboard backup');
+    S = s; save();
+  }).catch(e => alert('Import rejected, nothing changed: ' + e.message));
+  inp.value = '';
+}
+// ponytail: minimal quoted-CSV parser, good for Stripe exports; swap for a lib only if Stripe changes format
+function parseCSV(t) {
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"' && t[i+1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n' || c === '\r') { if (cell || row.length) { row.push(cell); rows.push(row); row = []; cell = ''; } }
+    else cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+function stripeImport(inp) {
+  const f = inp.files[0]; if (!f) return;
+  f.text().then(t => {
+    const rows = parseCSV(t);
+    const h = rows[0].map(x => x.toLowerCase());
+    const col = names => h.findIndex(x => names.some(n => x.includes(n)));
+    const cEmail = col(['customer email', 'email']), cAmt = col(['amount']), cDate = col(['created']), cStatus = col(['status']);
+    if (cEmail < 0 || cDate < 0) throw new Error('no email/date columns — is this a Stripe payments export?');
+    let added = 0;
+    for (const r of rows.slice(1)) {
+      if (cStatus >= 0 && !/paid|succeeded/i.test(r[cStatus])) continue;
+      const email = r[cEmail], date = (r[cDate] || '').slice(0, 10);
+      if (!email || !date || S.pays.some(p => p.email === email && p.date === date)) continue;
+      S.pays.push({ email, name: '', date, amt: +r[cAmt] || 99 });
+      autoEmail(email, '', 'paid'); added++;
+    }
+    save(); alert(`Imported ${added} new payment(s); duplicates and non-paid rows skipped.`);
+  }).catch(e => alert('Import rejected, nothing changed: ' + e.message));
+  inp.value = '';
+}
+function csvExport() {
+  const q = s => '"' + String(s ?? '').replace(/"/g, '""') + '"';
+  const rows = [['email', 'name', 'status', 'notes'], ...S.emails.map(e => [e.email, e.name, e.status, e.notes])];
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([rows.map(r => r.map(q).join(',')).join('\n')], { type: 'text/csv' }));
+  a.download = 'portafile-emails.csv'; a.click();
+}
+render();
+</script>
+</body>
+</html>
