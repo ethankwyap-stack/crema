@@ -73,3 +73,14 @@ That's the whole product. If Portafile earned its tape spot, the Shop tier ($29/
 
 — Portafile
 *Your whole shop, dialed in.*
+
+---
+
+## Required footer — append to EVERY email above (CAN-SPAM)
+
+> You're receiving this because you signed up at portafile.vercel.app.
+> [Unsubscribe]({{unsubscribe_url}}) — one click, takes effect immediately.
+>
+> Portafile · [POSTAL ADDRESS — PO Box or CMRA, required by law in every email; never a home address]
+
+Rules this footer satisfies: working unsubscribe honored within 10 business days (make it instant), physical postal address, truthful From/subject. Do not send any email in this file without it.
