@@ -81,6 +81,6 @@ That's the whole product. If Portafile earned its tape spot, the Shop tier ($29/
 > You're receiving this because you signed up at portafile.vercel.app.
 > [Unsubscribe]({{unsubscribe_url}}) — one click, takes effect immediately.
 >
-> Portafile · [POSTAL ADDRESS — PO Box or CMRA, required by law in every email; never a home address]
+> Portafile · San Francisco, California [ADD STREET or PO BOX before first send — CAN-SPAM requires a full postal address]
 
 Rules this footer satisfies: working unsubscribe honored within 10 business days (make it instant), physical postal address, truthful From/subject. Do not send any email in this file without it.
