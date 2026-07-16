@@ -1,0 +1,20 @@
+/* Portafile brand tokens — single source of truth for product + site + collateral */
+:root {
+  /* palette */
+  --espresso: #2A1A12;   /* primary text, marks */
+  --roast:    #4A3527;   /* secondary headings */
+  --ink-soft: #6B5544;   /* muted text */
+  --paper:    #FAF4EA;   /* page background */
+  --card:     #FFFDF8;   /* card surfaces */
+  --crema:    #D9A05B;   /* highlights, table accents */
+  --terra:    #C4502F;   /* primary accent: buttons, links, alerts-positive */
+  --terra-dk: #A03E22;   /* accent hover */
+  --spruce:   #5B7065;   /* cool counterpoint: success, dial-in */
+  --alert:    #B3261E;   /* margin danger */
+  --line:     #E7DACA;   /* hairlines */
+
+  /* type — zero external fonts, print-friendly */
+  --font-display: "Iowan Old Style", Palatino, Georgia, serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace; /* dial-in numbers */
+}

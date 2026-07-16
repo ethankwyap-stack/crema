@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" role="img" aria-label="Portafile">
+  <!-- Mark: a portafilter whose basket holds document lines -->
+  <g>
+    <!-- handle -->
+    <rect x="78" y="52" width="40" height="14" rx="7" fill="#2A1A12"/>
+    <!-- basket -->
+    <circle cx="52" cy="59" r="34" fill="#2A1A12"/>
+    <!-- documents in the basket -->
+    <rect x="34" y="46" width="36" height="5" rx="2.5" fill="#FAF4EA"/>
+    <rect x="34" y="57" width="36" height="5" rx="2.5" fill="#FAF4EA"/>
+    <rect x="34" y="68" width="24" height="5" rx="2.5" fill="#D9A05B"/>
+    <!-- crema drip: single drop under the basket spout -->
+    <circle cx="52" cy="100" r="5" fill="#C4502F"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="138" y="74" font-family="Iowan Old Style, Palatino, Georgia, serif" font-size="46" font-weight="700" letter-spacing="-0.5" fill="#2A1A12">portafile</text>
+</svg>

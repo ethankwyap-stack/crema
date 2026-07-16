@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Portafile mark">
+  <rect x="84" y="52" width="34" height="14" rx="7" fill="#2A1A12"/>
+  <circle cx="56" cy="59" r="36" fill="#2A1A12"/>
+  <rect x="37" y="45" width="38" height="5.5" rx="2.75" fill="#FAF4EA"/>
+  <rect x="37" y="57" width="38" height="5.5" rx="2.75" fill="#FAF4EA"/>
+  <rect x="37" y="69" width="25" height="5.5" rx="2.75" fill="#D9A05B"/>
+  <circle cx="56" cy="104" r="5.5" fill="#C4502F"/>
+</svg>

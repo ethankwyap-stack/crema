@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portafile — your whole shop, dialed in</title>
+<meta name="description" content="Recipe cards that know their cost. A dial-in board that answers the morning question. A new-hire pack ready before Monday. Free, local-first, built for independent coffee shops.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect x='84' y='52' width='34' height='14' rx='7' fill='%232A1A12'/%3E%3Ccircle cx='56' cy='59' r='36' fill='%232A1A12'/%3E%3Crect x='37' y='45' width='38' height='5.5' rx='2.75' fill='%23FAF4EA'/%3E%3Crect x='37' y='57' width='38' height='5.5' rx='2.75' fill='%23FAF4EA'/%3E%3Crect x='37' y='69' width='25' height='5.5' rx='2.75' fill='%23D9A05B'/%3E%3C/svg%3E">
+<style>
+:root{--espresso:#2A1A12;--roast:#4A3527;--ink-soft:#6B5544;--paper:#FAF4EA;--card:#FFFDF8;--crema:#D9A05B;--terra:#C4502F;--terra-dk:#A03E22;--spruce:#5B7065;--alert:#B3261E;--line:#E7DACA;
+--fd:"Iowan Old Style",Palatino,Georgia,serif;--fu:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;--fm:ui-monospace,"SF Mono",Menlo,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--espresso);font-family:var(--fu);font-size:16px;line-height:1.55}
+a{color:var(--terra)}
+.wrap{max-width:1060px;margin:0 auto;padding:0 22px}
+header.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
+.lockup{display:flex;align-items:center;gap:10px;font-family:var(--fd);font-weight:700;font-size:22px}
+.lockup svg{width:34px;height:34px}
+.nav .cta{background:var(--terra);color:#fff;text-decoration:none;font-weight:650;padding:9px 18px;border-radius:10px}
+.nav .cta:hover{background:var(--terra-dk)}
+
+.hero{padding:64px 0 40px;display:grid;grid-template-columns:1.1fr .9fr;gap:44px;align-items:center}
+@media(max-width:880px){.hero{grid-template-columns:1fr}}
+h1{font-family:var(--fd);font-size:clamp(38px,6vw,58px);line-height:1.04;margin:0 0 18px;letter-spacing:-.5px}
+h1 em{font-style:normal;color:var(--terra)}
+.sub{font-size:19px;color:var(--roast);max-width:34em;margin:0 0 26px}
+.heroctas{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-block;background:var(--terra);color:#fff;text-decoration:none;font-weight:700;padding:14px 26px;border-radius:12px;font-size:17px}
+.btn:hover{background:var(--terra-dk)}
+.btn.ghost{background:transparent;color:var(--espresso);border:2px solid var(--espresso)}
+.tiny{font-size:13px;color:var(--ink-soft);margin-top:10px}
+
+/* hero card mock */
+.mockcard{background:var(--card);border:1.5px solid var(--espresso);border-radius:16px;padding:20px 22px;box-shadow:10px 12px 0 rgba(42,26,18,.12);transform:rotate(1.6deg);max-width:400px;margin-left:auto}
+@media(max-width:880px){.mockcard{margin:0 auto}}
+.mockcard h3{font-family:var(--fd);margin:0;display:flex;justify-content:space-between;font-size:22px}
+.mockcard .m{font-family:var(--fm);font-size:14.5px;margin:8px 0 12px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.mockcard .m b{font-size:17px}
+.badge{padding:2px 10px;border-radius:99px;font-weight:700;font-family:var(--fm);font-size:12.5px;background:#e6ede8;color:var(--spruce)}
+.mockcard ul{list-style:none;margin:0 0 10px;padding:0;font-size:14.5px}
+.mockcard li{display:flex;justify-content:space-between;border-bottom:1px dotted var(--line);padding:3px 0}
+.mockcard li .c{font-family:var(--fm);color:var(--ink-soft)}
+.mockcard ol{margin:0;padding-left:20px;font-size:14.5px;color:var(--roast)}
+.mockcard .dial{margin-top:12px;border-top:1.5px solid var(--espresso);padding-top:8px;font-size:13px;font-weight:700;color:var(--spruce)}
+
+section{padding:56px 0}
+h2{font-family:var(--fd);font-size:clamp(26px,4vw,38px);line-height:1.15;margin:0 0 12px;letter-spacing:-.3px}
+.lead{font-size:18px;color:var(--roast);max-width:38em}
+
+/* quotes */
+.quotes{background:var(--espresso);color:var(--paper)}
+.quotes h2{color:var(--paper)}
+.quotes .lead{color:#d9c9b8}
+.qgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:30px}
+.q{background:#3a2317;border-radius:14px;padding:20px 22px;font-size:15.5px;line-height:1.5}
+.q p{margin:0 0 12px;font-family:var(--fd);font-size:17px}
+.q .who{font-size:13px;color:var(--crema)}
+.q a{color:var(--crema)}
+.qnote{font-size:12.5px;color:#a08c7a;margin-top:18px}
+
+/* three pillars */
+.pillars{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-top:34px}
+.pillar{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px}
+.pillar .n{font-family:var(--fm);color:var(--terra);font-weight:700;font-size:13px}
+.pillar h3{font-family:var(--fd);font-size:21px;margin:6px 0 8px}
+.pillar p{margin:0;color:var(--roast);font-size:15px}
+
+/* money */
+.money-sec .row{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+@media(max-width:880px){.money-sec .row{grid-template-columns:1fr}}
+.bignum{font-family:var(--fm);font-weight:700;font-size:clamp(40px,6vw,64px);color:var(--terra);line-height:1}
+.shot{border:1px solid var(--line);border-radius:14px;max-width:100%;box-shadow:0 8px 30px rgba(42,26,18,.14)}
+
+/* pricing */
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-top:34px}
+.plan{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:26px}
+.plan.hot{border-color:var(--terra);box-shadow:8px 10px 0 rgba(196,80,47,.15)}
+.plan h3{font-family:var(--fd);margin:0 0 2px;font-size:20px}
+.plan .p{font-family:var(--fm);font-size:30px;font-weight:700;margin:10px 0 2px}
+.plan .per{font-size:13px;color:var(--ink-soft)}
+.plan ul{padding-left:18px;margin:14px 0 0;font-size:14.5px;color:var(--roast)}
+.plan li{margin-bottom:6px}
+.founding{background:var(--crema);border-radius:12px;display:inline-block;padding:8px 16px;font-weight:700;margin-top:18px;font-size:14.5px}
+
+/* faq */
+.faq details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:10px}
+.faq summary{font-weight:700;cursor:pointer;font-size:15.5px}
+.faq p{color:var(--roast);font-size:15px;margin:10px 0 2px}
+
+footer{border-top:2px solid var(--espresso);padding:28px 0 40px;font-size:13.5px;color:var(--ink-soft)}
+footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="nav">
+    <div class="lockup">
+      <svg viewBox="0 0 120 120" aria-hidden="true"><rect x="84" y="52" width="34" height="14" rx="7" fill="#2A1A12"/><circle cx="56" cy="59" r="36" fill="#2A1A12"/><rect x="37" y="45" width="38" height="5.5" rx="2.75" fill="#FAF4EA"/><rect x="37" y="57" width="38" height="5.5" rx="2.75" fill="#FAF4EA"/><rect x="37" y="69" width="25" height="5.5" rx="2.75" fill="#D9A05B"/><circle cx="56" cy="104" r="5.5" fill="#C4502F"/></svg>
+      portafile
+    </div>
+    <a class="cta" href="../product/index.html">Open the app — free</a>
+  </header>
+
+  <section class="hero">
+    <div>
+      <h1>Your whole shop, <em>dialed&nbsp;in.</em></h1>
+      <p class="sub">Recipe cards that know exactly what every drink costs you. A dial-in board that answers the morning question. A new-hire pack printed and ready before Monday. Built for independent coffee shops — not chains.</p>
+      <div class="heroctas">
+        <a class="btn" href="../product/index.html">Open Portafile — free</a>
+        <a class="btn ghost" href="../video/portafile-launch.mp4">Watch the 75-second film</a>
+      </div>
+      <p class="tiny">No account. No card. No server. Your recipes live in your browser and print onto paper — where the bar actually reads them.</p>
+    </div>
+    <div class="mockcard" aria-label="Example recipe card">
+      <h3><span>Latte</span><span style="font-family:var(--fm)">$5.00</span></h3>
+      <div class="m"><span>costs you <b>$1.22</b></span><span class="badge">24% COGS</span><span style="color:var(--spruce)">keeps $3.78</span></div>
+      <ul>
+        <li><span>Espresso beans — 18 g</span><span class="c">$0.60</span></li>
+        <li><span>Whole milk — 9 fl oz</span><span class="c">$0.32</span></li>
+        <li><span>12oz cup + lid + sleeve</span><span class="c">$0.30</span></li>
+      </ul>
+      <ol>
+        <li>Pull double shot</li>
+        <li>Steam to 140°F, wet-paint texture</li>
+        <li>Pour from 3in, finish low</li>
+      </ol>
+      <div class="dial">⏚ House Blend: 18g in → 36g out, 28s (grind 12.2)</div>
+    </div>
+  </section>
+</div>
+
+<section class="quotes">
+  <div class="wrap">
+    <h2>The best shops run on recipes nobody wrote down.</h2>
+    <p class="lead">These are real posts from real coffee people, found while building Portafile:</p>
+    <div class="qgrid">
+      <div class="q"><p>"[C]offee like no other, has the absolute WORST training standards… 9/10 of the coffee shops I visit these days have absolutely no standards."</p><div class="who">— cafe owner, 7 years in specialty · <a href="https://www.reddit.com/r/barista/comments/1k6ee41/" rel="noopener">r/barista, Apr 2025</a></div></div>
+      <div class="q"><p>"[T]he shop is lacking a lot of basics such as guidelines on making drinks… Now on top of all this my boss expects me to make this training guide and then train the new barista. It's unbelievable."</p><div class="who">— barista at a new indie shop · <a href="https://www.reddit.com/r/barista/comments/1jb70yd/" rel="noopener">r/barista, Mar 2025</a></div></div>
+      <div class="q"><p>"[W]e really don't have a ideal recipe book to make sure things and drinks are being made the same…"</p><div class="who">— barista, nonprofit cafe · <a href="https://www.reddit.com/r/barista/comments/1c9z6b2/" rel="noopener">r/barista, Apr 2024</a></div></div>
+    </div>
+    <p class="qnote">Quotes are from public Reddit posts (fetched via the PullPush archive, July 2026), verbatim — trims are marked with … and [brackets] — and linked to their sources. They describe the problem — they are not endorsements of Portafile.</p>
+  </div>
+</section>
+
+<div class="wrap">
+  <section>
+    <h2>One tool, three jobs your binder can't do.</h2>
+    <div class="pillars">
+      <div class="pillar"><div class="n">01 · THE MONEY</div><h3>Cards that know their cost</h3><p>Type what you pay for milk, beans and cups once. Every recipe card shows drink-level cost, margin and COGS% — and re-prices itself the moment an ingredient price moves. When your bean supplier raises prices, you'll know which drinks went underwater before the till does.</p></div>
+      <div class="pillar"><div class="n">02 · THE MORNING</div><h3>A dial-in board with memory</h3><p>Grind, dose, yield, time — logged per bean in five seconds. The board always shows the current setting, every card carries it, and the history is still there when that Ethiopia comes back next season.</p></div>
+      <div class="pillar"><div class="n">03 · THE MONDAY</div><h3>A new-hire pack in ten minutes</h3><p>Order your training path, hit print: cover page, day-by-day checklist, every recipe card, today's dial-ins. Sign-offs tracked per barista. The knowledge stops walking out the door with whoever wrote the old binder.</p></div>
+    </div>
+  </section>
+
+  <section class="money-sec">
+    <div class="row">
+      <div>
+        <h2>Green coffee doubled. Your laminated price list didn't notice.</h2>
+        <p class="lead">Arabica peaked at <strong>$4.41/lb</strong> in 2025 — a historic high — and the average shop keeps <strong>11 cents of every dollar</strong>. At margins like that, "roughly $1 a latte" isn't a costing strategy. Portafile makes the real number ambient: on every card, every day, at today's prices.</p>
+        <p class="tiny">Sources: Perfect Daily Grind (Feb 2026) · coffeedasher.com industry statistics. Full citation list in the repo.</p>
+      </div>
+      <div><img class="shot" src="assets/01-recipes.png" alt="Portafile recipes view: cards with live cost, margin and COGS badges" loading="lazy"></div>
+    </div>
+  </section>
+
+  <section class="money-sec">
+    <div class="row">
+      <div><img class="shot" src="assets/03-dialin.png" alt="Portafile dial-in board: current grind, dose, yield, time per bean with history" loading="lazy"></div>
+      <div>
+        <h2>Paper survives the rush. The app keeps it honest.</h2>
+        <p class="lead">Nobody unlocks a phone with wet hands at 7:58am. Portafile prints laminated-ready cards, a one-page station sheet and the full new-hire pack — while the app stays the living source of truth, so the paper is never the stale version again. (The printed cards hide your costs. The margin report is the owner-only page.)</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing">
+    <h2>Pricing that respects an 11% margin.</h2>
+    <p class="lead">Flat per shop. Never per seat — we don't tax you for having to hire again.</p>
+    <div class="plans">
+      <div class="plan">
+        <h3>Local</h3>
+        <div class="p">$0</div><div class="per">forever</div>
+        <ul><li>Everything: cards, costing, dial-in board, training packs, printing</li><li>Lives entirely in your browser</li><li>JSON backup &amp; restore</li></ul>
+      </div>
+      <div class="plan hot">
+        <h3>Shop</h3>
+        <div class="p">$29<span style="font-size:15px">/mo</span></div><div class="per">or $199/yr · 30-day full trial</div>
+        <ul><li>Synced across the shop's devices</li><li>Secret-link sharing for staff phones</li><li>Sign-off history &amp; margin trends</li><li>One flat price per location</li></ul>
+      </div>
+      <div class="plan">
+        <h3>Roaster Partner</h3>
+        <div class="p">$149<span style="font-size:15px">/mo</span></div><div class="per">up to 50 wholesale accounts</div>
+        <ul><li>White-label Portafile as your onboarding gift to cafe accounts</li><li>Your beans + recommended dial-ins pre-seeded</li><li>Update a seasonal spec once — every account's board follows</li></ul>
+      </div>
+    </div>
+    <div class="founding">☕ Founding shops: first year $99 — for the first 50 shops that bring their real menu.</div>
+    <p class="tiny">The Local tier is the product you can open today. Shop &amp; Roaster tiers ship after founding-shop validation — pricing shown is the plan of record.</p>
+  </section>
+
+  <section class="faq">
+    <h2>Fair questions</h2>
+    <details><summary>Where does my data live?</summary><p>In your browser (localStorage), on your machine. Nothing is uploaded anywhere. Export a JSON backup from the Data menu and keep it with your shop docs. The paid Shop tier adds sync — that's the point of it.</p></details>
+    <details><summary>Why is the Local version free? What's the catch?</summary><p>No catch: it's free the way a sample bag is free. If Portafile earns a place taped to your machine, the synced Shop tier is where we make our living. If it doesn't, you lost nothing.</p></details>
+    <details><summary>Couldn't I just use Google Docs?</summary><p>You could — shops have been able to for 15 years, and (as one 7-year specialty owner put it) 9 of 10 shops they visit still have no standards. Docs won't compute your margin at today's milk price, won't remember your grind setting, and won't print a 4×6 card. The blank page is the enemy; Portafile starts you with 15 editable drinks.</p></details>
+    <details><summary>What about my ten locations?</summary><p>Portafile is deliberately single-shop-first — that's who's underserved. A Group tier (2–5 locations) is on the plan of record.</p></details>
+    <details><summary>Do my baristas need accounts?</summary><p>No accounts anywhere. Baristas use the printed packs, or the shop device. Sign-offs are tracked by name, not login.</p></details>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>© 2026 Portafile · your whole shop, dialed in</div>
+    <div>Built from the complaints of r/barista, with respect. · <a href="../product/index.html">Open the app</a></div>
+  </div>
+</footer>
+</body>
+</html>
