@@ -19,8 +19,8 @@ input,select,textarea { font:inherit; color:inherit; }
 .brand-name { font-family:var(--font-display); font-weight:700; font-size:20px; line-height:1; }
 .shop-name { border:none; background:transparent; border-bottom:1px dashed var(--crema); color:var(--ink-soft); font-size:13px; padding:1px 2px; width:180px; }
 .shop-name:focus { outline:none; border-bottom-color:var(--terra); }
-.tabs { display:flex; gap:4px; flex:1; min-width:280px; }
-.tab { border:none; background:transparent; padding:8px 14px; border-radius:8px 8px 0 0; color:var(--ink-soft); font-weight:600; }
+.tabs { display:flex; gap:4px; flex:1; min-width:280px; overflow-x:auto; }
+.tab { border:none; background:transparent; white-space:nowrap; flex:none; padding:8px 14px; border-radius:8px 8px 0 0; color:var(--ink-soft); font-weight:600; }
 .tab.active { background:var(--espresso); color:var(--paper); }
 .top-actions { display:flex; gap:6px; }
 .ghost { background:transparent; border:1px solid var(--line); border-radius:8px; padding:6px 12px; color:var(--roast); }

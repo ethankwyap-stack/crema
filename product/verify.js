@@ -3,7 +3,10 @@ const path = require('path');
 const PW = '/Users/ethanyap/.npm/_npx/e41f203b7505f1fb/node_modules/playwright';
 const { chromium } = require(PW);
 const APP = 'file://' + encodeURI('/Users/ethanyap/Desktop/Claude Projects/cafe business/product/index.html');
-const SHOTS = '/Users/ethanyap/Desktop/Claude Projects/cafe business/product/screenshots';
+// Writes to a temp dir so re-runs don't dirty the committed screenshots.
+// To refresh the committed set: SHOTS_DIR=./screenshots node verify.js
+const SHOTS = process.env.SHOTS_DIR || require('os').tmpdir() + '/portafile-shots';
+require('fs').mkdirSync(SHOTS, { recursive: true });
 const fs = require('fs'); fs.mkdirSync(SHOTS, { recursive: true });
 
 (async () => {

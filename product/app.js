@@ -178,7 +178,7 @@ const dialRefText = r => {
 /* ---------------- render root ---------------- */
 function render() {
   $('#shopName').value = S.shop.name;
-  $$('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === S.tab));
+  $$('.tab').forEach(b => { const on = b.dataset.tab === S.tab; b.classList.toggle('active', on); b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
   const v = $('#view');
   if (S.tab === 'recipes') v.innerHTML = viewRecipes();
   else if (S.tab === 'prices') v.innerHTML = viewPrices();
@@ -611,6 +611,12 @@ function wireView() {
 
 /* top chrome */
 $$('.tab').forEach(b => b.onclick = () => { S.tab = b.dataset.tab; save(); render(); });
+document.querySelector('.tabs').addEventListener('keydown', e => {
+  if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+  const tabs = $$('.tab'), i = tabs.findIndex(t => t.dataset.tab === S.tab);
+  const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+  S.tab = next.dataset.tab; save(); render(); next.focus();
+});
 $('#shopName').addEventListener('change', () => { S.shop.name = $('#shopName').value.trim() || 'My shop'; save(); render(); });
 $('#btnData').onclick = dataMenu;
 $('#btnHelp').onclick = helpModal;
