@@ -644,6 +644,42 @@ function selftest() {
   console.log('[portafile selftest]', fails.length ? fails : 'all pass');
 }
 
+/* ---------------- access gate (fill once, remembered) ---------------- */
+const LEAD_KEY = 'portafile.v1.lead';
+function gate() {
+  // ponytail: skip for file:// (offline copy has no API), automated browsers (test suites/bots
+  // would only donate fake emails), and anyone who already filled it in this browser
+  if (location.protocol === 'file:' || navigator.webdriver || localStorage.getItem(LEAD_KEY)) return;
+  const g = document.createElement('div'); g.className = 'gatewrap';
+  g.innerHTML = `<form class="sheet gate">
+    <h3>Before you brew…</h3>
+    <p class="hint">Portafile is free. Tell us who's using it so we can let you know when staff-phone sync ships.</p>
+    <label>Email *<input name="email" type="email" required autocomplete="email"></label>
+    <label>Shop name *<input name="shop" required placeholder="e.g. Northside Espresso"></label>
+    <label>Your role<select name="role"><option value="">—</option><option>Owner</option><option>Manager</option><option>Barista</option><option>Roaster</option><option>Just curious</option></select></label>
+    <label>City / country<input name="city" autocomplete="address-level2"></label>
+    <label>Phone (optional)<input name="phone" type="tel" autocomplete="tel"></label>
+    <div class="bar" style="justify-content:flex-end"><button class="btn" type="submit">Open Portafile</button></div>
+    <p class="hint">No password, no verification email — this browser stays unlocked.</p>
+  </form>`;
+  document.body.appendChild(g);
+  g.querySelector('form').onsubmit = ev => {
+    ev.preventDefault();
+    const f = new FormData(ev.target);
+    const lead = Object.fromEntries(['email', 'shop', 'role', 'city', 'phone'].map(k => [k, String(f.get(k) || '').trim()]));
+    if (!lead.email || !lead.shop) return;
+    localStorage.setItem(LEAD_KEY, JSON.stringify(lead)); // unlock first — never hold the door on a network hiccup
+    fetch('/api/lead', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(lead) })
+      .then(r => { if (r.ok) localStorage.setItem(LEAD_KEY + '.sent', '1'); }).catch(() => {});
+    g.remove();
+  };
+}
+// retry a lead that never reached the server (was offline / API down at signup time)
+if (localStorage.getItem(LEAD_KEY) && !localStorage.getItem(LEAD_KEY + '.sent') && location.protocol !== 'file:' && !navigator.webdriver)
+  fetch('/api/lead', { method: 'POST', headers: { 'content-type': 'application/json' }, body: localStorage.getItem(LEAD_KEY) })
+    .then(r => { if (r.ok) localStorage.setItem(LEAD_KEY + '.sent', '1'); }).catch(() => {});
+
 render();
+gate();
 if (syncKey) { syncPull(); setInterval(syncPull, 30000); syncBadge(); }
 if (location.search.includes('selftest=1')) selftest();

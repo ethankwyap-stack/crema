@@ -43,3 +43,5 @@ The package is complete through the kill pass (see `07-kill-pass.md`). Deliberat
 ## Sync branch (not deployed yet)
 
 The `sync` branch adds the paid-tier feature: opt-in secret-link cloud sync (`api/state.js` + Vercel Blob). To ship it: merge `sync` into `main`, connect a Blob store to the Vercel project (Storage tab → Create Blob store — free tier; this sets `BLOB_READ_WRITE_TOKEN` automatically), and redeploy. Without a key in the URL the app is byte-identical to local-only v1; `product/verify-sync.js` (11 checks) proves both modes.
+
+The branch also adds the **access gate**: the app asks for email + shop name (role/city/phone optional) once per browser before use; leads land in Blob via `api/lead.js` and are viewable in the founder dashboard ("Site signups" → needs an `ADMIN_KEY` env var on Vercel). `product/verify-gate.js` (11 checks) covers it. Automated browsers skip the gate, so test suites and the `?selftest=1` banner are unaffected.
