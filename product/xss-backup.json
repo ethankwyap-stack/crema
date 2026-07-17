@@ -1,0 +1,1 @@
+{"shop":{"name":"x","cogsTarget":30},"ingredients":[{"id":"i1","name":"Milk","unit":"oz","unitCost":0.04}],"recipes":[{"id":"x\"><img src=y onerror=window.__xss=1>","name":"Evil","cat":"c","size":"s","price":5,"items":[{"ing":"i1","qty":1}],"steps":[],"bean":null}],"beans":[],"dialins":[],"baristas":[],"path":[],"signoffs":{}}

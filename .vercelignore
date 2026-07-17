@@ -6,3 +6,5 @@
 /product/verify.js
 /product/verify-killpass.js
 /product/screenshots
+!/api
+!/package.json

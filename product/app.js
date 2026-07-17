@@ -108,7 +108,52 @@ function load() {
   } catch (e) { /* corrupted -> reseed */ }
   const s = seed(); localStorage.setItem(KEY, JSON.stringify(s)); return s;
 }
-const save = () => localStorage.setItem(KEY, JSON.stringify(S));
+const save = () => { localStorage.setItem(KEY, JSON.stringify(S)); syncPush(); };
+
+/* ---------------- sync (opt-in secret link, ?k=…) ---------------- */
+/* Off by default: with no key the app is pure-local, byte-identical to v1 behavior.
+   ponytail: last-write-wins, no merging — local backup + Export remain the safety net. */
+const SYNC_KEY = 'portafile.v1.synckey';
+const syncKey = (() => {
+  const m = location.search.match(/[?&]k=([a-f0-9]{40})\b/);
+  if (m) { localStorage.setItem(SYNC_KEY, m[1]); return m[1]; }
+  return localStorage.getItem(SYNC_KEY) || '';
+})();
+let syncStatus = syncKey ? 'connecting' : '';
+function syncBadge() {
+  let el = document.getElementById('syncBadge');
+  if (!syncKey) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'syncBadge'; document.body.appendChild(el); }
+  el.className = 'syncbadge ' + syncStatus;
+  el.textContent = { connecting: 'sync…', live: 'synced', offline: 'sync offline — working locally' }[syncStatus] || '';
+}
+let syncPushT;
+function syncPush() {
+  if (!syncKey) return;
+  clearTimeout(syncPushT);
+  syncPushT = setTimeout(async () => {
+    try {
+      const r = await fetch('/api/state?k=' + syncKey, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(S) });
+      syncStatus = r.ok ? 'live' : 'offline';
+    } catch (e) { syncStatus = 'offline'; }
+    syncBadge();
+  }, 800);
+}
+async function syncPull() {
+  if (!syncKey) return;
+  try {
+    const r = await fetch('/api/state?k=' + syncKey);
+    if (r.status === 404) { syncStatus = 'live'; syncPush(); syncBadge(); return; } // first device: seed the cloud
+    if (!r.ok) throw new Error(r.status);
+    const s = await r.json();
+    if (validBackup(s) && JSON.stringify({ ...s, tab: 0 }) !== JSON.stringify({ ...S, tab: 0 })) {
+      s.shop.cogsTarget = +s.shop.cogsTarget || 30; s.tab = S.tab;
+      S = s; localStorage.setItem(KEY, JSON.stringify(S)); render();
+    }
+    syncStatus = 'live';
+  } catch (e) { syncStatus = 'offline'; }
+  syncBadge();
+}
 
 /* ---------------- helpers ---------------- */
 const $ = (q, root) => (root || document).querySelector(q);
@@ -421,7 +466,25 @@ function dataMenu() {
       <button class="btn" id="dExport">Export backup</button>
       <label class="ghost" style="display:inline-block;padding:8px 14px;border-radius:9px">Import<input id="dImport" type="file" accept=".json" style="display:none"></label>
       <button class="ghost danger" id="dReset">Reset to demo</button>
-    </div>`);
+    </div>
+    ${location.protocol === 'file:' ? '' : `
+    <h4 style="margin-top:18px">Sync (share with your staff)</h4>
+    ${syncKey ? `
+      <p class="hint">This device is synced. Anyone who opens this secret link sees and edits the same live data — no account needed:</p>
+      <p><input id="dSyncLink" readonly value="${esc(location.origin + location.pathname + '?k=' + syncKey)}" style="width:100%"></p>
+      <div class="bar" style="justify-content:flex-start">
+        <button class="btn" id="dSyncCopy">Copy link</button>
+        <button class="ghost danger" id="dSyncOff">Turn off sync on this device</button>
+      </div>` : `
+      <p class="hint">Turn on sync to get a secret link: open it on any phone or laptop and everyone shares the same live data. Your data then also lives in Portafile's cloud storage.</p>
+      <div class="bar" style="justify-content:flex-start"><button class="btn" id="dSyncOn">Turn on sync</button></div>`}`}`);
+  const syncOn = $('#dSyncOn'); if (syncOn) syncOn.onclick = () => {
+    const b = new Uint8Array(20); crypto.getRandomValues(b);
+    localStorage.setItem(SYNC_KEY, [...b].map(x => x.toString(16).padStart(2, '0')).join(''));
+    location.search = '?k=' + localStorage.getItem(SYNC_KEY); // reload with key: sync boot path takes over
+  };
+  const syncCopy = $('#dSyncCopy'); if (syncCopy) syncCopy.onclick = () => { $('#dSyncLink').select(); navigator.clipboard.writeText($('#dSyncLink').value); syncCopy.textContent = 'Copied!'; };
+  const syncOff = $('#dSyncOff'); if (syncOff) syncOff.onclick = () => { localStorage.removeItem(SYNC_KEY); location.search = ''; };
   $('#dExport').onclick = () => {
     const blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -455,7 +518,7 @@ function helpModal() {
       <h4>Dial-in</h4><p>Log grind/dose/yield/time per bean. The newest entry is "the board" — it appears on cards and print packs. History stays forever.</p>
       <h4>Training</h4><p>Order the path (drinks + custom skills, grouped by day), pick a barista, tick sign-offs. Progress is saved per barista.</p>
       <h4>Print</h4><p>Cards and the new-hire pack hide costs on purpose — they get taped where customers can see. The margin report is the owner-only page.</p>
-      <h4>Your data</h4><p>Lives only in this browser (localStorage). <strong>Data → Export backup</strong> before switching machines. No account, no server, no bill.</p>
+      <h4>Your data</h4><p>Lives in this browser (localStorage). <strong>Data → Export backup</strong> before switching machines. No account, no bill. If you turn on <strong>Sync</strong> (Data menu), your data also lives in Portafile's cloud storage so staff phones share it via a secret link.</p>
     </div>
     <div class="bar"><button class="btn" data-close>Got it</button></div>`);
 }
@@ -582,4 +645,5 @@ function selftest() {
 }
 
 render();
+if (syncKey) { syncPull(); setInterval(syncPull, 30000); syncBadge(); }
 if (location.search.includes('selftest=1')) selftest();

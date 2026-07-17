@@ -39,3 +39,7 @@ The site's CTA links point at `../product/index.html` and `../video/portafile-la
 ## Status & what's still human
 
 The package is complete through the kill pass (see `07-kill-pass.md`). Deliberately **not** done, because they need a human: the Phase-0 validation gates in `03-design-the-business.md` §8, creating the Stripe payment link, the USPTO trademark knockout search on "Portafile", buying a domain, and posting any of the launch drafts. Nothing has been published anywhere.
+
+## Sync branch (not deployed yet)
+
+The `sync` branch adds the paid-tier feature: opt-in secret-link cloud sync (`api/state.js` + Vercel Blob). To ship it: merge `sync` into `main`, connect a Blob store to the Vercel project (Storage tab → Create Blob store — free tier; this sets `BLOB_READ_WRITE_TOKEN` automatically), and redeploy. Without a key in the URL the app is byte-identical to local-only v1; `product/verify-sync.js` (11 checks) proves both modes.
