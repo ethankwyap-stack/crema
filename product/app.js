@@ -108,7 +108,52 @@ function load() {
   } catch (e) { /* corrupted -> reseed */ }
   const s = seed(); localStorage.setItem(KEY, JSON.stringify(s)); return s;
 }
-const save = () => localStorage.setItem(KEY, JSON.stringify(S));
+const save = () => { localStorage.setItem(KEY, JSON.stringify(S)); syncPush(); };
+
+/* ---------------- sync (opt-in secret link, ?k=…) ---------------- */
+/* Off by default: with no key the app is pure-local, byte-identical to v1 behavior.
+   ponytail: last-write-wins, no merging — local backup + Export remain the safety net. */
+const SYNC_KEY = 'portafile.v1.synckey';
+const syncKey = (() => {
+  const m = location.search.match(/[?&]k=([a-f0-9]{40})\b/);
+  if (m) { localStorage.setItem(SYNC_KEY, m[1]); return m[1]; }
+  return localStorage.getItem(SYNC_KEY) || '';
+})();
+let syncStatus = syncKey ? 'connecting' : '';
+function syncBadge() {
+  let el = document.getElementById('syncBadge');
+  if (!syncKey) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'syncBadge'; document.body.appendChild(el); }
+  el.className = 'syncbadge ' + syncStatus;
+  el.textContent = { connecting: 'sync…', live: 'synced', offline: 'sync offline — working locally' }[syncStatus] || '';
+}
+let syncPushT;
+function syncPush() {
+  if (!syncKey) return;
+  clearTimeout(syncPushT);
+  syncPushT = setTimeout(async () => {
+    try {
+      const r = await fetch('/api/state?k=' + syncKey, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(S) });
+      syncStatus = r.ok ? 'live' : 'offline';
+    } catch (e) { syncStatus = 'offline'; }
+    syncBadge();
+  }, 800);
+}
+async function syncPull() {
+  if (!syncKey) return;
+  try {
+    const r = await fetch('/api/state?k=' + syncKey);
+    if (r.status === 404) { syncStatus = 'live'; syncPush(); syncBadge(); return; } // first device: seed the cloud
+    if (!r.ok) throw new Error(r.status);
+    const s = await r.json();
+    if (validBackup(s) && JSON.stringify({ ...s, tab: 0 }) !== JSON.stringify({ ...S, tab: 0 })) {
+      s.shop.cogsTarget = +s.shop.cogsTarget || 30; s.tab = S.tab;
+      S = s; localStorage.setItem(KEY, JSON.stringify(S)); render();
+    }
+    syncStatus = 'live';
+  } catch (e) { syncStatus = 'offline'; }
+  syncBadge();
+}
 
 /* ---------------- helpers ---------------- */
 const $ = (q, root) => (root || document).querySelector(q);
@@ -421,7 +466,25 @@ function dataMenu() {
       <button class="btn" id="dExport">Export backup</button>
       <label class="ghost" style="display:inline-block;padding:8px 14px;border-radius:9px">Import<input id="dImport" type="file" accept=".json" style="display:none"></label>
       <button class="ghost danger" id="dReset">Reset to demo</button>
-    </div>`);
+    </div>
+    ${location.protocol === 'file:' ? '' : `
+    <h4 style="margin-top:18px">Sync (share with your staff)</h4>
+    ${syncKey ? `
+      <p class="hint">This device is synced. Anyone who opens this secret link sees and edits the same live data — no account needed:</p>
+      <p><input id="dSyncLink" readonly value="${esc(location.origin + location.pathname + '?k=' + syncKey)}" style="width:100%"></p>
+      <div class="bar" style="justify-content:flex-start">
+        <button class="btn" id="dSyncCopy">Copy link</button>
+        <button class="ghost danger" id="dSyncOff">Turn off sync on this device</button>
+      </div>` : `
+      <p class="hint">Turn on sync to get a secret link: open it on any phone or laptop and everyone shares the same live data. Your data then also lives in Portafile's cloud storage.</p>
+      <div class="bar" style="justify-content:flex-start"><button class="btn" id="dSyncOn">Turn on sync</button></div>`}`}`);
+  const syncOn = $('#dSyncOn'); if (syncOn) syncOn.onclick = () => {
+    const b = new Uint8Array(20); crypto.getRandomValues(b);
+    localStorage.setItem(SYNC_KEY, [...b].map(x => x.toString(16).padStart(2, '0')).join(''));
+    location.search = '?k=' + localStorage.getItem(SYNC_KEY); // reload with key: sync boot path takes over
+  };
+  const syncCopy = $('#dSyncCopy'); if (syncCopy) syncCopy.onclick = () => { $('#dSyncLink').select(); navigator.clipboard.writeText($('#dSyncLink').value); syncCopy.textContent = 'Copied!'; };
+  const syncOff = $('#dSyncOff'); if (syncOff) syncOff.onclick = () => { localStorage.removeItem(SYNC_KEY); location.search = ''; };
   $('#dExport').onclick = () => {
     const blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -455,7 +518,7 @@ function helpModal() {
       <h4>Dial-in</h4><p>Log grind/dose/yield/time per bean. The newest entry is "the board" — it appears on cards and print packs. History stays forever.</p>
       <h4>Training</h4><p>Order the path (drinks + custom skills, grouped by day), pick a barista, tick sign-offs. Progress is saved per barista.</p>
       <h4>Print</h4><p>Cards and the new-hire pack hide costs on purpose — they get taped where customers can see. The margin report is the owner-only page.</p>
-      <h4>Your data</h4><p>Lives only in this browser (localStorage). <strong>Data → Export backup</strong> before switching machines. No account, no server, no bill.</p>
+      <h4>Your data</h4><p>Lives in this browser (localStorage). <strong>Data → Export backup</strong> before switching machines. No account, no bill. If you turn on <strong>Sync</strong> (Data menu), your data also lives in Portafile's cloud storage so staff phones share it via a secret link.</p>
     </div>
     <div class="bar"><button class="btn" data-close>Got it</button></div>`);
 }
@@ -581,5 +644,42 @@ function selftest() {
   console.log('[portafile selftest]', fails.length ? fails : 'all pass');
 }
 
+/* ---------------- access gate (fill once, remembered) ---------------- */
+const LEAD_KEY = 'portafile.v1.lead';
+function gate() {
+  // ponytail: skip for file:// (offline copy has no API), automated browsers (test suites/bots
+  // would only donate fake emails), and anyone who already filled it in this browser
+  if (location.protocol === 'file:' || navigator.webdriver || localStorage.getItem(LEAD_KEY)) return;
+  const g = document.createElement('div'); g.className = 'gatewrap';
+  g.innerHTML = `<form class="sheet gate">
+    <h3>Before you brew…</h3>
+    <p class="hint">Portafile is free. Tell us who's using it so we can let you know when staff-phone sync ships.</p>
+    <label>Email *<input name="email" type="email" required autocomplete="email"></label>
+    <label>Shop name *<input name="shop" required placeholder="e.g. Northside Espresso"></label>
+    <label>Your role<select name="role"><option value="">—</option><option>Owner</option><option>Manager</option><option>Barista</option><option>Roaster</option><option>Just curious</option></select></label>
+    <label>City / country<input name="city" autocomplete="address-level2"></label>
+    <label>Phone (optional)<input name="phone" type="tel" autocomplete="tel"></label>
+    <div class="bar" style="justify-content:flex-end"><button class="btn" type="submit">Open Portafile</button></div>
+    <p class="hint">No password, no verification email — this browser stays unlocked.</p>
+  </form>`;
+  document.body.appendChild(g);
+  g.querySelector('form').onsubmit = ev => {
+    ev.preventDefault();
+    const f = new FormData(ev.target);
+    const lead = Object.fromEntries(['email', 'shop', 'role', 'city', 'phone'].map(k => [k, String(f.get(k) || '').trim()]));
+    if (!lead.email || !lead.shop) return;
+    localStorage.setItem(LEAD_KEY, JSON.stringify(lead)); // unlock first — never hold the door on a network hiccup
+    fetch('/api/lead', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(lead) })
+      .then(r => { if (r.ok) localStorage.setItem(LEAD_KEY + '.sent', '1'); }).catch(() => {});
+    g.remove();
+  };
+}
+// retry a lead that never reached the server (was offline / API down at signup time)
+if (localStorage.getItem(LEAD_KEY) && !localStorage.getItem(LEAD_KEY + '.sent') && location.protocol !== 'file:' && !navigator.webdriver)
+  fetch('/api/lead', { method: 'POST', headers: { 'content-type': 'application/json' }, body: localStorage.getItem(LEAD_KEY) })
+    .then(r => { if (r.ok) localStorage.setItem(LEAD_KEY + '.sent', '1'); }).catch(() => {});
+
 render();
+gate();
+if (syncKey) { syncPull(); setInterval(syncPull, 30000); syncBadge(); }
 if (location.search.includes('selftest=1')) selftest();

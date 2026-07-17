@@ -1,0 +1,1 @@
+{"shop":{"name":"x","cogsTarget":30},"ingredients":[{"id":"i1","name":"Milk","unit":"oz","unitCost":0.04}],"recipes":[{"id":"r1","name":"Freebie","cat":"c","size":"s","price":0,"items":[{"ing":"i1","qty":10}],"steps":[],"bean":null}],"beans":[],"dialins":[],"baristas":[],"path":[],"signoffs":{}}

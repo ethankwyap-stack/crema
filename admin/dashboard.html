@@ -82,6 +82,17 @@ button.mini{padding:2px 8px;font-size:12px;background:transparent;color:var(--re
   <p class="tiny">"entered recipes" feeds gate 1. Unsubscribed = never email again (10-business-day legal max; do it same day).</p>
 </div>
 
+<h2>Site signups (live from portafile.vercel.app)</h2>
+<div class="card">
+  <div class="row">
+    <button onclick="fetchLeads()">Fetch signups</button>
+    <button class="ghost" onclick="localStorage.removeItem('portafile-admin-key');fetchLeads()">Change admin key</button>
+    <span class="tiny" id="leadStatus"></span>
+  </div>
+  <table id="leadTable"></table>
+  <p class="tiny">Reads the access-gate form submissions. Needs the ADMIN_KEY set on the Vercel project (Settings → Environment Variables) — enter the same value here when prompted; it's remembered in this browser. "→ list" copies a signup into the email list above.</p>
+</div>
+
 <h2>Launch-post tracker</h2>
 <div class="card">
   <table id="postTable"></table>
@@ -163,6 +174,23 @@ function addEmail() {
 function autoEmail(email, name, status) {
   const e = S.emails.find(x => x.email.toLowerCase() === email.toLowerCase());
   if (e) e.status = status; else S.emails.push({ email, name, status, notes: '' });
+}
+async function fetchLeads() {
+  const st = document.getElementById('leadStatus');
+  let k = localStorage.getItem('portafile-admin-key') || prompt('Admin key (the ADMIN_KEY value from Vercel):');
+  if (!k) return;
+  localStorage.setItem('portafile-admin-key', k);
+  st.textContent = 'fetching…';
+  try {
+    const r = await fetch('https://portafile.vercel.app/api/lead?admin=' + encodeURIComponent(k));
+    if (r.status === 401) { localStorage.removeItem('portafile-admin-key'); st.textContent = 'wrong key'; return; }
+    if (!r.ok) throw new Error(r.status);
+    const leads = await r.json();
+    st.textContent = leads.length + ' signup(s)';
+    document.getElementById('leadTable').innerHTML =
+      '<tr><th>When</th><th>Email</th><th>Shop</th><th>Role</th><th>City</th><th>Phone</th><th></th></tr>' +
+      leads.map(l => `<tr><td>${new Date(l.ts).toLocaleDateString()}</td><td>${esc(l.email)}</td><td>${esc(l.shop)}</td><td>${esc(l.role)}</td><td>${esc(l.city)}</td><td>${esc(l.phone)}</td><td><button class="mini" onclick="autoEmail('${esc(l.email)}','${esc(l.shop)}','interested');save()">→ list</button></td></tr>`).join('');
+  } catch (e) { st.textContent = 'unreachable (site deployed? API live?)'; }
 }
 function addPost() {
   if (!val('tWhere')) return alert('community required');

@@ -176,3 +176,15 @@ kbd { background:var(--espresso); color:var(--paper); border-radius:4px; padding
   .phead { display:flex; justify-content:space-between; font-size:8.5pt; color:#666; border-bottom:1pt solid #000; margin-bottom:8pt; padding-bottom:3pt; }
   .pagebreak { page-break-before:always; }
 }
+
+/* sync badge (only present when a sync key is active) */
+.syncbadge{position:fixed;right:12px;bottom:12px;z-index:60;padding:5px 11px;border-radius:99px;font-size:12.5px;font-weight:650;background:#E8F0EA;color:#3E5247;border:1px solid #C9DACD}
+.syncbadge.connecting{background:#F5EEDF;color:#7A6238;border-color:#E3D5B8}
+.syncbadge.offline{background:#F7E7E4;color:#8C3B2C;border-color:#EACFC8}
+@media print{.syncbadge{display:none}}
+
+/* access gate */
+.gatewrap{position:fixed;inset:0;z-index:80;background:rgba(42,26,18,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.gate{max-width:420px;width:100%}
+.gate label{display:block;margin:10px 0;font-size:13.5px;font-weight:600}
+.gate input,.gate select{display:block;width:100%;margin-top:4px;font-weight:400}
