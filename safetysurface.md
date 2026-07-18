@@ -40,7 +40,7 @@ None found that are exploitable by an anonymous internet user against existing d
 
 ### High
 
-**1. Stored XSS in the founder dashboard → admin-key theft → full lead-PII disclosure**
+**1. ~~Stored XSS in the founder dashboard → admin-key theft → full lead-PII disclosure~~ — FIXED 2026-07-18** (verified: `fix-tests.js` proves the "→ list" button now emits `toList(0)` regardless of payload, and attacker text only appears HTML-escaped in text cells)
 `admin/dashboard.html:192`. The "→ list" button builds an **inline `onclick`** with attacker-controlled
 lead data:
 ```js
@@ -67,7 +67,7 @@ function toList(i){ const l = window._leads[i]; autoEmail(l.email, l.shop, 'inte
 ```
 *Maps to:* OWASP A03 Injection (XSS) · ASVS V5.3 (output encoding).
 
-**2. Unauthenticated, unthrottled `POST /api/lead` creates a Blob per call — cost/abuse risk**
+**2. ~~Unauthenticated, unthrottled `POST /api/lead` creates a Blob per call — cost/abuse risk~~ — PARTLY FIXED 2026-07-18** (honeypot + per-instance rate limit shipped & verified live: a honeypot-filled POST returns 200 with **no** write, confirmed by listing the store. **Still on you:** confirm the Vercel spend cap — the code can't hard-stop a distributed flood; only the plan cap can.)
 `api/lead.js:14-25`, CORS `*`, no rate limit, no captcha, no honeypot. Each valid POST
 (`{email, shop}` passing a simple regex) writes a **new public blob**. A script can create millions
 → Blob quota/operation exhaustion and a dashboard flooded with junk signups (the dashboard's "Fetch
@@ -84,7 +84,7 @@ project is ever on a plan that allows overage, this becomes Critical.
 
 ### Medium
 
-**3. Lead PII stored in a PUBLIC blob at a guessable path — bypasses the admin gate**
+**3. ~~Lead PII stored in a PUBLIC blob at a guessable path — bypasses the admin gate~~ — FIXED 2026-07-18** (paths now use `crypto.randomUUID()` — 122-bit unguessable suffix instead of 31-bit `Math.random`; deployed)
 `api/lead.js:23-24`: `access:'public'`, `addRandomSuffix:false`, path `leads/{Date.now()}-{Math.random 6 chars}`.
 The `ADMIN_KEY` only gates the *list* endpoint — an individual lead blob is readable by anyone who
 knows its URL, and the URL is a millisecond timestamp + ~31 bits of **non-crypto** `Math.random`.
@@ -96,7 +96,7 @@ await put(`leads/${lead.ts}-${crypto.randomUUID()}.json`, ...)
 ```
 *Maps to:* OWASP A01 Broken Access Control · ASVS V8 (data protection).
 
-**4. Vulnerable `undici` (9 CVEs, 3 rated High/CVSS 7.5) via pinned `@vercel/blob ^0.27.3`**
+**4. ~~Vulnerable `undici` (9 CVEs, 3 rated High/CVSS 7.5) via pinned `@vercel/blob ^0.27.3`~~ — FIXED 2026-07-18** (bumped to `@vercel/blob ^2.6.1` → undici 6.27.0, `osv-scanner` now reports **0 issues**; full put/list/del round-trip verified against the live store, and the deployed routes 404/401/422 correctly)
 `osv-scanner` + `npm audit` both flag `undici 5.29.0` (transitive dep) with DoS / HTTP-smuggling /
 Set-Cookie advisories, fixed in undici ≥6.27. **Low practical reachability here** — your functions
 only use undici to talk to Vercel's own trusted Blob endpoints over HTTPS, not attacker-controlled
@@ -107,21 +107,17 @@ routes still work** (`put`/`list` API is stable across these) on a Vercel previe
 
 ### Low
 
-**5. Admin-key comparison isn't constant-time** — `api/lead.js:29` uses `!==`. A timing side-channel
-on a 192-bit key over the internet (Vercel cold starts + jitter) is not practically exploitable, but
-the clean fix is `crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b))` behind a length check. (A03.)
+**5. ~~Admin-key comparison isn't constant-time~~ — FIXED 2026-07-18** — `api/lead.js` now uses
+`timingSafeEqual` behind a length check (`safeEqual`), fails closed on undefined/array/length-mismatch (verified in `fix-tests.js`).
 
-**6. `javascript:` URLs allowed in the dashboard post-tracker** — `admin/dashboard.html:157`
-`<a href="${esc(t.url)}">`. `esc()` blocks attribute break-out but not a `javascript:` scheme.
-Self-XSS only (your own input, local page) → Low. Whitelist `http(s):` before rendering the link.
+**6. ~~`javascript:` URLs allowed in the dashboard post-tracker~~ — FIXED 2026-07-18** — links now pass
+through `safeUrl()` which allows only `http(s):` and rewrites anything else to `#` (verified in `fix-tests.js`).
 
-**7. CSP could add `base-uri 'none'; object-src 'none'`** — `vercel.json:10`. Present CSP is already
-good (blocks inline script, `frame-ancestors 'none'`); these two directives close `<base>` hijack and
-legacy plugin vectors. One-line addition.
+**7. ~~CSP could add `base-uri 'none'; object-src 'none'`~~ — FIXED 2026-07-18** — added to `vercel.json`;
+confirmed live on `/` via `curl -sI`.
 
-**8. No security logging** — failed admin-key attempts and API errors aren't logged; API routes have
-no `try/catch` (an unhandled throw returns Vercel's default 500, which leaks nothing to the client but
-gives you no signal). Low for a solo app; a `console.error` on the 401 path is enough.
+**8. ~~No security logging~~ — FIXED 2026-07-18** — `api/lead.js` now `console.error`s failed admin-key
+attempts (with client IP) to the Vercel function logs.
 
 **9. localStorage-only shop data (product app)** — cleared browser = lost recipes. Accepted local-first
 design; Export/Import is the mitigation. Carried from the prior audit. Consider an "export after N
@@ -185,30 +181,25 @@ edits" nag before broad launch.
 ---
 
 ## Go / no-go (ASVS L2)
-**Conditional GO.** The public site, product app, and secret-link sync are in genuinely good shape:
-headers, HTTPS, deploy allowlist, fail-closed auth, clean history, strong keys — all verified live.
-Nothing here exposes existing user data to an anonymous internet user *right now*.
-
-Before you actively drive signups (posting launch threads), close the two Highs — both are a few lines:
-fix the dashboard XSS (#1) so triaging a poisoned signup can't steal your admin key, and add the lead
-honeypot + confirm the Vercel spend cap (#2) so the signup form can't run up cost or bury real leads.
+**GO.** All eight code findings (#1–#8) were fixed, deployed to production 2026-07-18, and verified
+live (new CSP header, all API routes 404/401/422 after the Blob SDK bump, honeypot drops the write).
+The public site, product app, and secret-link sync were already in good shape (headers, HTTPS, deploy
+allowlist, fail-closed auth, clean history, strong keys — all verified live). Three items remain that
+**only you can confirm** from the Vercel/GitHub dashboards (below) — none block keeping the site up, but
+do them before you push signups hard.
 
 ## Ordered launch checklist
-**Do today**
-- [ ] Fix #1 (dashboard XSS) — pass the row index to `onclick`, not the lead data. (local file, no deploy)
-- [ ] Confirm **Vercel Spend Management = $0 / free-tier hard cap** (gates #2 from High→fine).
-- [ ] Confirm **2FA** on GitHub + Vercel.
+**Shipped 2026-07-18 (verified)**
+- [x] #1 dashboard XSS · #2 honeypot + rate limit · #3 UUID blob paths · #4 `@vercel/blob` 2.6.1 (undici clean) · #5 constant-time compare · #6 `javascript:` guard · #7 CSP hardening · #8 auth logging.
 
-**This week (before launch threads)**
-- [ ] Fix #2 — honeypot field in the gate form + drop-without-write in `api/lead.js`. Deploy + verify.
-- [ ] Fix #3 — `crypto.randomUUID()` for lead blob paths. Deploy.
-- [ ] Bump `@vercel/blob` (#4), verify both API routes on a preview, then promote.
-- [ ] Confirm the Blob store is not anonymously listable.
-- [ ] Run securityheaders.com + a ZAP baseline against the live URL.
+**Still on you (out-of-repo — I can't see these dashboards)**
+- [ ] Confirm **Vercel Spend Management = $0 / free-tier hard cap** — the real backstop for #2 against a distributed flood.
+- [ ] Confirm **2FA** on GitHub (`ethankwyap-stack`) + Vercel accounts.
+- [ ] Confirm the Blob store is **not anonymously listable** (Vercel → Storage → the store's settings).
+- [ ] After that: run **securityheaders.com** + an **OWASP ZAP baseline** against the live URL as independent checks.
 
-**Nice-to-have**
-- [ ] #5 constant-time admin compare · #6 `javascript:` scheme guard · #7 CSP `base-uri`/`object-src` ·
-      #8 log failed admin attempts · #9 export nag.
+**Nice-to-have (not blocking)**
+- [ ] #9 export-nag for the product app (localStorage data-loss mitigation).
 
 ---
 
