@@ -125,6 +125,24 @@ edits" nag before broad launch.
 
 ---
 
+## Additional hardening (2026-07-18, pass 2 — deployed & verified live)
+Beyond the eight findings, a defense-in-depth pass:
+- **GDPR "delete this signup"** — admin-gated `DELETE /api/lead?admin=&ts=` (numeric-ts guard blocks
+  path traversal — 400 on `../`, verified) + a per-row delete button in the dashboard. Full round-trip
+  verified live (create → delete → gone; 401 unauthenticated). You can now honor "delete my data" requests.
+- **Extra headers** — `Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Resource-Policy: same-origin`, live.
+- **`/.well-known/security.txt`** (RFC 9116) — a vuln-reporting contact, live at the canonical path.
+- **Reproducible builds** — committed `package-lock.json` pins `@vercel/blob 2.6.1` / `undici 6.27.0`
+  (osv-scanner: 0 issues), so production installs exactly the audited tree (supply-chain integrity).
+- **Working CI** — the security workflow is now green (gitleaks secret-scan on every push; Dependabot
+  owns dependency CVEs). The earlier version was red on every run (bad osv-action tag).
+- **Security tests now test the real app** — `verify.js`/`verify-killpass.js` pointed at a stale backup
+  copy; repointed at the shipped code, and the crafted-id XSS protection re-confirmed against it.
+
+**Recommended (one free toggle, out-of-repo):** turn on Vercel **Attack Challenge Mode** (Project →
+Firewall) during launch week — it adds bot/DDoS challenge to the whole project, the real backstop for the
+`/api/lead` flood that the in-repo rate limiter can only slow.
+
 ## Three confidence levels
 
 **VERIFIED — tool-confirmed or exercised live this session**
@@ -177,6 +195,13 @@ edits" nag before broad launch.
   guards nothing sensitive. Don't ever treat it as auth.
 - **Vercel Blob `access:'public'`** — currently the only mode on the free tier; mitigated for state by
   the 160-bit path. For leads, tighten the path randomness (#3).
+- **Sync links can't be truly revoked yet (deferred, not overlooked)** — if a shop's `?k=` link leaks,
+  there's no "reset link" today. I deliberately did *not* ship a naive one: the client treats a `404`
+  on its key as "first device — seed the cloud," so any device still holding the old link would just
+  re-create the blob, defeating the reset (security theater). A real fix needs a revocation model
+  (an owner token, or a server-side revoked-key list) — a coherent change to the sync design, worth
+  doing before sync is marketed hard, but not a quick patch. Today's mitigation: links are 160-bit and
+  shared deliberately; treat a leaked link like a leaked password.
 
 ---
 
@@ -194,9 +219,13 @@ do them before you push signups hard.
 
 **Still on you (out-of-repo — I can't see these dashboards)**
 - [ ] Confirm **Vercel Spend Management = $0 / free-tier hard cap** — the real backstop for #2 against a distributed flood.
+- [ ] Turn on **Vercel Attack Challenge Mode** (Project → Firewall) for launch week — free bot/DDoS challenge.
 - [ ] Confirm **2FA** on GitHub (`ethankwyap-stack`) + Vercel accounts.
-- [ ] Confirm the Blob store is **not anonymously listable** (Vercel → Storage → the store's settings).
+- [ ] Confirm the Blob store is **not anonymously listable** (Vercel → Storage → the store's settings). (Note: Vercel Blob has no anonymous list API — listing requires the server-side token — so this is effectively true by design.)
 - [ ] After that: run **securityheaders.com** + an **OWASP ZAP baseline** against the live URL as independent checks.
+
+**Deferred by design (documented above, not a quick fix)**
+- [ ] Sync-link revocation (needs a real revocation model — do before marketing sync heavily).
 
 **Nice-to-have (not blocking)**
 - [ ] #9 export-nag for the product app (localStorage data-loss mitigation).
