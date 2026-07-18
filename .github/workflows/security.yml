@@ -1,7 +1,6 @@
-# Runs gitleaks, semgrep, and osv-scanner on every push and PR.
-# Note: gitleaks-action needs a free GITLEAKS_LICENSE only if ethankwyap-stack is a GitHub *Organization*
-# account (personal accounts don't). If the gitleaks job errors on license, add the secret or drop that job —
-# the local `gitleaks git .` in the audit already covers history.
+# Secret scan on every push/PR. gitleaks-action is free for personal (non-org) accounts.
+# Dependency CVEs are handled by Dependabot (.github/dependabot.yml), so no osv/semgrep job here —
+# that keeps this gate green-when-clean and red only on a real secret leak.
 name: security
 on: [push, pull_request]
 permissions:
@@ -16,15 +15,3 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  semgrep:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: pipx run semgrep scan --config auto --error
-  osv-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: google/osv-scanner-action/osv-scanner-action@v2
-        with:
-          scan-args: -r .

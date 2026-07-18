@@ -1,11 +1,12 @@
 /* Portafile lead capture — POST stores one lead per blob (no read-modify-write races),
    GET lists them for the founder dashboard (requires ADMIN_KEY env var to match ?admin=). */
-import { put, list } from '@vercel/blob';
+import { put, list, del } from '@vercel/blob';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 
 const cors = res => {
-  res.setHeader('Access-Control-Allow-Origin', '*'); // ponytail: dashboard runs on localhost; leads are only readable with the admin key
+  res.setHeader('Access-Control-Allow-Origin', '*'); // ponytail: dashboard runs on localhost; leads are only readable/deletable with the admin key
   res.setHeader('Access-Control-Allow-Headers', 'content-type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS'); // dashboard DELETE is cross-origin → needs this on the preflight
 };
 
 // constant-time compare; false on any length/type mismatch (fails closed, never throws)
@@ -60,6 +61,19 @@ export default async function handler(req, res) {
     return res.status(200).json(leads.filter(Boolean).sort((a, b) => b.ts - a.ts));
   }
 
-  res.setHeader('Allow', 'GET, POST, OPTIONS');
+  // admin-gated single-lead delete — lets the founder honor a "delete my data" request (GDPR)
+  if (req.method === 'DELETE') {
+    if (!process.env.ADMIN_KEY || !safeEqual(req.query.admin, process.env.ADMIN_KEY)) {
+      console.error('lead delete auth failed', { ip: clientIp(req) || '?' });
+      return res.status(401).json({ error: 'unauthorized' });
+    }
+    const ts = String(req.query.ts || '');
+    if (!/^\d+$/.test(ts)) return res.status(400).json({ error: 'bad ts' }); // numeric ts only → path stays inside leads/
+    const { blobs } = await list({ prefix: `leads/${ts}-`, limit: 10 });
+    await Promise.all(blobs.map(b => del(b.url)));
+    return res.status(200).json({ ok: true, deleted: blobs.length });
+  }
+
+  res.setHeader('Allow', 'GET, POST, DELETE, OPTIONS');
   return res.status(405).json({ error: 'method' });
 }

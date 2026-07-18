@@ -2,7 +2,7 @@
 const { chromium } = require('/Users/ethanyap/.npm/_npx/e41f203b7505f1fb/node_modules/playwright');
 const path = require('path');
 const fs = require('fs');
-const APP = 'file://' + path.resolve('/Users/ethanyap/Desktop/Claude Projects/cafe business/product/index.html');
+const APP = 'file://' + path.resolve(__dirname, 'index.html'); // test the REAL shipped app, not a stale backup copy
 const tmp = p => path.join(require('os').tmpdir(), p); // fixtures stay out of the repo
 let failures = 0;
 const check = (name, cond) => { console.log((cond ? 'PASS' : 'FAIL') + '  ' + name); if (!cond) failures++; };

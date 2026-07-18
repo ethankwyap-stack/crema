@@ -2,7 +2,7 @@
 const path = require('path');
 const PW = '/Users/ethanyap/.npm/_npx/e41f203b7505f1fb/node_modules/playwright';
 const { chromium } = require(PW);
-const APP = 'file://' + encodeURI('/Users/ethanyap/Desktop/Claude Projects/cafe business/product/index.html');
+const APP = 'file://' + encodeURI(path.resolve(__dirname, 'index.html')); // test the REAL shipped app, not a stale backup copy
 // Writes to a temp dir so re-runs don't dirty the committed screenshots.
 // To refresh the committed set: SHOTS_DIR=./screenshots node verify.js
 const SHOTS = process.env.SHOTS_DIR || require('os').tmpdir() + '/portafile-shots';
