@@ -18,6 +18,7 @@ Coffee-shop recipe-card + costing app (recipes with live cost/margin, dial-in bo
 `python3 -m http.server <port>` from repo root, open `/site/index.html`. Verify suites: `node product/verify*.js`.
 
 ## Gotchas
+- Root `/` is a REWRITE of /site/index.html — relative URLs in that page resolve against `/` in production and 404 (only `/assets/:file` has a rewrite). Any new script/asset reference must be absolute (`/site/...`). Bit us: `src="reveal.js"` → silent 404 at root, no animations.
 - CSP (vercel.json) blocks ALL inline `<script>` — page JS must be external same-origin files. Inline `style=` attrs are allowed.
 - `.vercelignore` publishes ONLY site/product/video — adding a new top-level dir won't deploy without editing it.
 - Zero external requests by design: system fonts only, no CDNs; keep it that way.
