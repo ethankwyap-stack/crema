@@ -665,6 +665,7 @@ function gate() {
     <label>Your role<select name="role"><option value="">—</option><option>Owner</option><option>Manager</option><option>Barista</option><option>Roaster</option><option>Just curious</option></select></label>
     <label>City / country<input name="city" autocomplete="address-level2"></label>
     <label>Phone (optional)<input name="phone" type="tel" autocomplete="tel"></label>
+    <input name="hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
     <div class="bar" style="justify-content:flex-end"><button class="btn" type="submit">Open Portafile</button></div>
     <p class="hint">No password, no verification email — this browser stays unlocked.</p>
   </form>`;
@@ -675,7 +676,8 @@ function gate() {
     const lead = Object.fromEntries(['email', 'shop', 'role', 'city', 'phone'].map(k => [k, String(f.get(k) || '').trim()]));
     if (!lead.email || !lead.shop) return;
     localStorage.setItem(LEAD_KEY, JSON.stringify(lead)); // unlock first — never hold the door on a network hiccup
-    fetch('/api/lead', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(lead) })
+    // honeypot value rides along in the POST only (never stored in LEAD_KEY, so the retry path stays clean)
+    fetch('/api/lead', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...lead, hp: String(f.get('hp') || '') }) })
       .then(r => { if (r.ok) localStorage.setItem(LEAD_KEY + '.sent', '1'); }).catch(() => {});
     g.remove();
   };

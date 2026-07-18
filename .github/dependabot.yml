@@ -1,0 +1,11 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # security-only would miss the undici bump surfaced in the 2026-07-18 audit; keep version updates on
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

@@ -109,6 +109,7 @@ button.mini{padding:2px 8px;font-size:12px;background:transparent;color:var(--re
 'use strict';
 const KEY = 'portafile-admin-v1';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl = u => /^https?:\/\//i.test(String(u || '')) ? String(u) : '#'; // block javascript:/data: schemes in links
 let S = load();
 function load() {
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.pays)) return s; } catch (e) {}
@@ -154,7 +155,7 @@ function render() {
     S.emails.map((e, i) => `<tr><td>${esc(e.email)}</td><td>${esc(e.name)}</td><td><select onchange="setStatus(${i},this.value)">${['interested','entered recipes','paid','unsubscribed'].map(s => `<option ${s === e.status ? 'selected' : ''}>${s}</option>`).join('')}</select></td><td>${esc(e.notes)}</td><td><button class="mini" onclick="rm('emails',${i})">×</button></td></tr>`).join('');
 
   document.getElementById('postTable').innerHTML = '<tr><th>community</th><th>posted</th><th>traction</th><th>signups</th><th></th></tr>' +
-    S.posts.map((t, i) => `<tr><td><a href="${esc(t.url)}" rel="noopener">${esc(t.where)}</a></td><td>${fmt(t.date)}</td><td>${esc(t.res)}</td><td>${esc(t.sign)}</td><td><button class="mini" onclick="rm('posts',${i})">×</button></td></tr>`).join('');
+    S.posts.map((t, i) => `<tr><td><a href="${esc(safeUrl(t.url))}" rel="noopener">${esc(t.where)}</a></td><td>${fmt(t.date)}</td><td>${esc(t.res)}</td><td>${esc(t.sign)}</td><td><button class="mini" onclick="rm('posts',${i})">×</button></td></tr>`).join('');
 }
 function setLaunch(v) { S.launch = v; save(); }
 function setNum(k, v) { S[k] = Math.max(0, +v || 0); save(); }
@@ -186,12 +187,14 @@ async function fetchLeads() {
     if (r.status === 401) { localStorage.removeItem('portafile-admin-key'); st.textContent = 'wrong key'; return; }
     if (!r.ok) throw new Error(r.status);
     const leads = await r.json();
+    window._leads = leads; // referenced by row index — lead text never crosses into HTML/JS (was a stored-XSS break-out)
     st.textContent = leads.length + ' signup(s)';
     document.getElementById('leadTable').innerHTML =
       '<tr><th>When</th><th>Email</th><th>Shop</th><th>Role</th><th>City</th><th>Phone</th><th></th></tr>' +
-      leads.map(l => `<tr><td>${new Date(l.ts).toLocaleDateString()}</td><td>${esc(l.email)}</td><td>${esc(l.shop)}</td><td>${esc(l.role)}</td><td>${esc(l.city)}</td><td>${esc(l.phone)}</td><td><button class="mini" onclick="autoEmail('${esc(l.email)}','${esc(l.shop)}','interested');save()">→ list</button></td></tr>`).join('');
+      leads.map((l, i) => `<tr><td>${new Date(l.ts).toLocaleDateString()}</td><td>${esc(l.email)}</td><td>${esc(l.shop)}</td><td>${esc(l.role)}</td><td>${esc(l.city)}</td><td>${esc(l.phone)}</td><td><button class="mini" onclick="toList(${i})">→ list</button></td></tr>`).join('');
   } catch (e) { st.textContent = 'unreachable (site deployed? API live?)'; }
 }
+function toList(i) { const l = (window._leads || [])[i]; if (l) { autoEmail(l.email, l.shop, 'interested'); save(); } }
 function addPost() {
   if (!val('tWhere')) return alert('community required');
   S.posts.push({ where: val('tWhere'), url: val('tUrl'), date: val('tDate'), res: val('tRes'), sign: val('tSign') }); save();
