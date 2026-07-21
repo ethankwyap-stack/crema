@@ -123,7 +123,11 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   await pD.waitForTimeout(1500);
   ok('dead link: badge says link no longer works', (await pD.textContent('#syncBadge')).includes('no longer works'));
   ok('dead link: nothing created in cloud', !keys[DEADKEY] && Object.keys(cloud).length === 1);
-  ok('dead link: local data untouched', await pD.locator('.rcard').count() > 0);
+  // a link this device never got in through must NOT wipe it — otherwise clicking a stale link
+  // destroys the local shop of someone who was never part of that shop at all
+  ok('dead link: never-synced device keeps working', await pD.locator('.rcard').count() > 0);
+  ok('dead link: never-synced device NOT wiped or locked', await pD.evaluate(() =>
+    !!localStorage.getItem('portafile.v1') && !localStorage.getItem('portafile.v1.revoked')));
 
   // 6b. creation without an owner token is refused even with a shop param
   const createStatus = await pD.evaluate(async () => {
@@ -143,11 +147,25 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   ok('rotate: old key deleted server-side', !keys[KEY]);
   await pA.evaluate(() => closeModal());
 
-  // 7b. staff device on the OLD key goes dead but keeps its local data
+  // 7b. staff device on the OLD key is HARD-KILLED: locked, wiped, unusable
   await pB.evaluate(() => syncPull());
-  await pB.waitForTimeout(500);
-  ok('rotate: old link dead on staff device', (await pB.textContent('#syncBadge')).includes('no longer works'));
-  ok('rotate: staff local data untouched', await pB.locator('.rcard').count() > 0);
+  await pB.waitForTimeout(700);
+  ok('rotate: staff device shows the lock screen', (await pB.textContent('body')).includes('This link has been turned off'));
+  ok('rotate: staff device has no working UI left', await pB.locator('.rcard').count() === 0 && await pB.locator('.tab').count() === 0);
+  ok('rotate: shop data wiped off the staff device', await pB.evaluate(() =>
+    !localStorage.getItem('portafile.v1') && !localStorage.getItem('portafile.v1.presync') && !localStorage.getItem('portafile.v1.synckey')));
+
+  // 7b-2. the lock survives a reload — they can't just refresh their way back in
+  await pB.reload({ waitUntil: 'networkidle' });
+  await pB.waitForTimeout(700);
+  ok('rotate: still locked after reload', (await pB.textContent('body')).includes('This link has been turned off'));
+  ok('rotate: still no app after reload', await pB.locator('.rcard').count() === 0);
+
+  // 7b-3. the NEW link brings that same device back to life (re-hired barista)
+  await pB.goto(base + `/index.html?k=${newK}`, { waitUntil: 'networkidle' });
+  await pB.waitForTimeout(1500);
+  ok('rotate: new link unlocks the same device', (await pB.inputValue('#shopName')) === JSON.parse(cloud[SHOP]).shop.name);
+  ok('rotate: lock flag cleared by the new link', await pB.evaluate(() => !localStorage.getItem('portafile.v1.revoked')));
 
   // 7c. a fresh staff device on the NEW key works normally
   const cF = await b.newContext(); const pF = await cF.newPage();
@@ -157,6 +175,21 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   await pF.waitForTimeout(1500);
   ok('rotate: new link pulls shop data', (await pF.inputValue('#shopName')) === JSON.parse(cloud[SHOP]).shop.name);
   await cF.close();
+
+  // 7d. a 404 that is NOT 'unknown-key' (pointer fine, shop blob missing) must never wipe a device
+  const cG = await b.newContext(); const pG = await cG.newPage();
+  pG.on('pageerror', e => errs.push('pG: ' + e.message));
+  await pG.route('**/api/state*', mock);
+  await pG.goto(base + `/index.html?k=${newK}`, { waitUntil: 'networkidle' });
+  await pG.waitForTimeout(1500);
+  const keep = cloud[SHOP]; delete cloud[SHOP];
+  await pG.evaluate(() => syncPull());
+  await pG.waitForTimeout(700);
+  ok('server hiccup (404 not-found) does NOT wipe a synced device',
+    await pG.evaluate(() => !!localStorage.getItem('portafile.v1') && !localStorage.getItem('portafile.v1.revoked'))
+    && await pG.locator('.rcard').count() > 0);
+  cloud[SHOP] = keep;
+  await cG.close();
 
   // 8. offline: API dead → badge degrades, app keeps working locally
   await pA.unroute('**/api/state*');

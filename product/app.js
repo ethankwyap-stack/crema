@@ -3,6 +3,8 @@
 
 /* ---------------- state ---------------- */
 const KEY = 'portafile.v1';
+const LOCK_KEY = 'portafile.v1.revoked'; // set when the owner killed this device's link — survives reload
+let locked = false;                      // once true nothing may write to localStorage or the API again
 const uid = () => Math.random().toString(36).slice(2, 9);
 
 function seed() {
@@ -106,9 +108,11 @@ function load() {
       localStorage.setItem(KEY + '.bad', raw); // keep the damaged state recoverable instead of destroying it
     }
   } catch (e) { /* corrupted -> reseed */ }
-  const s = seed(); localStorage.setItem(KEY, JSON.stringify(s)); return s;
+  const s = seed();
+  if (!localStorage.getItem(LOCK_KEY)) localStorage.setItem(KEY, JSON.stringify(s)); // a killed device stays empty on disk
+  return s;
 }
-const save = () => { localStorage.setItem(KEY, JSON.stringify(S)); syncPush(); };
+const save = () => { if (locked) return; localStorage.setItem(KEY, JSON.stringify(S)); syncPush(); };
 
 /* ---------------- sync (opt-in secret link, ?k=…) ---------------- */
 /* Off by default: with no key the app is pure-local, byte-identical to v1 behavior.
@@ -116,6 +120,7 @@ const save = () => { localStorage.setItem(KEY, JSON.stringify(S)); syncPush(); }
 const SYNC_KEY = 'portafile.v1.synckey';
 const OWNER_KEY = 'portafile.v1.owner';  // owner devices only — proves ownership, sent as a header, never in a URL
 const SHOP_KEY = 'portafile.v1.shopid';  // durable shop identity; the share link is a rotatable pointer to it
+const SYNCED_KEY = 'portafile.v1.synced'; // the link this device actually pulled a shop through
 const hex40 = () => { const b = new Uint8Array(20); crypto.getRandomValues(b); return [...b].map(x => x.toString(16).padStart(2, '0')).join(''); };
 let syncKey = (() => {
   const m = location.search.match(/[?&]k=([a-f0-9]{40})\b/);
@@ -131,13 +136,35 @@ function syncBadge() {
   el.textContent = { connecting: 'sync…', live: 'synced', offline: 'sync offline — working locally', revoked: 'this link no longer works — ask the owner for a new one' }[syncStatus] || '';
 }
 let syncPollT;
-function syncRevoked() { // dead link: stop polling, touch nothing local — the data on this device stays
-  syncStatus = 'revoked'; clearInterval(syncPollT); syncBadge();
+function lockScreen() {
+  document.title = 'Link turned off — Portafile';
+  document.body.innerHTML = `<div class="gatewrap"><div class="sheet">
+    <h3>This link has been turned off</h3>
+    <p>The shop owner reset the staff link, so this device no longer has access to the shop's recipes, prices or training records. The copy that was stored on this device has been removed.</p>
+    <p class="hint">Ask the owner for the new link and open it on this device.</p>
+  </div></div>`;
+}
+/* Dead link. On a staff device this is a hard stop: wipe the shop's data off the device, lock the
+   UI, and stay locked across reloads until a working link is opened. An owner device (holds the
+   token) is NEVER wiped or locked — that would destroy the only full copy of the shop. */
+function syncRevoked() {
+  clearInterval(syncPollT); clearTimeout(syncPushT);
+  // Wipe ONLY a device this link actually let in. A stale link clicked by someone holding their own
+  // local shop must never destroy it — there is nothing to revoke on a device that never had access.
+  if (localStorage.getItem(OWNER_KEY) || localStorage.getItem(SYNCED_KEY) !== syncKey) {
+    syncStatus = 'revoked'; syncBadge(); return;
+  }
+  locked = true;
+  const dead = syncKey || '1';
+  Object.keys(localStorage).filter(k => k.startsWith(KEY)).forEach(k => localStorage.removeItem(k));
+  localStorage.setItem(LOCK_KEY, dead); // after the wipe — the wipe would have removed it
+  lockScreen();
 }
 let syncPushT;
 let syncPulled = false; // never push before the first successful pull — a freshly-seeded browser must not shove demo data over a real cloud copy
+const isUnknownKey = async r => (await r.json().catch(() => ({})))?.error === 'unknown-key';
 function syncPush() {
-  if (!syncKey || !syncPulled) return;
+  if (!syncKey || !syncPulled || locked) return;
   clearTimeout(syncPushT);
   syncPushT = setTimeout(async () => {
     try {
@@ -146,27 +173,35 @@ function syncPush() {
       if (owner && shopId) headers['x-portafile-owner'] = owner; // owner creds ride along; staff devices don't have them
       const r = await fetch('/api/state?k=' + syncKey + (owner && shopId ? '&shop=' + shopId : ''), { method: 'PUT', headers, body: JSON.stringify({ ...S, ts: Date.now() }) });
       if (r.status === 409) return syncPull(); // our copy is stale — refresh from cloud instead of clobbering it
-      if (r.status === 404) return syncRevoked(); // pointer gone (link was reset) — server created nothing
+      // only a definitive 'unknown-key' means the link was killed; any other 404 is a server hiccup
+      if (r.status === 404) { if (await isUnknownKey(r)) return syncRevoked(); syncStatus = 'offline'; syncBadge(); return; }
       syncStatus = r.ok ? 'live' : 'offline';
     } catch (e) { syncStatus = 'offline'; }
     syncBadge();
   }, 800);
 }
 async function syncPull() {
-  if (!syncKey) return;
+  if (!syncKey || locked) return;
   try {
     const r = await fetch('/api/state?k=' + syncKey);
     // 404 = the pointer doesn't exist. Only an OWNER device (holds the token) may treat that as
     // "shop not created yet" and seed it. A staff/revoked device creating here is exactly what
-    // made link rotation impossible before — it must go dead instead, leaving local data intact.
+    // made link rotation impossible before — it must go dead instead.
     if (r.status === 404) {
-      if (localStorage.getItem(OWNER_KEY)) { syncPulled = true; syncStatus = 'live'; syncPush(); syncBadge(); }
-      else syncRevoked();
+      const gone = await isUnknownKey(r);
+      if (localStorage.getItem(OWNER_KEY)) {
+        const stored = localStorage.getItem(SYNC_KEY);
+        if (stored && stored !== syncKey) { syncKey = stored; return syncPull(); } // another tab rotated the link
+        syncPulled = true; syncStatus = 'live'; syncPush(); syncBadge();
+      } else if (gone) syncRevoked();
+      else syncStatus = 'offline'; // pointer is fine, shop data missing — never wipe on this
+      syncBadge();
       return;
     }
     if (!r.ok) throw new Error(r.status);
     const s = await r.json();
     syncPulled = true;
+    localStorage.setItem(SYNCED_KEY, syncKey); // this link genuinely let us in — makes a later revoke wipe-worthy
     if (validBackup(s) && JSON.stringify({ ...s, tab: 0, ts: 0 }) !== JSON.stringify({ ...S, tab: 0, ts: 0 })) {
       localStorage.setItem(KEY + '.presync', localStorage.getItem(KEY) || ''); // snapshot of what we overwrite — recoverable if a stale device clobbered us
       s.shop.cogsTarget = +s.shop.cogsTarget || 30; s.tab = S.tab;
@@ -511,6 +546,7 @@ function dataMenu() {
   };
   const syncCopy = $('#dSyncCopy'); if (syncCopy) syncCopy.onclick = () => { $('#dSyncLink').select(); navigator.clipboard.writeText($('#dSyncLink').value); syncCopy.textContent = 'Copied!'; };
   const syncRotate = $('#dSyncRotate'); if (syncRotate) syncRotate.onclick = async () => {
+    if (!confirm('Reset the staff link?\n\nEvery phone and laptop using the old link loses access immediately, and the shop data stored on those devices is erased. Your own device keeps everything. You cannot undo this.')) return;
     syncRotate.disabled = true;
     try {
       const r = await fetch('/api/state?action=rotate&shop=' + localStorage.getItem(SHOP_KEY),
@@ -520,7 +556,7 @@ function dataMenu() {
       localStorage.setItem(SYNC_KEY, k); syncKey = k;
       history.replaceState(null, '', location.pathname + '?k=' + k);
       dataMenu(); // rebuild the sheet so the link field shows the new key
-      alert('New staff link created. Every old link has stopped working — share the new one with your staff.');
+      alert('New staff link created. Every old link has stopped working and those devices have been wiped — share the new link with your staff.');
     } catch (e) { syncRotate.disabled = false; alert('Could not reset the link — check your connection and try again.'); }
   };
   const syncOff = $('#dSyncOff'); if (syncOff) syncOff.onclick = () => { localStorage.removeItem(SYNC_KEY); location.search = ''; };
@@ -733,7 +769,15 @@ if (localStorage.getItem(SHOP_KEY) && localStorage.getItem(LEAD_KEY) && !localSt
     .then(r => { if (r.ok) localStorage.setItem(LEAD_KEY + '.linked', '1'); }).catch(() => {});
 
 navigator.storage?.persist?.()?.catch(() => {}); // best-effort: ask the browser not to evict localStorage (Safari/Chrome purge unused sites' storage)
-render();
-gate();
-if (syncKey) { syncPull(); syncPollT = setInterval(syncPull, 30000); syncBadge(); }
-if (location.search.includes('selftest=1')) selftest();
+
+// A device whose link was killed stays locked across reloads. Opening a DIFFERENT link clears the
+// lock and gets a fresh chance — that's how a re-hired barista comes back with the new link.
+const lockedKey = localStorage.getItem(LOCK_KEY);
+if (lockedKey && (!syncKey || syncKey === lockedKey)) { locked = true; lockScreen(); }
+else {
+  if (lockedKey) localStorage.removeItem(LOCK_KEY);
+  render();
+  gate();
+  if (syncKey) { syncPull(); syncPollT = setInterval(syncPull, 30000); syncBadge(); }
+  if (location.search.includes('selftest=1')) selftest();
+}

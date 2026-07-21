@@ -33,10 +33,15 @@ function validBackup(s) {
     && s.signoffs && typeof s.signoffs === 'object');
 }
 
+// null ONLY when the blob genuinely isn't there. A transient fetch failure must THROW (→ 500),
+// never look like "absent" — the client wipes local data on 'unknown-key', so a network blip
+// misreported as a missing pointer would destroy a real shop's copy on every staff device.
 async function readJson(path) {
   const { blobs } = await list({ prefix: path, limit: 1 });
   if (!blobs.length) return null;
-  return fetch(blobs[0].url).then(r => r.json()).catch(() => null);
+  const r = await fetch(blobs[0].url);
+  if (!r.ok) throw new Error(`blob fetch ${r.status} for ${path}`);
+  return r.json();
 }
 const writeJson = (path, obj) => put(path, JSON.stringify(obj), { access: 'public', addRandomSuffix: false, contentType: 'application/json', allowOverwrite: true, cacheControlMaxAge: 0 });
 
