@@ -197,8 +197,8 @@ function syncPush() {
     try {
       const owner = localStorage.getItem(OWNER_KEY), shopId = localStorage.getItem(SHOP_KEY);
       const headers = { 'content-type': 'application/json' };
-      if (owner && shopId) headers['x-portafile-owner'] = owner; // owner creds ride along; staff devices don't have them
-      const r = await fetch('/api/state?k=' + syncKey + (owner && shopId ? '&shop=' + shopId : ''), { method: 'PUT', headers, body: JSON.stringify({ ...S, ts: Date.now() }) });
+      if (owner && shopId) { headers['x-portafile-owner'] = owner; headers['x-portafile-shop'] = shopId; } // owner creds ride along; staff devices don't have them
+      const r = await fetch('/api/state?k=' + syncKey, { method: 'PUT', headers, body: JSON.stringify({ ...S, ts: Date.now() }) });
       if (r.status === 409) return syncPull(); // our copy is stale — refresh from cloud instead of clobbering it
       if (r.status === 410) return syncRevokeSignal();          // this link was replaced — kill the device (needs 2 strikes)
       if (r.status === 404) { syncDead(); return; }             // unrecognised link — stop, but never wipe
@@ -574,8 +574,8 @@ function dataMenu() {
     if (!confirm('Reset the staff link?\n\nEvery phone and laptop using the old link loses access immediately, and the shop data stored on those devices is erased. Your own device keeps everything. You cannot undo this.')) return;
     syncRotate.disabled = true;
     try {
-      const r = await fetch('/api/state?action=rotate&shop=' + localStorage.getItem(SHOP_KEY),
-        { method: 'POST', headers: { 'x-portafile-owner': localStorage.getItem(OWNER_KEY) } });
+      const r = await fetch('/api/state?action=rotate',
+        { method: 'POST', headers: { 'x-portafile-owner': localStorage.getItem(OWNER_KEY), 'x-portafile-shop': localStorage.getItem(SHOP_KEY) } });
       if (!r.ok) throw new Error(r.status);
       const { k } = await r.json();
       localStorage.setItem(SYNC_KEY, k); syncKey = k;

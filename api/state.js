@@ -74,7 +74,7 @@ const REVOKED = { error: 'revoked' }, UNKNOWN = { error: 'unknown-key' };
 
 export default async function handler(req, res) {
   const k = String(req.query.k || '');
-  const shop = String(req.query.shop || '');
+  const shop = String(req.headers['x-portafile-shop'] || ''); // header, not query — query strings land in access logs
   const owner = String(req.headers['x-portafile-owner'] || '');
 
   if (req.method === 'GET') {

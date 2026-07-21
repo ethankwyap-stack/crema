@@ -25,7 +25,7 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   const mock = async route => {
     apiCalls++;
     const u = new URL(route.request().url());
-    const k = u.searchParams.get('k'), shop = u.searchParams.get('shop');
+    const k = u.searchParams.get('k'), shop = route.request().headers()['x-portafile-shop'] || null;
     const owner = route.request().headers()['x-portafile-owner'] || '';
     const method = route.request().method();
     if (method === 'POST' && u.searchParams.get('action') === 'rotate') {
@@ -142,8 +142,8 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
 
   // 6b. creation without an owner token is refused even with a shop param
   const createStatus = await pD.evaluate(async () => {
-    const r = await fetch('/api/state?k=' + 'e'.repeat(40) + '&shop=' + 'b'.repeat(40),
-      { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ts: Date.now() }) });
+    const r = await fetch('/api/state?k=' + 'e'.repeat(40),
+      { method: 'PUT', headers: { 'content-type': 'application/json', 'x-portafile-shop': 'b'.repeat(40) }, body: JSON.stringify({ ts: Date.now() }) });
     return r.status;
   });
   ok('dead link: tokenless create refused', createStatus === 404 && !keys[DEADKEY] && !cloud['b'.repeat(40)]);
@@ -217,8 +217,8 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   // it; a rotated-away key never can, or revocation would be undoable.
   // carry the live state forward with a newer ts, or the stale-write guard 409s the restore
   const restorePut = (k, o) => pA.evaluate(async ([k, shop, owner, body]) => {
-    const r = await fetch(`/api/state?k=${k}&shop=${shop}`, {
-      method: 'PUT', headers: { 'content-type': 'application/json', 'x-portafile-owner': owner },
+    const r = await fetch(`/api/state?k=${k}`, {
+      method: 'PUT', headers: { 'content-type': 'application/json', 'x-portafile-owner': owner, 'x-portafile-shop': shop },
       body: JSON.stringify(body),
     });
     return r.status;
