@@ -2,7 +2,12 @@
 # Dependency CVEs are handled by Dependabot (.github/dependabot.yml), so no osv/semgrep job here —
 # that keeps this gate green-when-clean and red only on a real secret leak.
 name: security
-on: [push, pull_request]
+# push only. On pull_request, gitleaks-action asks the API for the PR's commit list, which needs
+# pull-requests:read — a scope Dependabot's read-only token wouldn't reliably grant, so every PR
+# went red with "Resource not accessible by integration" while the repo was clean. Every PR branch
+# here is pushed to this repo, so the push run scans the identical commits and its check shows on
+# the PR anyway. ponytail: re-add pull_request only if fork PRs ever become a thing.
+on: [push]
 permissions:
   contents: read
 jobs:
