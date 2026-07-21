@@ -128,12 +128,14 @@ function syncBadge() {
   el.textContent = { connecting: 'sync…', live: 'synced', offline: 'sync offline — working locally' }[syncStatus] || '';
 }
 let syncPushT;
+let syncPulled = false; // never push before the first successful pull — a freshly-seeded browser must not shove demo data over a real cloud copy
 function syncPush() {
-  if (!syncKey) return;
+  if (!syncKey || !syncPulled) return;
   clearTimeout(syncPushT);
   syncPushT = setTimeout(async () => {
     try {
-      const r = await fetch('/api/state?k=' + syncKey, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(S) });
+      const r = await fetch('/api/state?k=' + syncKey, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...S, ts: Date.now() }) });
+      if (r.status === 409) return syncPull(); // our copy is stale — refresh from cloud instead of clobbering it
       syncStatus = r.ok ? 'live' : 'offline';
     } catch (e) { syncStatus = 'offline'; }
     syncBadge();
@@ -143,10 +145,12 @@ async function syncPull() {
   if (!syncKey) return;
   try {
     const r = await fetch('/api/state?k=' + syncKey);
-    if (r.status === 404) { syncStatus = 'live'; syncPush(); syncBadge(); return; } // first device: seed the cloud
+    if (r.status === 404) { syncPulled = true; syncStatus = 'live'; syncPush(); syncBadge(); return; } // first device: seed the cloud
     if (!r.ok) throw new Error(r.status);
     const s = await r.json();
-    if (validBackup(s) && JSON.stringify({ ...s, tab: 0 }) !== JSON.stringify({ ...S, tab: 0 })) {
+    syncPulled = true;
+    if (validBackup(s) && JSON.stringify({ ...s, tab: 0, ts: 0 }) !== JSON.stringify({ ...S, tab: 0, ts: 0 })) {
+      localStorage.setItem(KEY + '.presync', localStorage.getItem(KEY) || ''); // snapshot of what we overwrite — recoverable if a stale device clobbered us
       s.shop.cogsTarget = +s.shop.cogsTarget || 30; s.tab = S.tab;
       S = s; localStorage.setItem(KEY, JSON.stringify(S)); render();
     }
@@ -687,6 +691,7 @@ if (localStorage.getItem(LEAD_KEY) && !localStorage.getItem(LEAD_KEY + '.sent') 
   fetch('/api/lead', { method: 'POST', headers: { 'content-type': 'application/json' }, body: localStorage.getItem(LEAD_KEY) })
     .then(r => { if (r.ok) localStorage.setItem(LEAD_KEY + '.sent', '1'); }).catch(() => {});
 
+navigator.storage?.persist?.()?.catch(() => {}); // best-effort: ask the browser not to evict localStorage (Safari/Chrome purge unused sites' storage)
 render();
 gate();
 if (syncKey) { syncPull(); setInterval(syncPull, 30000); syncBadge(); }

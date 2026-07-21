@@ -4,6 +4,19 @@ import { put, list } from '@vercel/blob';
 
 const KEY_RE = /^[a-f0-9]{40}$/;
 
+// best-effort per-instance throttle (same pattern as lead.js): stops a single-source PUT flood
+// from burning Blob ops. A distributed flood is the Vercel spend cap's job.
+const HITS = new Map(); // ip -> recent ms timestamps
+const RATE_N = 120, RATE_MS = 10 * 60 * 1000; // saves are debounced 800ms client-side — 120/10min never throttles a real editing session
+function rateLimited(ip) {
+  if (!ip) return false;
+  const now = Date.now(), win = (HITS.get(ip) || []).filter(t => now - t < RATE_MS);
+  win.push(now); HITS.set(ip, win);
+  if (HITS.size > 5000) HITS.clear(); // crude memory bound
+  return win.length > RATE_N;
+}
+const clientIp = req => String(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+
 // mirror of the client's validBackup() — never store a shape the app would reject
 function validBackup(s) {
   return !!(s && typeof s === 'object'
@@ -26,10 +39,17 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PUT') {
+    if (rateLimited(clientIp(req))) return res.status(429).json({ error: 'slow down' });
     const body = req.body;
     if (!validBackup(body)) return res.status(422).json({ error: 'not a portafile state' });
     const raw = JSON.stringify(body);
     if (raw.length > 1_000_000) return res.status(413).json({ error: 'too large' }); // ponytail: 1MB cap ≈ 100× a real shop; raise if a legit shop ever hits it
+    // stale-write guard: a device holding an older copy must pull, not clobber newer cloud state
+    const { blobs } = await list({ prefix: path, limit: 1 });
+    if (blobs.length) {
+      const cur = await fetch(blobs[0].url).then(r => r.json()).catch(() => null);
+      if (cur && (+body.ts || 0) < (+cur.ts || 0)) return res.status(409).json({ error: 'stale' });
+    }
     await put(path, raw, { access: 'public', addRandomSuffix: false, contentType: 'application/json', allowOverwrite: true, cacheControlMaxAge: 0 });
     return res.status(200).json({ ok: true });
   }

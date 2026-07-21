@@ -19,7 +19,13 @@ const KEY = 'a'.repeat(40);
   const mock = async route => {
     apiCalls++;
     const u = new URL(route.request().url()); const k = u.searchParams.get('k');
-    if (route.request().method() === 'PUT') { cloud[k] = route.request().postData(); return route.fulfill({ json: { ok: true } }); }
+    if (route.request().method() === 'PUT') {
+      // mirror api/state.js stale-write guard: older ts than stored → 409
+      const body = JSON.parse(route.request().postData());
+      const old = cloud[k] && JSON.parse(cloud[k]);
+      if (old && (+body.ts || 0) < (+old.ts || 0)) return route.fulfill({ status: 409, json: { error: 'stale' } });
+      cloud[k] = route.request().postData(); return route.fulfill({ json: { ok: true } });
+    }
     if (!cloud[k]) return route.fulfill({ status: 404, json: { error: 'not found' } });
     return route.fulfill({ contentType: 'application/json', body: cloud[k] });
   };
@@ -46,6 +52,7 @@ const KEY = 'a'.repeat(40);
   await pA.waitForTimeout(1500);
   ok('A: badge shows synced', (await pA.textContent('#syncBadge')) === 'synced');
   ok('A: cloud seeded with valid state', !!cloud[KEY] && JSON.parse(cloud[KEY]).recipes.length === 15);
+  ok('A: cloud state carries ts', +JSON.parse(cloud[KEY]).ts > 0);
 
   // 3. A edits shop name → push lands in cloud
   await pA.fill('#shopName', 'Sync Test Cafe'); await pA.dispatchEvent('#shopName', 'change');
@@ -66,6 +73,20 @@ const KEY = 'a'.repeat(40);
   await pA.evaluate(() => syncPull());
   await pA.waitForTimeout(800);
   ok('A: poll pulled B\'s edit', (await pA.inputValue('#shopName')) === 'B Was Here');
+
+  // 5b. the pull that overwrote A kept a recovery snapshot of A's prior state
+  ok('A: presync snapshot saved before overwrite', await pA.evaluate(() => {
+    const p = localStorage.getItem('portafile.v1.presync');
+    return !!p && JSON.parse(p).shop.name === 'Sync Test Cafe';
+  }));
+
+  // 5c. a stale device can't clobber newer cloud state — the 409 makes it pull instead
+  const future = JSON.parse(cloud[KEY]); future.shop.name = 'Future Cafe'; future.ts = Date.now() + 9e6;
+  cloud[KEY] = JSON.stringify(future);
+  await pA.fill('#shopName', 'Stale Edit'); await pA.dispatchEvent('#shopName', 'change');
+  await pA.waitForTimeout(1800);
+  ok('stale: cloud kept the newer state', JSON.parse(cloud[KEY]).shop.name === 'Future Cafe');
+  ok('stale: device refreshed to cloud state instead', (await pA.inputValue('#shopName')) === 'Future Cafe');
 
   // 6. offline: API dead → badge degrades, app keeps working locally
   await pA.unroute('**/api/state*');
