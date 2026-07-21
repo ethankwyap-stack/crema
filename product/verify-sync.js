@@ -94,7 +94,10 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   ok('A: edit pushed to cloud', JSON.parse(cloud[SHOP]).shop.name === 'Sync Test Cafe');
 
   // 4. device B (STAFF: no token) opens the same link → sees A's data
-  const cB = await b.newContext(); const pB = await cB.newPage();
+  const cB = await b.newContext();
+  // pretend this browser already filled the access gate, so we can prove a wipe doesn't erase that
+  await cB.addInitScript(() => { localStorage.setItem('portafile.v1.lead', '{"email":"x@y.z","shop":"S"}'); localStorage.setItem('portafile.v1.lead.sent', '1'); });
+  const pB = await cB.newPage();
   pB.on('pageerror', e => errs.push('pB: ' + e.message));
   await pB.route('**/api/state*', mock);
   await pB.goto(base + `/index.html?k=${KEY}`, { waitUntil: 'networkidle' });
@@ -170,6 +173,8 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   ok('rotate: staff device has no working UI left', await pB.locator('.rcard').count() === 0 && await pB.locator('.tab').count() === 0);
   ok('rotate: shop data wiped off the staff device', await pB.evaluate(() =>
     !localStorage.getItem('portafile.v1') && !localStorage.getItem('portafile.v1.presync') && !localStorage.getItem('portafile.v1.synckey')));
+  ok('rotate: signup record SURVIVES the wipe (no re-signup, no duplicate lead)', await pB.evaluate(() =>
+    !!localStorage.getItem('portafile.v1.lead') && localStorage.getItem('portafile.v1.lead.sent') === '1'));
 
   // 7b-2. the lock survives a reload — they can't just refresh their way back in
   await pB.reload({ waitUntil: 'networkidle' });

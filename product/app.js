@@ -156,7 +156,12 @@ function syncRevoked() {
   }
   locked = true;
   const dead = syncKey || '1';
-  Object.keys(localStorage).filter(k => k.startsWith(KEY)).forEach(k => localStorage.removeItem(k));
+  // Destroy the SHOP's data, not the browser's signup record — that record isn't a credential and
+  // grants nothing, and clearing it makes an already-signed-up person fill the gate in again,
+  // writing a duplicate lead into the founder's store.
+  Object.keys(localStorage)
+    .filter(k => k.startsWith(KEY) && !k.startsWith(LEAD_KEY))
+    .forEach(k => localStorage.removeItem(k));
   localStorage.setItem(LOCK_KEY, dead); // after the wipe — the wipe would have removed it
   lockScreen();
 }
