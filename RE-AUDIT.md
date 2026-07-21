@@ -1,16 +1,18 @@
 # RE-AUDIT — Portafile
 
-**Last full audit:** 2026-07-18 (see `safetysurface.md`, `THREAT-MODEL.md`).
+**Last full audit:** 2026-07-21 (see `safetysurface.md`). Prior: 2026-07-18 (archived `extras/safetysurface-2026-07-18.md`).
 **Risk tier:** ASVS Level 2 (collects personal data — lead email/phone/city).
 
-## Tools used this audit (and versions)
-- gitleaks 8.30.1 — `gitleaks git .` (history) + `gitleaks dir .` (working tree): history clean.
-- osv-scanner 2.4.0 — deps: 9 undici CVEs via `@vercel/blob ^0.27.3` (finding #4).
-- npm 11.18.0 `npm audit` — corroborated osv-scanner.
-- Live probes: `curl` for endpoint status, headers, HTTP→HTTPS, API reject paths.
-- Local `node` repro of the dashboard stored-XSS break-out (finding #1).
-- Not run: semgrep (not installed; codebase is 2 small vanilla-JS functions + reviewed by hand and by
-  the pattern grep for inline-handler interpolation — only `dashboard.html:192` matched).
+## Tools used 2026-07-21 audit (and versions)
+- gitleaks — `gitleaks git .`: 27 commits, no leaks.
+- osv-scanner — lockfile, 31 packages: no CVEs (`@vercel/blob` now 2.6.1).
+- semgrep `--config auto` — 9 findings, all low/false-positive (see safetysurface.md LOW section).
+- Live probes: `curl` for endpoint status, headers, HTTP→HTTPS, API reject paths, rate-limit trigger, and direct public-blob reads (found HIGH-1).
+- All 4 verify suites re-run green.
+- Key new finding: **HIGH-1 — public blobs let an old share link bypass revocation and recover the current key.** Fix = private blobs.
+
+## Tools used 2026-07-18 audit
+- gitleaks 8.30.1, osv-scanner 2.4.0 (9 undici CVEs, since fixed by the 2.6.1 bump), npm audit, curl, node repro. semgrep not run that pass.
 
 ## Re-run this audit (`/security-audit`) after ANY of:
 - an auth change (ADMIN_KEY handling, the sync-key model, the access gate),
