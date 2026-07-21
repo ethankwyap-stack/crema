@@ -1,6 +1,6 @@
 # HANDOFF — Portafile: Task 3 (owner-token split) + 3 pre-flight fixes
 
-> **DONE 2026-07-21** — Task 3 + all 3 fixes built, all 4 suites green (verify-sync now 26 checks), 390px re-verified, legacy blob kept via pointer-only (`keys/187cdea…` written, no owners/ record per Ethan). Awaiting Ethan's deploy, then live verify. Current state lives in `CLAUDE.md` + auto-memory; the spec below is historical.
+> **DONE + DEPLOYED 2026-07-21 (commit `31fed28`)** — Task 3 + all 3 fixes shipped. All 4 suites green (verify-sync now 26 checks), 390px re-verified, legacy blob kept via pointer-only (`keys/187cdea…`, no owners/ record per Ethan, so that one link can't rotate). Live-verified against production: 16/16 checks — create needs an owner token, hijack of a known shopId refused, rotate 403s without the token, the old link dies and cannot re-create the shop, the legacy link still resolves. Test blobs deleted; store back to its 5 real files. Only remaining item: Ethan's iPhone dry run. Current state lives in `CLAUDE.md` + auto-memory; the spec below is historical.
 
 **Written 2026-07-21 by the prior session. Every fact below was verified by running a command in that session unless explicitly labelled otherwise. Volatile facts (git, live URLs, blob contents, disk) were re-checked immediately before writing.**
 
