@@ -1,5 +1,13 @@
 # HANDOFF — Portafile: security audit DONE; NEXT TASK IS FIXING THE FINDINGS
 
+> **UPDATE 2026-07-21 ~18:55 UTC:** MEDIUM-1 and LOW are **FIXED, deployed, and verified live**
+> (commits `2b53edd`, `9a301d7`, pushed). shopId now travels in an `x-portafile-shop` header
+> (server, client PUT + rotate, verify-sync mock all updated; 7-check live test passed against prod
+> with throwaway data, test blobs cleaned up). CI actions pinned by SHA, dependabot cooldown added,
+> and the `pull_request` trigger removed (gitleaks 403'd on Dependabot PRs — pre-existing; push runs
+> cover the same commits). **Only HIGH-1 (private Blob store migration, §2) remains — awaiting
+> Ethan's go/no-go.** §§1–3 below predate these fixes.
+
 **Written 2026-07-21 ~18:10 UTC. Every fact below was verified by a command run this session unless
 labelled "unverified" or "Ethan to confirm." You are picking this up cold. The product is LIVE and
 about to onboard two real coffee-shop owners — breaking it is worse than being slow.**
