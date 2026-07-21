@@ -162,7 +162,29 @@ function syncRevoked() {
 }
 let syncPushT;
 let syncPulled = false; // never push before the first successful pull — a freshly-seeded browser must not shove demo data over a real cloud copy
-const isUnknownKey = async r => (await r.json().catch(() => ({})))?.error === 'unknown-key';
+/* 410 is the ONLY wipe trigger: the server compared this link against the shop's current one and
+   says it was replaced. A 404 means "no record of this link", which a flaky blob read can also
+   produce, so it never destroys anything — it just shows the dead-link badge. */
+const syncDead = () => { clearInterval(syncPollT); syncStatus = 'revoked'; syncBadge(); };
+/* Wiping a device is irreversible, and blob reads go briefly stale after any write — so one 410 is
+   a claim, not proof. Demand a second one a few seconds later; any successful sync clears the count. */
+let revokeStrikes = 0;
+function syncRevokeSignal() {
+  if (localStorage.getItem(OWNER_KEY)) return syncRestart(3000); // owner device: never terminal, just settle and retry
+  if (++revokeStrikes < 2) { syncRestart(4000); return; }
+  syncRevoked();
+}
+/* Blob storage takes up to ~1.2s to serve a freshly written value, so for a moment after a rotate
+   the server can still answer from the pre-rotate owner record and call the NEW key revoked.
+   Pause, then resume — without this the owner's own device goes dead the instant they press reset. */
+function syncRestart(delay) {
+  clearInterval(syncPollT); clearTimeout(syncPushT);
+  setTimeout(() => {
+    if (locked) return;
+    syncStatus = 'connecting'; syncBadge(); syncPull();
+    syncPollT = setInterval(syncPull, 30000);
+  }, delay);
+}
 function syncPush() {
   if (!syncKey || !syncPulled || locked) return;
   clearTimeout(syncPushT);
@@ -173,8 +195,8 @@ function syncPush() {
       if (owner && shopId) headers['x-portafile-owner'] = owner; // owner creds ride along; staff devices don't have them
       const r = await fetch('/api/state?k=' + syncKey + (owner && shopId ? '&shop=' + shopId : ''), { method: 'PUT', headers, body: JSON.stringify({ ...S, ts: Date.now() }) });
       if (r.status === 409) return syncPull(); // our copy is stale — refresh from cloud instead of clobbering it
-      // only a definitive 'unknown-key' means the link was killed; any other 404 is a server hiccup
-      if (r.status === 404) { if (await isUnknownKey(r)) return syncRevoked(); syncStatus = 'offline'; syncBadge(); return; }
+      if (r.status === 410) return syncRevokeSignal();          // this link was replaced — kill the device (needs 2 strikes)
+      if (r.status === 404) { syncDead(); return; }             // unrecognised link — stop, but never wipe
       syncStatus = r.ok ? 'live' : 'offline';
     } catch (e) { syncStatus = 'offline'; }
     syncBadge();
@@ -184,24 +206,22 @@ async function syncPull() {
   if (!syncKey || locked) return;
   try {
     const r = await fetch('/api/state?k=' + syncKey);
-    // 404 = the pointer doesn't exist. Only an OWNER device (holds the token) may treat that as
-    // "shop not created yet" and seed it. A staff/revoked device creating here is exactly what
-    // made link rotation impossible before — it must go dead instead.
+    if (r.status === 410) return syncRevokeSignal(); // the owner replaced this link — wipe and lock (needs 2 strikes)
+    // 404 = no record of this link. Only an OWNER device (holds the token) may read that as
+    // "shop not created yet" and seed it; anyone else stops, but nothing is destroyed.
     if (r.status === 404) {
-      const gone = await isUnknownKey(r);
       if (localStorage.getItem(OWNER_KEY)) {
         const stored = localStorage.getItem(SYNC_KEY);
         if (stored && stored !== syncKey) { syncKey = stored; return syncPull(); } // another tab rotated the link
         syncPulled = true; syncStatus = 'live'; syncPush(); syncBadge();
-      } else if (gone) syncRevoked();
-      else syncStatus = 'offline'; // pointer is fine, shop data missing — never wipe on this
-      syncBadge();
+      } else syncDead();
       return;
     }
     if (!r.ok) throw new Error(r.status);
     const s = await r.json();
     syncPulled = true;
     localStorage.setItem(SYNCED_KEY, syncKey); // this link genuinely let us in — makes a later revoke wipe-worthy
+    revokeStrikes = 0;                         // a working sync clears any earlier transient 410
     if (validBackup(s) && JSON.stringify({ ...s, tab: 0, ts: 0 }) !== JSON.stringify({ ...S, tab: 0, ts: 0 })) {
       localStorage.setItem(KEY + '.presync', localStorage.getItem(KEY) || ''); // snapshot of what we overwrite — recoverable if a stale device clobbered us
       s.shop.cogsTarget = +s.shop.cogsTarget || 30; s.tab = S.tab;
@@ -554,6 +574,8 @@ function dataMenu() {
       if (!r.ok) throw new Error(r.status);
       const { k } = await r.json();
       localStorage.setItem(SYNC_KEY, k); syncKey = k;
+      localStorage.setItem(SYNCED_KEY, k); // we own this link; don't let the settle window look like a revoke
+      syncRestart(2500);
       history.replaceState(null, '', location.pathname + '?k=' + k);
       dataMenu(); // rebuild the sheet so the link field shows the new key
       alert('New staff link created. Every old link has stopped working and those devices have been wiped — share the new link with your staff.');

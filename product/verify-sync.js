@@ -30,11 +30,14 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
     const method = route.request().method();
     if (method === 'POST' && u.searchParams.get('action') === 'rotate') {
       if (!owners[shop] || owners[shop].hash !== owner) return route.fulfill({ status: 403, json: { error: 'not-owner' } });
-      delete keys[owners[shop].currentKey]; // old link dies first — mirrors the server's fail-closed order
+      // pointers are never deleted; flipping currentKey IS the revocation (mirrors api/state.js)
       const nk = (rotN++).toString(16).padStart(40, '0');
       keys[nk] = shop; owners[shop].currentKey = nk;
       return route.fulfill({ json: { k: nk } });
     }
+    // a key that resolves but is no longer the shop's current one is positively revoked → 410
+    const revoked = keys[k] && owners[keys[k]] && owners[keys[k]].currentKey !== k;
+    if (revoked) return route.fulfill({ status: 410, json: { error: 'revoked' } });
     if (method === 'PUT') {
       const body = JSON.parse(route.request().postData());
       let shopId;
@@ -149,10 +152,18 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   await pA.waitForTimeout(800);
   const newK = await pA.evaluate(() => localStorage.getItem('portafile.v1.synckey'));
   ok('rotate: new key minted, stored, pointing at the shop', !!newK && newK !== KEY && keys[newK] === SHOP);
-  ok('rotate: old key deleted server-side', !keys[KEY]);
+  // pointers are never deleted — the old key is dead because it is no longer owners.currentKey,
+  // and the server says so positively with 410 rather than by a blob being absent
+  ok('rotate: old key demoted, not deleted', keys[KEY] === SHOP && owners[SHOP].currentKey === newK);
+  ok('rotate: old key now answers 410 revoked', await pA.evaluate(async k =>
+    (await fetch('/api/state?k=' + k)).status, KEY) === 410);
   await pA.evaluate(() => closeModal());
 
-  // 7b. staff device on the OLD key is HARD-KILLED: locked, wiped, unusable
+  // 7b. staff device on the OLD key is HARD-KILLED: locked, wiped, unusable.
+  // One 410 is only a strike (blob reads flake); the second one wipes — so pull twice.
+  await pB.evaluate(() => syncPull());
+  await pB.waitForTimeout(500);
+  ok('rotate: first 410 alone does not wipe', await pB.evaluate(() => !!localStorage.getItem('portafile.v1')));
   await pB.evaluate(() => syncPull());
   await pB.waitForTimeout(700);
   ok('rotate: staff device shows the lock screen', (await pB.textContent('body')).includes('This link has been turned off'));
@@ -208,7 +219,7 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
     return r.status;
   }, [k, SHOP, o, { ...JSON.parse(cloud[SHOP]), ts: Date.now() + 2e7 }]);
   delete keys[newK]; // simulate the pointer never being written
-  ok('owner CANNOT restore with a rotated-away key', await restorePut(KEY, OWNER) === 404 && !keys[KEY]);
+  ok('owner CANNOT revive a rotated-away key (410)', await restorePut(KEY, OWNER) === 410 && owners[SHOP].currentKey === newK);
   ok('stranger CANNOT restore with the current key', await restorePut(newK, 'f'.repeat(40)) === 404 && !keys[newK]);
   ok('owner CAN restore the pointer with the current key', await restorePut(newK, OWNER) === 200 && keys[newK] === SHOP);
 
