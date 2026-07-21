@@ -67,10 +67,14 @@ async function resolveKey(k) {
   const own = await readJson(`owners/${shopId}.json`);
   // No owner record at all = a pre-owner-token shop (the legacy one): it has no rotation, so its
   // link stays valid forever. A null here from a flaky read lands in the same safe branch.
-  if (own && own.currentKey && k !== own.currentKey) return { state: 'revoked' };
+  if (own && own.currentKey && k !== own.currentKey) return { state: 'revoked', own };
   return { state: 'ok', shopId };
 }
-const REVOKED = { error: 'revoked' }, UNKNOWN = { error: 'unknown-key' };
+// A 410 says WHOSE link died: owner:true only for the shop's real owner (their device settles and
+// retries instead of locking). Without this the client trusted any local owner token — so a device
+// owning a DIFFERENT shop could never be revoked from this one.
+const revoked = (own, owner) => ({ error: 'revoked', owner: !!(own && owner && sha256(owner) === own.ownerHash) });
+const UNKNOWN = { error: 'unknown-key' };
 
 export default async function handler(req, res) {
   const k = String(req.query.k || '');
@@ -80,7 +84,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     if (!HEX40.test(k)) return res.status(400).json({ error: 'bad key' });
     const r = await resolveKey(k);
-    if (r.state === 'revoked') return res.status(410).json(REVOKED);
+    if (r.state === 'revoked') return res.status(410).json(revoked(r.own, owner));
     if (r.state === 'unknown') return res.status(404).json(UNKNOWN);
     const state = await readJson(`shops/${r.shopId}.json`);
     if (!state) return res.status(404).json({ error: 'not found' }); // pointer fine, data missing — client must NOT treat this as revocation
@@ -97,7 +101,7 @@ export default async function handler(req, res) {
     if (raw.length > 1_000_000) return res.status(413).json({ error: 'too large' }); // ponytail: 1MB cap ≈ 100× a real shop; raise if a legit shop ever hits it
 
     const r = await resolveKey(k);
-    if (r.state === 'revoked') return res.status(410).json(REVOKED);
+    if (r.state === 'revoked') return res.status(410).json(revoked(r.own, owner));
     let shopId = r.shopId;
     if (r.state === 'unknown') {
       // create/repair path: only an owner token can bring a shop into existence

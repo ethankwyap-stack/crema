@@ -37,7 +37,7 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
     }
     // a key that resolves but is no longer the shop's current one is positively revoked → 410
     const revoked = keys[k] && owners[keys[k]] && owners[keys[k]].currentKey !== k;
-    if (revoked) return route.fulfill({ status: 410, json: { error: 'revoked' } });
+    if (revoked) return route.fulfill({ status: 410, json: { error: 'revoked', owner: owners[keys[k]].hash === owner } }); // owner flag mirrors api/state.js
     if (method === 'PUT') {
       const body = JSON.parse(route.request().postData());
       let shopId;

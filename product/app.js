@@ -174,10 +174,13 @@ const syncDead = () => { clearInterval(syncPollT); syncStatus = 'revoked'; syncB
 /* Wiping a device is irreversible, and blob reads go briefly stale after any write — so one 410 is
    a claim, not proof. Demand a second one a few seconds later; any successful sync clears the count. */
 let revokeStrikes = 0;
-function syncRevokeSignal() {
-  if (localStorage.getItem(OWNER_KEY)) return syncRestart(3000); // owner device: never terminal, just settle and retry
+/* isOwner comes from the SERVER's 410 body — it checked our token against THIS shop's owner record.
+   A local owner token proves nothing here: it may belong to a different shop, and trusting it made
+   such a device unrevokable (it settled-and-retried forever instead of locking). */
+function syncRevokeSignal(isOwner) {
+  if (isOwner) return syncRestart(3000); // this shop's real owner: never terminal, just settle and retry
   if (++revokeStrikes < 2) { syncRestart(4000); return; }
-  syncRevoked();
+  syncRevoked(); // still refuses to WIPE any owner-token device — it may hold the only copy of its own shop
 }
 /* Blob storage takes up to ~1.2s to serve a freshly written value, so for a moment after a rotate
    the server can still answer from the pre-rotate owner record and call the NEW key revoked.
@@ -200,7 +203,7 @@ function syncPush() {
       if (owner && shopId) { headers['x-portafile-owner'] = owner; headers['x-portafile-shop'] = shopId; } // owner creds ride along; staff devices don't have them
       const r = await fetch('/api/state?k=' + syncKey, { method: 'PUT', headers, body: JSON.stringify({ ...S, ts: Date.now() }) });
       if (r.status === 409) return syncPull(); // our copy is stale — refresh from cloud instead of clobbering it
-      if (r.status === 410) return syncRevokeSignal();          // this link was replaced — kill the device (needs 2 strikes)
+      if (r.status === 410) return syncRevokeSignal((await r.json().catch(() => 0))?.owner); // link replaced — kill the device (needs 2 strikes) unless the server says we own this shop
       if (r.status === 404) { syncDead(); return; }             // unrecognised link — stop, but never wipe
       syncStatus = r.ok ? 'live' : 'offline';
     } catch (e) { syncStatus = 'offline'; }
@@ -210,8 +213,10 @@ function syncPush() {
 async function syncPull() {
   if (!syncKey || locked) return;
   try {
-    const r = await fetch('/api/state?k=' + syncKey);
-    if (r.status === 410) return syncRevokeSignal(); // the owner replaced this link — wipe and lock (needs 2 strikes)
+    const owner = localStorage.getItem(OWNER_KEY);
+    // owner token rides along so a 410 can say whether WE are this shop's owner (settle) or not (lock)
+    const r = await fetch('/api/state?k=' + syncKey, owner ? { headers: { 'x-portafile-owner': owner } } : undefined);
+    if (r.status === 410) return syncRevokeSignal((await r.json().catch(() => 0))?.owner); // the owner replaced this link — wipe and lock (needs 2 strikes)
     // 404 = no record of this link. Only an OWNER device (holds the token) may read that as
     // "shop not created yet" and seed it; anyone else stops, but nothing is destroyed.
     if (r.status === 404) {
