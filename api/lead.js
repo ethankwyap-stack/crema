@@ -43,6 +43,8 @@ export default async function handler(req, res) {
       email: s(b.email, 120), shop: s(b.shop, 120), role: s(b.role, 40),
       city: s(b.city, 80), phone: s(b.phone, 40), ts: Date.now(),
     };
+    // optional shop linkage — lets the founder answer "which signup owns which cloud data"
+    if (/^[a-f0-9]{40}$/.test(String(b.shopId || ''))) lead.shopId = String(b.shopId);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lead.email) || !lead.shop)
       return res.status(422).json({ error: 'email and shop name required' });
     await put(`leads/${lead.ts}-${randomUUID()}.json`,

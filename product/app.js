@@ -114,7 +114,10 @@ const save = () => { localStorage.setItem(KEY, JSON.stringify(S)); syncPush(); }
 /* Off by default: with no key the app is pure-local, byte-identical to v1 behavior.
    ponytail: last-write-wins, no merging — local backup + Export remain the safety net. */
 const SYNC_KEY = 'portafile.v1.synckey';
-const syncKey = (() => {
+const OWNER_KEY = 'portafile.v1.owner';  // owner devices only — proves ownership, sent as a header, never in a URL
+const SHOP_KEY = 'portafile.v1.shopid';  // durable shop identity; the share link is a rotatable pointer to it
+const hex40 = () => { const b = new Uint8Array(20); crypto.getRandomValues(b); return [...b].map(x => x.toString(16).padStart(2, '0')).join(''); };
+let syncKey = (() => {
   const m = location.search.match(/[?&]k=([a-f0-9]{40})\b/);
   if (m) { localStorage.setItem(SYNC_KEY, m[1]); return m[1]; }
   return localStorage.getItem(SYNC_KEY) || '';
@@ -125,7 +128,11 @@ function syncBadge() {
   if (!syncKey) { if (el) el.remove(); return; }
   if (!el) { el = document.createElement('div'); el.id = 'syncBadge'; document.body.appendChild(el); }
   el.className = 'syncbadge ' + syncStatus;
-  el.textContent = { connecting: 'sync…', live: 'synced', offline: 'sync offline — working locally' }[syncStatus] || '';
+  el.textContent = { connecting: 'sync…', live: 'synced', offline: 'sync offline — working locally', revoked: 'this link no longer works — ask the owner for a new one' }[syncStatus] || '';
+}
+let syncPollT;
+function syncRevoked() { // dead link: stop polling, touch nothing local — the data on this device stays
+  syncStatus = 'revoked'; clearInterval(syncPollT); syncBadge();
 }
 let syncPushT;
 let syncPulled = false; // never push before the first successful pull — a freshly-seeded browser must not shove demo data over a real cloud copy
@@ -134,8 +141,12 @@ function syncPush() {
   clearTimeout(syncPushT);
   syncPushT = setTimeout(async () => {
     try {
-      const r = await fetch('/api/state?k=' + syncKey, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...S, ts: Date.now() }) });
+      const owner = localStorage.getItem(OWNER_KEY), shopId = localStorage.getItem(SHOP_KEY);
+      const headers = { 'content-type': 'application/json' };
+      if (owner && shopId) headers['x-portafile-owner'] = owner; // owner creds ride along; staff devices don't have them
+      const r = await fetch('/api/state?k=' + syncKey + (owner && shopId ? '&shop=' + shopId : ''), { method: 'PUT', headers, body: JSON.stringify({ ...S, ts: Date.now() }) });
       if (r.status === 409) return syncPull(); // our copy is stale — refresh from cloud instead of clobbering it
+      if (r.status === 404) return syncRevoked(); // pointer gone (link was reset) — server created nothing
       syncStatus = r.ok ? 'live' : 'offline';
     } catch (e) { syncStatus = 'offline'; }
     syncBadge();
@@ -145,7 +156,14 @@ async function syncPull() {
   if (!syncKey) return;
   try {
     const r = await fetch('/api/state?k=' + syncKey);
-    if (r.status === 404) { syncPulled = true; syncStatus = 'live'; syncPush(); syncBadge(); return; } // first device: seed the cloud
+    // 404 = the pointer doesn't exist. Only an OWNER device (holds the token) may treat that as
+    // "shop not created yet" and seed it. A staff/revoked device creating here is exactly what
+    // made link rotation impossible before — it must go dead instead, leaving local data intact.
+    if (r.status === 404) {
+      if (localStorage.getItem(OWNER_KEY)) { syncPulled = true; syncStatus = 'live'; syncPush(); syncBadge(); }
+      else syncRevoked();
+      return;
+    }
     if (!r.ok) throw new Error(r.status);
     const s = await r.json();
     syncPulled = true;
@@ -284,7 +302,7 @@ function viewPrices() {
   return `
   <h2>Ingredient prices</h2>
   <p class="hint">Starter numbers are estimates — put in what you actually pay. Every card re-prices the moment you change a number here. That laminated price list from 2023? This is the version that can't go stale.</p>
-  <table class="grid"><thead><tr><th>Ingredient</th><th>Unit</th><th>Cost / unit</th><th>Used in</th><th></th></tr></thead>
+  <div class="tablewrap"><table class="grid"><thead><tr><th>Ingredient</th><th>Unit</th><th>Cost / unit</th><th>Used in</th><th></th></tr></thead>
   <tbody>
     ${S.ingredients.map(i => {
       const uses = S.recipes.filter(r => r.items.some(it => it.ing === i.id));
@@ -296,7 +314,7 @@ function viewPrices() {
         <td><button class="mini danger" data-act="delIng">×</button></td>
       </tr>`;
     }).join('')}
-  </tbody></table>
+  </tbody></table></div>
   <p><button class="btn" id="addIng">+ Add ingredient</button></p>`;
 }
 
@@ -478,16 +496,33 @@ function dataMenu() {
       <p><input id="dSyncLink" readonly value="${esc(location.origin + location.pathname + '?k=' + syncKey)}" style="width:100%"></p>
       <div class="bar" style="justify-content:flex-start">
         <button class="btn" id="dSyncCopy">Copy link</button>
+        ${localStorage.getItem(OWNER_KEY) ? '<button class="ghost" id="dSyncRotate">Reset staff link</button>' : ''}
         <button class="ghost danger" id="dSyncOff">Turn off sync on this device</button>
       </div>` : `
       <p class="hint">Turn on sync to get a secret link: open it on any phone or laptop and everyone shares the same live data. Your data then also lives in Portafile's cloud storage.</p>
       <div class="bar" style="justify-content:flex-start"><button class="btn" id="dSyncOn">Turn on sync</button></div>`}`}`);
   const syncOn = $('#dSyncOn'); if (syncOn) syncOn.onclick = () => {
-    const b = new Uint8Array(20); crypto.getRandomValues(b);
-    localStorage.setItem(SYNC_KEY, [...b].map(x => x.toString(16).padStart(2, '0')).join(''));
-    location.search = '?k=' + localStorage.getItem(SYNC_KEY); // reload with key: sync boot path takes over
+    // three independent secrets: durable identity, ownership proof, and the rotatable link
+    localStorage.setItem(SHOP_KEY, hex40());
+    localStorage.setItem(OWNER_KEY, hex40());
+    const k = hex40();
+    localStorage.setItem(SYNC_KEY, k);
+    location.search = '?k=' + k; // reload with key: sync boot path takes over
   };
   const syncCopy = $('#dSyncCopy'); if (syncCopy) syncCopy.onclick = () => { $('#dSyncLink').select(); navigator.clipboard.writeText($('#dSyncLink').value); syncCopy.textContent = 'Copied!'; };
+  const syncRotate = $('#dSyncRotate'); if (syncRotate) syncRotate.onclick = async () => {
+    syncRotate.disabled = true;
+    try {
+      const r = await fetch('/api/state?action=rotate&shop=' + localStorage.getItem(SHOP_KEY),
+        { method: 'POST', headers: { 'x-portafile-owner': localStorage.getItem(OWNER_KEY) } });
+      if (!r.ok) throw new Error(r.status);
+      const { k } = await r.json();
+      localStorage.setItem(SYNC_KEY, k); syncKey = k;
+      history.replaceState(null, '', location.pathname + '?k=' + k);
+      dataMenu(); // rebuild the sheet so the link field shows the new key
+      alert('New staff link created. Every old link has stopped working — share the new one with your staff.');
+    } catch (e) { syncRotate.disabled = false; alert('Could not reset the link — check your connection and try again.'); }
+  };
   const syncOff = $('#dSyncOff'); if (syncOff) syncOff.onclick = () => { localStorage.removeItem(SYNC_KEY); location.search = ''; };
   $('#dExport').onclick = () => {
     const blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
@@ -663,7 +698,7 @@ function gate() {
   const g = document.createElement('div'); g.className = 'gatewrap';
   g.innerHTML = `<form class="sheet gate">
     <h3>Before you brew…</h3>
-    <p class="hint">Portafile is free. Tell us who's using it so we can let you know when staff-phone sync ships.</p>
+    <p class="hint">Portafile is free. Tell us who's using it so we know which shops to build for — and so we can help if something breaks.</p>
     <label>Email *<input name="email" type="email" required autocomplete="email"></label>
     <label>Shop name *<input name="shop" required placeholder="e.g. Northside Espresso"></label>
     <label>Your role<select name="role"><option value="">—</option><option>Owner</option><option>Manager</option><option>Barista</option><option>Roaster</option><option>Just curious</option></select></label>
@@ -671,7 +706,7 @@ function gate() {
     <label>Phone (optional)<input name="phone" type="tel" autocomplete="tel"></label>
     <input name="hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
     <div class="bar" style="justify-content:flex-end"><button class="btn" type="submit">Open Portafile</button></div>
-    <p class="hint">No password, no verification email — this browser stays unlocked.</p>
+    <p class="hint">No password, no verification email — this browser stays unlocked. <a href="/site/privacy.html" target="_blank" rel="noopener">How we handle your details</a></p>
   </form>`;
   document.body.appendChild(g);
   g.querySelector('form').onsubmit = ev => {
@@ -691,8 +726,14 @@ if (localStorage.getItem(LEAD_KEY) && !localStorage.getItem(LEAD_KEY + '.sent') 
   fetch('/api/lead', { method: 'POST', headers: { 'content-type': 'application/json' }, body: localStorage.getItem(LEAD_KEY) })
     .then(r => { if (r.ok) localStorage.setItem(LEAD_KEY + '.sent', '1'); }).catch(() => {});
 
+// once this browser owns a shop, tie its signup lead to the shopId (one re-POST, ever) —
+// this is the only record of which signup owns which cloud data; unreconstructable later
+if (localStorage.getItem(SHOP_KEY) && localStorage.getItem(LEAD_KEY) && !localStorage.getItem(LEAD_KEY + '.linked') && location.protocol !== 'file:' && !navigator.webdriver)
+  fetch('/api/lead', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...JSON.parse(localStorage.getItem(LEAD_KEY)), shopId: localStorage.getItem(SHOP_KEY) }) })
+    .then(r => { if (r.ok) localStorage.setItem(LEAD_KEY + '.linked', '1'); }).catch(() => {});
+
 navigator.storage?.persist?.()?.catch(() => {}); // best-effort: ask the browser not to evict localStorage (Safari/Chrome purge unused sites' storage)
 render();
 gate();
-if (syncKey) { syncPull(); setInterval(syncPull, 30000); syncBadge(); }
+if (syncKey) { syncPull(); syncPollT = setInterval(syncPull, 30000); syncBadge(); }
 if (location.search.includes('selftest=1')) selftest();
