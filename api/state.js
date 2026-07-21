@@ -6,7 +6,7 @@
      Required to create a shop or rotate its link.
    A shareKey whose pointer is missing NEVER creates anything — that's what makes rotation real.
    Requires BLOB_READ_WRITE_TOKEN env var on the Vercel project. */
-import { put, list, del } from '@vercel/blob';
+import { put, get, del } from '@vercel/blob';
 import { createHash, randomBytes } from 'node:crypto';
 
 const HEX40 = /^[a-f0-9]{40}$/;
@@ -33,15 +33,16 @@ function validBackup(s) {
     && s.signoffs && typeof s.signoffs === 'object');
 }
 
-// null ONLY when the blob genuinely isn't there. A transient fetch failure must THROW (→ 500),
-// never look like "absent" — the client wipes local data on 'unknown-key', so a network blip
-// misreported as a missing pointer would destroy a real shop's copy on every staff device.
+// NEVER look a blob up with list() — its index lags writes AND deletes, so it both hides
+// brand-new blobs and keeps serving ones already deleted. get(useCache:false) reads origin
+// storage directly: null means genuinely absent, and a transient failure throws (→ 500).
+// Both matter: the client wipes a device's local data on 'unknown-key', so "absent" has to be
+// the truth rather than a stale index, and a rotate that trusts a stale list leaves the old
+// staff link alive (that exact bug shipped and killed a link that kept working).
 async function readJson(path) {
-  const { blobs } = await list({ prefix: path, limit: 1 });
-  if (!blobs.length) return null;
-  const r = await fetch(blobs[0].url);
-  if (!r.ok) throw new Error(`blob fetch ${r.status} for ${path}`);
-  return r.json();
+  const r = await get(path, { access: 'public', useCache: false });
+  if (!r) return null;
+  return JSON.parse(await r.blob.text());
 }
 const writeJson = (path, obj) => put(path, JSON.stringify(obj), { access: 'public', addRandomSuffix: false, contentType: 'application/json', allowOverwrite: true, cacheControlMaxAge: 0 });
 
@@ -74,12 +75,18 @@ export default async function handler(req, res) {
       shopId = String(ptr.shopId || '');
       if (!HEX40.test(shopId)) return res.status(404).json({ error: 'unknown-key' });
     } else {
-      // create path: only an owner token can bring a shop into existence, and only once —
-      // a rotated-away key stays dead even for the owner (they use rotate to recover).
+      // create path: only an owner token can bring a shop into existence
       if (!shop || !owner) return res.status(404).json({ error: 'unknown-key' });
       if (!HEX40.test(shop)) return res.status(400).json({ error: 'bad shop' });
-      if (await readJson(`owners/${shop}.json`)) return res.status(404).json({ error: 'unknown-key' });
-      await writeJson(`owners/${shop}.json`, { ownerHash: sha256(owner), currentKey: k, created: Date.now() });
+      const own = await readJson(`owners/${shop}.json`);
+      if (own) {
+        // shop exists but its pointer is gone. Restoring it is allowed ONLY for the real owner
+        // holding the CURRENT key — that self-heals a rotate that died halfway without ever
+        // resurrecting a rotated-away link (old key !== currentKey → stays dead forever).
+        if (sha256(owner) !== own.ownerHash || k !== own.currentKey) return res.status(404).json({ error: 'unknown-key' });
+      } else {
+        await writeJson(`owners/${shop}.json`, { ownerHash: sha256(owner), currentKey: k, created: Date.now() });
+      }
       await writeJson(`keys/${k}.json`, { shopId: shop, created: Date.now() });
       shopId = shop;
     }
@@ -97,12 +104,17 @@ export default async function handler(req, res) {
     const own = await readJson(`owners/${shop}.json`);
     // same 403 for no-such-shop and wrong token — no existence oracle
     if (!own || sha256(owner) !== own.ownerHash) return res.status(403).json({ error: 'not-owner' });
+    // Kill the old link FIRST and prove it's dead. Failing here must leave the old link dead and
+    // the new one unborn (fails closed); the owner just presses reset again — their token, not the
+    // link, is what authorises this. Minting first would fail OPEN: a live old link the owner
+    // believes is revoked, which is the one outcome this whole feature exists to prevent.
+    const old = String(own.currentKey || '');
+    if (HEX40.test(old)) {
+      await del(`keys/${old}.json`);
+      if (await readJson(`keys/${old}.json`)) return res.status(500).json({ error: 'old-link-still-live' });
+    }
     const nk = randomBytes(20).toString('hex');
     await writeJson(`keys/${nk}.json`, { shopId: shop, created: Date.now() });
-    if (HEX40.test(String(own.currentKey || ''))) {
-      const { blobs } = await list({ prefix: `keys/${own.currentKey}.json`, limit: 1 });
-      await Promise.all(blobs.map(b => del(b.url)));
-    }
     await writeJson(`owners/${shop}.json`, { ...own, currentKey: nk });
     return res.status(200).json({ k: nk });
   }

@@ -30,8 +30,9 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
     const method = route.request().method();
     if (method === 'POST' && u.searchParams.get('action') === 'rotate') {
       if (!owners[shop] || owners[shop].hash !== owner) return route.fulfill({ status: 403, json: { error: 'not-owner' } });
+      delete keys[owners[shop].currentKey]; // old link dies first — mirrors the server's fail-closed order
       const nk = (rotN++).toString(16).padStart(40, '0');
-      keys[nk] = shop; delete keys[owners[shop].currentKey]; owners[shop].currentKey = nk;
+      keys[nk] = shop; owners[shop].currentKey = nk;
       return route.fulfill({ json: { k: nk } });
     }
     if (method === 'PUT') {
@@ -39,9 +40,13 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
       let shopId;
       if (keys[k]) shopId = keys[k];
       else {
-        // create path: needs owner creds, a fresh shopId, and CREATES NOTHING otherwise
-        if (!shop || !owner || owners[shop]) return route.fulfill({ status: 404, json: { error: 'unknown-key' } });
-        owners[shop] = { hash: owner, currentKey: k }; keys[k] = shop; shopId = shop;
+        // create path: needs owner creds, and CREATES NOTHING otherwise. An existing shop's pointer
+        // may only be restored by the real owner holding the CURRENT key (never a rotated-away one).
+        if (!shop || !owner) return route.fulfill({ status: 404, json: { error: 'unknown-key' } });
+        const own = owners[shop];
+        if (own && (own.hash !== owner || k !== own.currentKey)) return route.fulfill({ status: 404, json: { error: 'unknown-key' } });
+        if (!own) owners[shop] = { hash: owner, currentKey: k };
+        keys[k] = shop; shopId = shop;
       }
       const old = cloud[shopId] && JSON.parse(cloud[shopId]);
       if (old && (+body.ts || 0) < (+old.ts || 0)) return route.fulfill({ status: 409, json: { error: 'stale' } });
@@ -166,6 +171,7 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   await pB.waitForTimeout(1500);
   ok('rotate: new link unlocks the same device', (await pB.inputValue('#shopName')) === JSON.parse(cloud[SHOP]).shop.name);
   ok('rotate: lock flag cleared by the new link', await pB.evaluate(() => !localStorage.getItem('portafile.v1.revoked')));
+  await cB.close(); // done with the staff device — stop its poll racing the pointer tests below
 
   // 7c. a fresh staff device on the NEW key works normally
   const cF = await b.newContext(); const pF = await cF.newPage();
@@ -190,6 +196,21 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
     && await pG.locator('.rcard').count() > 0);
   cloud[SHOP] = keep;
   await cG.close();
+
+  // 7e. a half-finished rotate leaves the shop with no pointer. The owner (current key) may restore
+  // it; a rotated-away key never can, or revocation would be undoable.
+  // carry the live state forward with a newer ts, or the stale-write guard 409s the restore
+  const restorePut = (k, o) => pA.evaluate(async ([k, shop, owner, body]) => {
+    const r = await fetch(`/api/state?k=${k}&shop=${shop}`, {
+      method: 'PUT', headers: { 'content-type': 'application/json', 'x-portafile-owner': owner },
+      body: JSON.stringify(body),
+    });
+    return r.status;
+  }, [k, SHOP, o, { ...JSON.parse(cloud[SHOP]), ts: Date.now() + 2e7 }]);
+  delete keys[newK]; // simulate the pointer never being written
+  ok('owner CANNOT restore with a rotated-away key', await restorePut(KEY, OWNER) === 404 && !keys[KEY]);
+  ok('stranger CANNOT restore with the current key', await restorePut(newK, 'f'.repeat(40)) === 404 && !keys[newK]);
+  ok('owner CAN restore the pointer with the current key', await restorePut(newK, OWNER) === 200 && keys[newK] === SHOP);
 
   // 8. offline: API dead → badge degrades, app keeps working locally
   await pA.unroute('**/api/state*');
