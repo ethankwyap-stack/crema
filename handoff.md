@@ -1,201 +1,278 @@
-# HANDOFF — Portafile: Task 3 (owner-token split) + 3 pre-flight fixes
+# HANDOFF — Portafile: link revocation shipped; NEXT TASK IS A SECURITY CHECK
 
-> **DONE + DEPLOYED 2026-07-21 (commit `31fed28`)** — Task 3 + all 3 fixes shipped. All 4 suites green (verify-sync now 26 checks), 390px re-verified, legacy blob kept via pointer-only (`keys/187cdea…`, no owners/ record per Ethan, so that one link can't rotate). Live-verified against production: 16/16 checks — create needs an owner token, hijack of a known shopId refused, rotate 403s without the token, the old link dies and cannot re-create the shop, the legacy link still resolves. Test blobs deleted; store back to its 5 real files. Only remaining item: Ethan's iPhone dry run. Current state lives in `CLAUDE.md` + auto-memory; the spec below is historical.
+**Written 2026-07-21 ~17:40 UTC. Every fact below was verified by running a command in this
+session unless it is explicitly labelled "Ethan confirmed" or "unverified". Volatile facts (git,
+live URLs, blob store, disk) were re-checked immediately before writing this file.**
 
-**Written 2026-07-21 by the prior session. Every fact below was verified by running a command in that session unless explicitly labelled otherwise. Volatile facts (git, live URLs, blob contents, disk) were re-checked immediately before writing.**
-
-You are picking this up cold. Read this whole file before touching code. The product is **live and about to be handed to two real coffee-shop owners** — breaking it is worse than being slow.
+You are picking this up cold. The product is **live and about to be handed to two real
+coffee-shop owners.** Breaking it is worse than being slow.
 
 ---
 
 ## TL;DR
 
-**Do:** build Task 3 (owner-token + shopId/shareKey split), plus 3 small pre-flight fixes, run all four verify suites, then hand Ethan (a) the deploy command and (b) a phone dry-run checklist. Full spec below.
+**Ethan's next task, in his words: "Will run a security check."** That is section 9. Everything
+else in this file is background so you don't redo finished work.
 
-**Do NOT redo:** the security audit, the sync-safety pass (commit `57c2ea2`, already deployed and verified live), or the phone/live audit — all findings are recorded here.
+**Done, deployed, and verified — do NOT rebuild any of it:** the three-part key model
+(shopId / rotatable shareKey / owner token), hard-kill link revocation, three pre-flight UI
+fixes, and `ONBOARDING.md` (a user guide for the two shops). Six commits, all deployed to
+production, all four test suites green, and Ethan hand-tested the revocation flow on his own
+phone and laptop — he confirmed "the steps worked."
 
-**One open decision needs Ethan's answer before you finish Task 3** — the legacy shop blob (§5). Ask him. Do not guess and do not delete anything.
+**One thing still unconfirmed by a human:** the very last fix (revocation no longer erases the
+browser's signup record) was deployed *after* Ethan's manual test. Its code is confirmed live and
+it has an automated test, but he has not re-run the browser flow. Ask him whether he did.
 
-**You cannot deploy.** The auto-mode classifier blocks `vercel deploy` and `git push` for the agent. Ethan runs those himself with the `!` prefix.
+**Do not delete blobs without asking.** See sections 4 and 5.
 
 ---
 
 ## 1. What this product is (one paragraph)
 
-Portafile is a recipe-card + costing app for independent coffee shops: recipe cards carrying live cost/margin, an espresso dial-in board per bean, training paths with sign-offs, and printable packs. Static HTML/CSS/JS, **no framework, no build step, no database**. All shop data lives in browser localStorage; an opt-in cloud copy lives in Vercel Blob, reached by a secret link (`?k=<40 hex>`). Business plan sells a $29/mo "Shop" tier whose deliverable is that sync — but **no payment gate exists in code today; everything is free and unlocked for everyone.**
+Portafile is a recipe-card + costing app for independent coffee shops: recipe cards carrying live
+cost/margin, an espresso dial-in board per bean, training paths with sign-offs, and printable
+packs. Static HTML/CSS/JS — **no framework, no build step, no database.** Shop data lives in
+browser localStorage; an opt-in cloud copy lives in Vercel Blob, reached by a secret link
+(`?k=<40 hex>`). The marketing site shows paid tiers ($29/mo "Shop", $149/mo "Roaster"), but
+**no payment gate exists in code and nothing can bill anyone** — `ONBOARDING.md` tells the two
+shops in writing that those prices are placeholders.
 
 ---
 
-## 2. Verified state (re-checked 2026-07-21, immediately before writing)
+## 2. What was accomplished this session
+
+### 2a. The three-part key model (was "Task 3")
+Before: the secret link *was* the identity, the credential, and the storage path
+(`shops/<k>.json`). A link could never be revoked, and there was no account object to attach a
+subscription to. Now:
+
+| Thing | Where it lives | Purpose |
+|---|---|---|
+| `shopId` (40 hex) | blob `shops/<shopId>.json`; localStorage `portafile.v1.shopid` | durable identity. **Never appears in a URL.** |
+| `shareKey` (40 hex) | URL `?k=`; pointer blob `keys/<shareKey>.json` = `{shopId,created}` | what you hand to staff. Rotatable. |
+| `ownerToken` (40 hex) | owner's localStorage `portafile.v1.owner` only; server stores **sha256** in `owners/<shopId>.json` = `{ownerHash,currentKey,created}` | proves ownership. Required to create a shop or rotate its link. Sent in the **`x-portafile-owner` header**, never a query string (query strings land in access logs). |
+
+### 2b. Hard-kill revocation
+Ethan's words: *"if a link gets deleted i don't want any of the features to be able to be used."*
+A device told its link was replaced now wipes the shop's data out of that browser, sets
+`portafile.v1.revoked`, and shows a full-screen lock that survives reload. Opening a *different*
+working link clears the lock (the re-hired-barista path).
+
+### 2c. THE ROAD NOT TAKEN — read this before you "fix" anything in `api/state.js`
+The first two designs were **abandoned after being disproven by measurement**, not by taste:
+
+1. **Revoke by deleting the old pointer blob.** Shipped, then found broken *in Ethan's real
+   production data*: a link he had already reset was still opening his shop. Root cause —
+   `list()` lags both writes and deletes, so rotate's "find the old key blob and delete it"
+   found nothing to delete and silently succeeded.
+2. **Revoke by treating a missing pointer as revocation.** Also wrong. Measured, repeatedly:
+   two back-to-back reads of the same *existing* blob returned found, then null; reads after an
+   overwrite served the **previous value** for seconds. Absence is not evidence. With a wipe
+   attached to absence, a flaky read would erase a real shop off a staff device.
+
+**The design that shipped:** pointers are **never deleted**. A link is dead when it is not
+`owners.currentKey` — a value comparison against a blob that always exists — answered as **HTTP
+410 `{error:'revoked'}`**. The client wipes **only** on 410, and only after **two** of them.
+Every flaky read now fails safe.
+
+### 2d. The three pre-flight UI fixes
+- Gate copy no longer promises staff-phone sync "when it ships" (it shipped).
+- The gate form (collects email + phone) now links to `/site/privacy.html`.
+- Prices table wrapped in `.tablewrap{overflow-x:auto}` — at 390 px it clipped columns and made
+  Chromium widen the layout viewport to 557 px, zooming the whole app out. Re-verified at 390 px
+  in full Chromium: layout viewport stays 390, delete buttons reachable.
+
+### 2e. `ONBOARDING.md` (repo root)
+A ~1,260-word guide Ethan sends to the two shops: cost (free; tiers are placeholders), setup
+walkthrough, what each of the five tabs does, sharing/revoking links, limits, how to report bugs.
+**Offered but not built:** turning it into a styled shareable web page. He did not take it up.
+
+---
+
+## 3. Verified state (re-checked 2026-07-21 ~17:38 UTC)
 
 | Thing | State |
 |---|---|
 | Repo | `/Users/ethanyap/portafile`, branch `main`, **working tree clean** |
-| Last commit | `57c2ea2` "Sync safety: stale-write 409 guard, presync snapshot, no-push-before-pull, state rate limit" |
-| Live site | https://portafile.vercel.app → **200**; https://portafile.vercel.app/product/ → **200** |
-| Deployed? | Yes — `57c2ea2` is live in production and was verified against the real API (see §3) |
-| Hosting | Vercel project `ethan16/portafile`, plan **Hobby**, **no payment method on file** (checked via Vercel API `/v2/user` → `billing.plan = hobby`, no `paymentMethod` key). It cannot bill him. |
-| Blob store | `x5ibkklkuewcvfr9.public.blob.vercel-storage.com` — contains **3 lead blobs** and **1 shop blob** (see §5) |
+| Last commit | `3c62a3d` "Add ONBOARDING.md — user guide for the two founding shops" |
+| This session's commits | `324c8e1`, `a49654e`, `585f6af`, `fb6bd42`, `4135ad3`, `3c62a3d` |
+| Deployed? | **Yes.** Latest production deploy `dpl_CjnRx9qH5s4qnivbsUgBtypokkCS`, aliased to portafile.vercel.app. Confirmed the newest client fix is in the served `app.js`. |
+| Live URLs | `/` → 200, `/product/` → 200, `/site/privacy.html` → 200 |
+| Live revocation proof | Ethan's leftover link `b555034f…` → **410**; his legacy link `187cdea…` → 200; his current phone-shop link `93af05e0…` → 200 |
+| Hosting | Vercel project `ethan16/portafile`, **Hobby plan**. Ethan confirmed he has set the **$0 spend cap** and enabled **2FA** on GitHub + Vercel this session. |
+| Blob store | 22 blobs: 13 `keys/`, 4 `shops/`, 3 `owners/`, 2 `leads/`. Only **2 shops are real** (see §5 warning). |
 | Secrets | `ADMIN_KEY` in Vercel prod env + gitignored `~/portafile/.admin-key`; `BLOB_READ_WRITE_TOKEN` in gitignored `.env.local`. **Never commit or echo either.** |
-| Dependencies | one: `@vercel/blob` 2.6.1, lockfile committed |
-| Verify suites | 4 files in `product/`, **all passing** as of this session: `verify.js`, `verify-gate.js`, `verify-killpass.js`, `verify-sync.js` (15 checks) |
-| Playwright | reinstalled this session — both `chromium` (full, 171 MB) and `chromium-headless-shell` present in `~/Library/Caches/ms-playwright/`. Suites `require()` it by absolute path `/Users/ethanyap/.npm/_npx/e41f203b7505f1fb/node_modules/playwright` |
+| Dependencies | one: `@vercel/blob` 2.6.1, lockfile committed. `node_modules` was missing at session start — `npm install` fixed it. |
+| Test suites | 4 in `product/`, **all passing**: `verify.js`, `verify-gate.js`, `verify-killpass.js`, `verify-sync.js` (now ~38 checks) |
+| Playwright | present at `/Users/ethanyap/.npm/_npx/e41f203b7505f1fb/node_modules/playwright`; suites `require()` that absolute path |
 | Disk | 33 GB free of 228 GB |
-| Founder dashboard | `admin/dashboard.html`, served at http://localhost:4322/admin/dashboard.html by LaunchAgent `com.ethanyap.portafile-dashboard`. **`admin/` is deliberately NOT deployed** (`.vercelignore`) — it has no auth. That exclusion is load-bearing; never deploy it. |
+| Founder dashboard | `admin/dashboard.html` on http://localhost:4322/admin/dashboard.html via LaunchAgent `com.ethanyap.portafile-dashboard`. **`admin/` is deliberately NOT deployed** (`.vercelignore`) — it has no auth and is safe only because it 404s in production. |
 
 ---
 
-## 3. Already done this session — do not redo
+## 4. Decisions still open — ASK ETHAN, DO NOT GUESS
 
-**A full pre-launch audit** (security, data safety, reliability, onboarding, payment-readiness). Findings that were fixed and shipped in `57c2ea2`:
-
-- Sync writes now carry a `ts`; `api/state.js` returns **409** on a PUT older than the stored blob; the client reacts by pulling instead of clobbering.
-- Client snapshots local state to `localStorage['portafile.v1.presync']` before any pull overwrites it.
-- Client never pushes before its first successful pull (`syncPulled` flag, `app.js:131`) — stops a freshly-reseeded browser overwriting real cloud data.
-- `navigator.storage.persist()` best-effort at boot.
-- `api/state.js` PUT rate-limited 120/10 min/IP.
-
-**Verified live against production** with a throwaway key: first PUT → 200, older-ts PUT → **409**, newer-ts PUT → 200, GET returned the newest copy. Test blob deleted afterward (confirmed 404).
-
-**Live phone audit** (real Chromium at 390×844 against production, gate never submitted): gate renders correctly; all five tabs render; **zero page errors**; no horizontal overflow on Recipes/Dial-in/Training/Print; tab bar is swipeable so Print is reachable; Data menu offers "Turn on sync" in production; 15 seeded cards load. The **one** problem found is fix #3 below.
-
----
-
-## 4. THE TASK
-
-### 4a. Task 3 — owner-token + shopId/shareKey split
-
-**Why:** today the secret link is simultaneously the identity, the credential, and the storage path (`shops/<k>.json`). Consequences: a link can never be revoked (a barista who quits keeps access forever), and there is no account object to attach a subscription to. Ethan has 2 shops onboarding imminently and intends to charge later. Doing this now is cheap; doing it after they have data means a migration and a "your link changed" conversation.
-
-**Target model:**
-
-| Thing | Where it lives | Purpose |
-|---|---|---|
-| `shopId` (40 hex) | blob `shops/<shopId>.json`; client localStorage `portafile.v1.shopid` | durable identity. **Never appears in a shareable URL.** The thing billing attaches to later. |
-| `shareKey` (40 hex) | URL `?k=`; pointer blob `keys/<shareKey>.json` = `{"shopId":"…","created":<ms>}` | what you hand to staff. **Rotatable.** |
-| `ownerToken` (40 hex) | owner's localStorage `portafile.v1.owner` only; server stores **sha256 hash** in `owners/<shopId>.json` = `{"ownerHash":"…","currentKey":"…","created":<ms>}` | proves ownership. Required to create a shop or rotate its link. Hash-at-rest so a blob leak ≠ ownership. |
-
-**API after the change** (`api/state.js`):
-
-- `GET /api/state?k=<shareKey>` → read `keys/<shareKey>.json`; **miss → 404 `{error:'unknown-key'}`**; hit → return `shops/<shopId>.json`.
-- `PUT /api/state?k=<shareKey>` → resolve pointer; **miss → 404 `unknown-key` and CREATE NOTHING**; hit → existing ts/409 guard → write.
-- `PUT /api/state?k=<shareKey>&shop=<shopId>` **with header `x-portafile-owner: <ownerToken>`** → the create/claim path. Creates only when `keys/<shareKey>` is absent AND `owners/<shopId>` is absent; otherwise requires `sha256(ownerToken) === stored ownerHash`.
-- `POST /api/state?action=rotate&shop=<shopId>` **with header `x-portafile-owner`** → verify hash → mint a new shareKey server-side → write new `keys/<new>.json` → delete `keys/<currentKey>.json` → update `owners/<shopId>.currentKey` → return `{k:"<new>"}`.
-
-> **Put the owner token in the `x-portafile-owner` header, never in the query string.** Query strings land in access logs. The shareKey is already a query param (existing design, leave it); the owner token is strictly more powerful, so it goes in a header. Requests are same-origin, so no CORS complication.
-
-**Client changes** (`product/app.js`):
-
-1. Add `OWNER_KEY = 'portafile.v1.owner'` and `SHOP_KEY = 'portafile.v1.shopid'` near `SYNC_KEY` (**line 116**).
-2. **Sync-on handler (line 485–489):** mint three independent 40-hex values (`crypto.getRandomValues`, 20 bytes each) — shopId, ownerToken, shareKey. Store shopId + ownerToken locally, then `location.search = '?k=' + shareKey` as today.
-3. `syncPush()` (**line 132**): when localStorage holds an ownerToken + shopId, send `&shop=<shopId>` and the `x-portafile-owner` header. Staff devices simply don't have them and send neither.
-4. **`syncPull()` 404 branch (line 148) — THE critical change.** Today 404 means "first device, seed the cloud." That single line is exactly why revocation is impossible (documented as deferred in `safetysurface.md`); if you leave it, rotation is theatre because any old device re-creates the shop. New behaviour:
-   - **Holds an ownerToken** → our shop, not created yet → `syncPulled = true; syncPush()` (creation path).
-   - **No ownerToken** (staff device, or a revoked link) → **do not create anything**, set a `revoked` sync status, show a badge like *"this link no longer works — ask the owner for a new one"*, stop the 30 s poll, and **leave local data untouched**.
-   - A PUT answering 404 `unknown-key` gets the same treatment.
-5. **Data menu:** if the device holds an ownerToken, show a **"Reset staff link"** button → POST rotate → store and display the new link, and state plainly that old links have stopped working. Hide it on non-owner devices. (`dSyncOff` at line 491 is local-only and stays as-is.)
-6. **Lead↔shop linkage (audit item I3):** when a shop is first created, if `localStorage['portafile.v1.lead']` exists, re-POST it to `/api/lead` once with the `shopId` attached, guarded by a `portafile.v1.lead.linked` flag. Server (`api/lead.js`, lead object at **line 42**) accepts an optional `shopId`, validated as 40 hex, and stores it. This is what lets Ethan answer "which signup owns which data" — impossible to reconstruct later.
-
-**Required test coverage** — extend `product/verify-sync.js` (its mock API must mirror the new endpoints, as it already mirrors the 409 guard) and keep all 15 existing checks green:
-- a link whose pointer is missing does **not** create a blob and does **not** wipe local data;
-- after rotate, the **old** key fails and the **new** key works;
-- creation without an owner token is refused;
-- a staff device (no owner token) can still read **and** write normally.
-
-### 4b. The three pre-flight fixes
-
-**Fix 1 — stale gate copy.** `product/app.js:666` currently reads *"Tell us who's using it so we can let you know when staff-phone sync ships."* Sync has shipped; the user turns it on minutes later. Ethan approved this replacement:
-> "Portafile is free. Tell us who's using it so we know which shops to build for — and so we can help if something breaks."
-
-**Fix 2 — no privacy link on a form collecting email + phone.** The gate form (`app.js:662–675`) links to nothing. `site/privacy.html` already exists and already says the right things (email only, unsubscribe, delete on request). Add a link near the existing hint at **line 674**, pointing at **`/site/privacy.html`** — absolute path, per the rewrite gotcha in §6 — with `target="_blank" rel="noopener"`.
-
-**Fix 3 — Prices tab is unusable on a phone.** Root cause verified, not guessed: `product/styles.css:71` sets `table.grid { overflow:hidden }` and the inputs are fixed-width (`input.wide` 170 px + numeric 90 px), so the table needs **~540 px**. On a 390 px phone it cannot scroll — it clips the "Used in" column and the delete button, and Chromium responds by widening the layout viewport to 557 px, **zooming the whole app out**. Fix: wrap the table in a scroll container — `<div class="tablewrap">` around the table in `viewPrices()` (opens **app.js:287**, closes **line 299**) plus a CSS rule `.tablewrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }`. Keep `overflow:hidden` on the table itself (it's there for the rounded corners). Native scrolling, no JS. Re-verify at 390 px afterward.
+1. **~18 leftover test blobs in the store.** My debugging created test shops/pointers/owners.
+   I tried to bulk-delete them and **the auto-mode classifier blocked it.** They are harmless and
+   free. He knows. He has not said to remove them. **Do not delete blobs without an explicit yes.**
+2. **A duplicate signup blob.** `leads/` holds two identical `ethankw.yap@gmail.com` /
+   "Tester Coffee" leads (13:46 and 17:02 UTC). The 17:02 one was caused by the signup-record bug
+   (§2e / gotcha 4). He can delete it from the founder dashboard; he hasn't said he has.
+3. **USPTO trademark knockout search on "Portafile"** — offered, not done. He now knows what
+   USPTO means (he asked). Not a blocker for onboarding two shops; it matters before spending
+   money on a domain or logo.
+4. **Turning `ONBOARDING.md` into a shareable web page** — offered, no answer.
 
 ---
 
-## 5. THE OPEN DECISION — ask Ethan, do not guess
+## 5. Gotchas — the ones that actually bit, in order of how much they cost
 
-The blob store contains **one existing shop blob**:
+1. **VERCEL BLOB IS EVENTUALLY CONSISTENT. NEVER BUILD AN AUTHORIZATION CHECK ON A READ.**
+   This cost most of the session. Measured, not assumed: back-to-back reads of the same existing
+   path returned found → null; reads after an overwrite served the old value for seconds;
+   `list()` lags writes *and* deletes. Consequences now baked into `api/state.js`, all four
+   load-bearing — do not "simplify" any of them away:
+   - Pointers are never deleted; revocation is `k !== owners.currentKey` → **410**.
+   - A **404 never means revoked** (a flaky read makes one), so the client never wipes on 404.
+   - Claiming a shopId — the one place where absence would grant authority — uses
+     `put(..., {allowOverwrite:false})`, the store's **only atomic primitive**, instead of
+     read-then-write. Without this, a flaky read let a *wrong* owner token claim an existing shop
+     (observed).
+   - Exact-path work uses `get(path,{access:'public',useCache:false})` and `del(path)`, never
+     `list()`. `list()` is fine only for prefix scans like the dashboard's `leads/`.
+   **Honest consequence to repeat to anyone:** revocation takes a few seconds to take effect.
+   Fine for firing a barista; it is *not* a real-time kill switch.
+2. **Do not write tests that assert immediately after a write.** That tests the CDN, not the
+   code, and it produces spectacular fake failures. Ethan's explicit instruction when he saw me
+   iterating on this: *"Stop tuning the harness — delete the timing-dependent test rather than
+   making it pass."* Honor that. `verify-sync.js` mocks the API in-process and is deterministic;
+   keep it that way.
+3. **`get()` returns metadata in `.blob` and the body in `.stream`.** `r.blob.text()` is not a
+   function. Use `new Response(r.stream).json()`. This would have 500'd every request in
+   production; it was caught only because the handler was run locally against the real store first.
+4. **The revocation wipe must skip `portafile.v1.lead*`.** It originally cleared every
+   `portafile.v1*` key, which erased the "this browser already signed up" record — so a wiped
+   device was asked to fill the access gate again and **wrote a duplicate lead blob into Ethan's
+   store.** He hit this for real. There is a test for it now. The signup record is not a
+   credential and grants nothing.
+5. **An owner-token device must never be wiped or locked.** It holds the only copy of owner
+   powers. On a 410 it settles and retries instead. A rotate also pauses the owner's own sync
+   ~2.5 s so the consistency window can't look like a lockout to the person who just pressed the
+   button.
+6. **Root `/` is a rewrite of `/site/index.html`.** Relative URLs on that page resolve against
+   `/` in production and 404. New references must be absolute (`/site/…`). Bit a previous
+   session: `src="reveal.js"` → silent 404.
+7. **CSP blocks ALL inline `<script>`.** Page JS must be external same-origin files. Inline
+   `style=` attributes are fine.
+8. **`.vercelignore` publishes ONLY `site/`, `product/`, `video/`.** A new top-level directory
+   will not deploy until you edit it. **`admin/` must stay excluded.**
+9. **`api/lead.js` must keep `Access-Control-Allow-Origin: *`** or the localhost:4322 founder
+   dashboard's "Fetch signups" breaks. `vercel.json` pins every non-`/api/` path to the prod origin.
+10. **The access gate skips `navigator.webdriver` browsers by design**, which is why the suites
+    pass it. To see the gate in automation, override `navigator.webdriver` in an init script.
+11. **Never submit the gate form against production** — it writes a real lead blob into his store.
+12. **Deploys do not happen on `git push`** despite `vercel git connect`. Production only updates
+    via `vercel deploy --prod --yes`.
+13. **The agent cannot deploy or push** — the auto-mode classifier blocks `vercel deploy` and
+    `git push`, and blocked a bulk blob delete. Hand Ethan the command prefixed with `!`.
+14. **Two shops in the blob store are REAL — do not touch them:**
+    `187cdeade66450652b3553fe8f758b24d7220ea6` (his legacy pre-owner-token shop; it has a
+    `keys/` pointer but deliberately **no** `owners/` record, so its link works forever and
+    cannot rotate — his explicit choice) and
+    `82ebcd8e73ff82f9c96da597cfb81bf3f3facf9c` (the shop on his phone, current key
+    `93af05e076c00bf4009dac33a288306a10cf701e`).
 
-```
-shops/187cdeade66450652b3553fe8f758b24d7220ea6.json   6586 bytes   uploaded ~2026-07-17
-```
-
-Under the new model, `shops/<shopId>.json` is reachable only through a `keys/` pointer, so this blob becomes **unreachable unless a pointer is created for it**. Two clean options — both avoid writing any legacy-compatibility code:
-
-- **(a)** It's throwaway test data → delete the blob, do nothing else. *Smallest diff; likely correct — 6586 bytes is about the size of untouched demo seed data.*
-- **(b)** He wants it kept → create `keys/187cdeade66450652b3553fe8f758b24d7220ea6.json` pointing at shopId `187cdeade66450652b3553fe8f758b24d7220ea6` (reuse the same string as both shareKey and shopId for this one shop) plus an `owners/` record. His existing link then keeps working with zero compat code.
-
-**Ask him which. Never delete a blob without an explicit yes.** The prior session could not inspect the blob's contents — the classifier blocked fetching the public blob URL — so its actual contents are **unverified**.
-
-Related and also unverified: a lead blob was written **~2 h before this handoff** (`leads/1784641601758-ec977dd0-…json`). It was *not* created by the prior session's testing (that test never submitted the form, and its fake email would have failed the server's regex). It may be a genuine visitor or Ethan's own visit. He can check it in the founder dashboard.
+### Machine-level warnings (carried forward — these outlive any single task)
+15. **Never trust System Settings → Storage for free space** — it counts iCloud-purgeable and has
+    been wrong by ~50 GB. Always `df -h /`.
+16. **Do not touch the `flowise-main` or `postgres:16-alpine` Docker containers** — a separate
+    live project serving localhost:3010.
+17. **`Docker.raw` is ~13 GB and does not shrink when images are pruned.**
+18. **Do not touch `~/Library/Application Support/Claude/vm_bundles`** (~6.8 GB) — Claude
+    Desktop's agent VM.
+19. **Never suggest "Keep Messages: 1 Year."** It permanently deletes messages across all his
+    devices. Data loss is a top anxiety.
+20. **Claude Code dies when Wi-Fi goes off** (`ENOTFOUND`). Any offline test must be handed to him
+    as ONE self-contained checklist he runs unattended, then reports back after reconnecting.
+21. A completed local-AI-stack project provides a **free local LLM** if anything ever needs one:
+    Ollama at `http://localhost:11434` (`qwen3.5:9b`), open-webui at `http://localhost:8888`,
+    no API key, cannot bill him.
 
 ---
 
-## 6. Gotchas — the ones that will actually bite you
+## 6. Reboot / persistence
 
-**Repo-specific:**
-1. **Root `/` is a rewrite of `/site/index.html`.** Relative URLs on that page resolve against `/` in production and 404. Any new script/asset/link reference must be absolute (`/site/…`). This has bitten before (`src="reveal.js"` → silent 404).
-2. **CSP blocks ALL inline `<script>`.** Page JS must be external same-origin files. Inline `style=` attributes are fine.
-3. **`.vercelignore` publishes ONLY `site/`, `product/`, `video/`.** A new top-level directory will not deploy until you edit it. **`admin/` must stay excluded** — it has no auth and is safe only because it 404s in production.
-4. **`api/lead.js` must keep `Access-Control-Allow-Origin: *`** or the localhost:4322 founder dashboard's "Fetch signups" breaks. `vercel.json` pins every non-`/api/` path to the prod origin.
-5. **The access gate skips `navigator.webdriver` browsers by design**, which is why the suites pass it. To see the gate in automation, override `navigator.webdriver` in an init script.
-6. **Never submit the gate form against production** — it writes a real lead blob into Ethan's store. Bypass it by setting `localStorage['portafile.v1.lead']` **and** `portafile.v1.lead.sent` in an `addInitScript` before load.
-7. **`syncPull()`'s "404 → seed the cloud" line is the reason revocation was previously impossible.** If Task 3 leaves it intact, link rotation is fake. See §4a step 4.
-
-**Tooling / environment:**
-8. **Playwright's browsers were deleted by an earlier disk cleanup** and had to be reinstalled this session. If a suite dies with "Executable doesn't exist", run `node /Users/ethanyap/.npm/_npx/e41f203b7505f1fb/node_modules/playwright/cli.js install chromium`.
-9. **Old headless Chrome clamps width to ~500 px and fakes mobile overflow.** For real phone-viewport testing launch with `channel: 'chromium'` (the full browser, now installed), not the default headless shell. The prior session's numbers came from the full browser.
-10. **You cannot deploy or push.** The auto-mode classifier blocks `vercel deploy` and `git push` for the agent, and also blocked `curl` against the public blob host. Hand Ethan the command prefixed with `!`.
-11. **Deploys do not happen on `git push`** despite `vercel git connect`. Production only updates via `vercel deploy --prod --yes`.
-
-**Machine-level (carried forward from the previous handoff; still true):**
-12. **Never trust System Settings → Storage for free space** — it counts iCloud-purgeable and has been wrong by 50 GB. Always `df -h /`.
-13. **Do not touch the `flowise-main` or `postgres:16-alpine` Docker containers** — a separate live project on localhost:3010.
-14. **`Docker.raw` is ~13 GB and does not shrink when images are pruned.**
-15. The completed local-AI-stack work (Ollama on `127.0.0.1:11434`, open-webui on `localhost:8888`, zero cost, no API key) is recorded in `~/.claude/projects/-Users-ethanyap/memory/project_local_ai_stack.md`. Free local LLM if anything ever needs one.
+- **The live site survives everything** — it's static files plus serverless functions on Vercel.
+- **The founder dashboard** is a LaunchAgent (`com.ethanyap.portafile-dashboard`,
+  `python3 -m http.server 4322`); it restarts with the machine. Its data lives in the
+  localhost:4322 browser origin's localStorage — use its **Export backup** button before moving
+  anything.
+- **Weak link:** the owner token exists in exactly one browser per shop. If that browser is
+  cleared, the shop's data survives (cloud + other devices) but the ability to revoke links is
+  gone forever. There is no account recovery. `ONBOARDING.md` warns the two owners about this.
 
 ---
 
-## 7. Definition of done
+## 7. Don't redo
 
-1. Task 3 built as specced in §4a, with the four new checks added to `verify-sync.js`.
-2. All three fixes from §4b applied.
-3. **All four suites pass**: `node product/verify.js`, `verify-gate.js`, `verify-killpass.js`, `verify-sync.js`.
-4. Prices tab re-verified at 390 px width with the full Chromium (no clipping, no layout-viewport widening).
-5. `product/CLAUDE.md`… actually **`~/portafile/CLAUDE.md`** — add the new key model to Gotchas (the file already documents the `ts`/409 rule; extend it).
-6. Auto-memory updated: `~/.claude/projects/-Users-ethanyap/memory/project_portafile.md`.
-7. Hand Ethan the two deliverables below.
-
-**Deliverable A — the deploy command** (he runs it, one step at a time):
-
-```
-! cd ~/portafile && git add -A && git commit -m "<message>"
-! cd ~/portafile && vercel deploy --prod --yes
-```
-
-Then verify the live endpoints yourself with a throwaway key (create → rotate → confirm old key 404s → delete the test blobs), as the prior session did for the 409 guard.
-
-**Deliverable B — a phone dry-run checklist** for Ethan to run on his own iPhone before sending anything to the two shops. This exists because **real iOS Safari cannot be tested from here** — emulated Chromium is not Safari, and Safari is exactly where storage eviction and clipboard behaviour differ. The checklist should walk: open the link → fill the gate → rename the shop → turn on sync → copy the link → open it in a second browser → change an ingredient price and watch cards re-price → print one recipe card → reset the staff link and confirm the old one stops working.
+- The build in §2 — all deployed and verified.
+- The 2026-07-18 security audit's fixes (`safetysurface.md`, `THREAT-MODEL.md`, `RE-AUDIT.md` in
+  the repo) — but see §9, those documents are now **stale with respect to today's changes**.
+- The earlier sync-safety pass (commit `57c2ea2`): PUTs carry a `ts`, the API 409s stale writes,
+  the client snapshots to `portafile.v1.presync` before any pull-overwrite, and never pushes
+  before its first successful pull.
+- Ethan's Vercel $0 spend cap and 2FA — he confirmed both are done this session.
 
 ---
 
 ## 8. How to work with Ethan
 
-He is a college student and a learning developer — not fluent in git, terminals, or deployment, but learning, so teach while doing. His standing rules (also in `~/.claude/CLAUDE.md`, loaded automatically):
+College student, learning developer — not fluent in git, terminals or deployment, but learning,
+so teach while doing. His standing rules also live in `~/.claude/CLAUDE.md`, loaded automatically.
 
-- **Zero cost, always.** Cost questions get certainty, never "probably free." Name every service and whether it can ever bill him.
-- **Terminal steps: numbered, ONE command per step, say what he should see, then wait** for his confirmation or screenshot before the next step.
-- **Verify before saying done.** Exercise the real feature; if something couldn't be tested, say so plainly.
-- **Lead with the outcome** in the first sentence. Everything important goes in the final message — he doesn't watch the process.
-- Short replies ("yes", "proceed", "do all") mean: do exactly the pending step, nothing more.
-- Screenshots from him are bug reports or "where do I click" questions — read the image before answering.
-- He is running **ponytail mode** (a laziness/anti-over-engineering skill): prefer the smallest solution that actually works, stdlib and native platform features before dependencies, and mark deliberate simplifications with a `ponytail:` comment. The codebase already uses that convention — match it.
+- **Zero cost, always.** Cost questions get certainty, never "probably free." Name every service
+  and whether it can ever bill him.
+- **Terminal steps: numbered, ONE command per step, say what he should see, then wait.** He runs
+  deploys himself with a `!` prefix. Watch for stray leading spaces — ` cd ...` failed once with
+  `command not found`.
+- **Verify before saying done.** Exercise the real feature. If something couldn't be tested, say
+  so plainly.
+- **Lead with the outcome** in the first sentence; everything important goes in the final message.
+- Short replies ("yes", "proceed") mean: do exactly the pending step, nothing more.
+- He runs **ponytail mode** (anti-over-engineering): smallest solution that works, stdlib and
+  native platform features before dependencies, mark deliberate simplifications with a
+  `ponytail:` comment. The codebase uses that convention — match it.
+- He interrupts when you over-iterate. When he does, take the instruction literally and move on.
 
 ---
 
-## 9. The next task after this one
+## 9. THE NEXT TASK — a security check
 
-Nothing is queued beyond §4 and the two deliverables. Once Ethan has deployed and done his phone dry run, he onboards the two coffee-shop owners — each on **their own device with their own link** (one browser = one shop's data; two shops must never share a link, since separate links are the only isolation mechanism).
+**Ethan said: "Will run a security check."** He will likely invoke the `/security-audit` skill
+(it exists in `~/.claude/skills/`). Your job is to make that audit correct, not to pre-empt it.
 
-Known remaining work, deliberately **not** part of this task: no monitoring or alerting exists (he'd learn about an outage from a phone call), and backups are the cloud copy plus whatever JSON a user exports. Both were classed "important, not critical" for two hand-held users. His outstanding non-code to-dos: confirm the Vercel billing page, 2FA on GitHub + Vercel, USPTO knockout search on "Portafile", and a domain.
+**What the auditor most needs to know:**
+
+- **The existing audit documents are STALE.** `safetysurface.md`, `THREAT-MODEL.md` and
+  `RE-AUDIT.md` were written 2026-07-18 and describe the *pre-owner-token* world. Today's session
+  replaced the entire key/authorization model and added a client-side data-wipe. Treat those
+  files as history and re-audit `api/state.js` and `product/app.js` from scratch.
+- **`safetysurface.md` documents sync-link revocation as DEFERRED/impossible. That is now
+  obsolete** — it shipped today. Update it rather than trusting it.
+- **The highest-value things to scrutinise**, because they are new and security-relevant:
+  1. `api/state.js` — the 410-vs-404 distinction, the `allowOverwrite:false` atomic claim, the
+     owner-token sha256 comparison, and the "owner may rebuild a lost pointer only with the
+     current key" branch.
+  2. `product/app.js` — the wipe path (`syncRevoked`), the two-strike rule
+     (`syncRevokeSignal`), the `portafile.v1.synced` guard, and the lock screen. **A wrong
+     condition here destroys a real shop's data on a real barista's phone.**
+  3. Whether a 40-hex shopId leaking anywhere (logs, referrer, the `&shop=` query param on PUT)
+     would let someone claim or damage a shop.
+- **Known, accepted, already-explained-to-Ethan limits** — not findings, don't re-litigate:
+  revocation takes a few seconds; a technical person can clear browser storage to escape the
+  lock screen; an offline device never learns it was revoked; a backup exported before a reset
+  still exists; edits are last-write-wins with no merging.
+
+**Still open on him personally** (out of repo, unverifiable from here): the USPTO knockout search
+and a domain.
