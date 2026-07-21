@@ -43,7 +43,7 @@ function validBackup(s) {
 // Never look a blob up with list() — its index lags writes AND deletes. get(useCache:false) reads
 // origin storage; a transient failure throws (→ 500) instead of masquerading as "absent".
 async function readJson(path) {
-  const r = await get(path, { access: 'public', useCache: false }); // r.blob is metadata; the body is r.stream
+  const r = await get(path, { access: 'private', useCache: false }); // r.blob is metadata; the body is r.stream
   if (!r) return null;
   if (!r.stream) throw new Error(`no body for ${path} (status ${r.statusCode})`);
   return new Response(r.stream).json();
@@ -57,7 +57,7 @@ async function readJsonSure(path, tries = 3) {
   }
   return null;
 }
-const writeJson = (path, obj) => put(path, JSON.stringify(obj), { access: 'public', addRandomSuffix: false, contentType: 'application/json', allowOverwrite: true, cacheControlMaxAge: 0 });
+const writeJson = (path, obj) => put(path, JSON.stringify(obj), { access: 'private', addRandomSuffix: false, contentType: 'application/json', allowOverwrite: true, cacheControlMaxAge: 0 });
 
 // 'unknown' → we have no record of this link. 'revoked' → this link was replaced by a newer one.
 async function resolveKey(k) {
@@ -113,7 +113,7 @@ export default async function handler(req, res) {
         // record" when one exists, but this put cannot overwrite one. Conflict = someone owns it.
         try {
           await put(`owners/${shop}.json`, JSON.stringify({ ownerHash: sha256(owner), currentKey: k, created: Date.now() }),
-            { access: 'public', addRandomSuffix: false, contentType: 'application/json', allowOverwrite: false, cacheControlMaxAge: 0 });
+            { access: 'private', addRandomSuffix: false, contentType: 'application/json', allowOverwrite: false, cacheControlMaxAge: 0 });
         } catch (e) { return res.status(404).json(UNKNOWN); }
       }
       await writeJson(`keys/${k}.json`, { shopId: shop, created: Date.now() });

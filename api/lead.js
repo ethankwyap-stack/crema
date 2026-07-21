@@ -1,6 +1,6 @@
 /* Portafile lead capture — POST stores one lead per blob (no read-modify-write races),
    GET lists them for the founder dashboard (requires ADMIN_KEY env var to match ?admin=). */
-import { put, list, del } from '@vercel/blob';
+import { put, get, list, del } from '@vercel/blob';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 
 const cors = res => {
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lead.email) || !lead.shop)
       return res.status(422).json({ error: 'email and shop name required' });
     await put(`leads/${lead.ts}-${randomUUID()}.json`,
-      JSON.stringify(lead), { access: 'public', addRandomSuffix: false, contentType: 'application/json' });
+      JSON.stringify(lead), { access: 'private', addRandomSuffix: false, contentType: 'application/json' });
     return res.status(200).json({ ok: true });
   }
 
@@ -58,7 +58,10 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'unauthorized' });
     }
     const { blobs } = await list({ prefix: 'leads/', limit: 1000 });
-    const leads = await Promise.all(blobs.map(b => fetch(b.url).then(r => r.json()).catch(() => null)));
+    // private store: blob URLs aren't publicly fetchable — read via the SDK (authed by the token)
+    const leads = await Promise.all(blobs.map(b =>
+      get(b.pathname, { access: 'private', useCache: false })
+        .then(r => (r?.stream ? new Response(r.stream).json() : null)).catch(() => null)));
     res.setHeader('Cache-Control', 'no-store');
     return res.status(200).json(leads.filter(Boolean).sort((a, b) => b.ts - a.ts));
   }
@@ -72,7 +75,7 @@ export default async function handler(req, res) {
     const ts = String(req.query.ts || '');
     if (!/^\d+$/.test(ts)) return res.status(400).json({ error: 'bad ts' }); // numeric ts only → path stays inside leads/
     const { blobs } = await list({ prefix: `leads/${ts}-`, limit: 10 });
-    await Promise.all(blobs.map(b => del(b.url)));
+    await Promise.all(blobs.map(b => del(b.pathname)));
     return res.status(200).json({ ok: true, deleted: blobs.length });
   }
 
