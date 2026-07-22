@@ -53,7 +53,9 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
       }
       const old = cloud[shopId] && JSON.parse(cloud[shopId]);
       if (old && (+body.ts || 0) < (+old.ts || 0)) return route.fulfill({ status: 409, json: { error: 'stale' } });
-      cloud[shopId] = route.request().postData(); return route.fulfill({ json: { ok: true } });
+      cloud[shopId] = route.request().postData();
+      const putRole = (owners[shopId] && owners[shopId].hash !== owner) ? 'staff' : 'owner'; // mirrors api/state.js PUT
+      return route.fulfill({ headers: { 'x-portafile-role': putRole }, json: { ok: true } });
     }
     if (!keys[k]) return route.fulfill({ status: 404, json: { error: 'unknown-key' } });
     if (!cloud[keys[k]]) return route.fulfill({ status: 404, json: { error: 'not found' } });
@@ -127,6 +129,24 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
     (await pB.textContent('#view')).includes('costs you'));
   // put B back to a pure staff device for the revocation tests below
   await pB.evaluate(() => { localStorage.removeItem('portafile.v1.owner'); localStorage.setItem('portafile.v1.role', 'staff'); render(); });
+
+  // 4d. REGRESSION (found live by Ethan): a device holding a DIFFERENT shop's owner token opens the
+  // staff link. The stale token must not unlock costs — the server said 'staff' for this shop.
+  const cX = await b.newContext();
+  await cX.addInitScript(() => {
+    localStorage.setItem('portafile.v1.owner', 'b'.repeat(40));  // owner of some OTHER shop
+    localStorage.setItem('portafile.v1.role', 'owner');          // and a stale cached role
+    localStorage.setItem('portafile.v1.synckey', 'b'.repeat(40)); // from that other shop's link
+  });
+  const pX = await cX.newPage();
+  pX.on('pageerror', e => errs.push('pX: ' + e.message));
+  await pX.route('**/api/state*', mock);
+  await pX.goto(base + `/index.html?k=${KEY}`, { waitUntil: 'networkidle' });
+  await pX.waitForTimeout(1500);
+  ok('wrong-shop owner token: costs hidden on staff link', !(await pX.textContent('#view')).includes('costs you'));
+  ok('wrong-shop owner token: no Prices tab', await pX.locator('[data-tab="prices"]:visible').count() === 0);
+  ok('wrong-shop owner token: server-declared staff role stored', await pX.evaluate(() => localStorage.getItem('portafile.v1.role') === 'staff'));
+  await cX.close();
 
   // 5. B edits → staff write lands, A picks it up on next poll
   await pB.fill('#shopName', 'B Was Here'); await pB.dispatchEvent('#shopName', 'change');

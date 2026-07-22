@@ -139,6 +139,8 @@ export default async function handler(req, res) {
     const cur = await readJson(`shops/${shopId}.json`);
     if (cur && (+body.ts || 0) < (+cur.ts || 0)) return res.status(409).json({ error: 'stale' });
     await writeJson(`shops/${shopId}.json`, body);
+    // create path (state 'unknown') just proved ownership; existing shops answer from their record
+    res.setHeader('x-portafile-role', r.state === 'unknown' ? 'owner' : roleOf(r.own, owner));
     return res.status(200).json({ ok: true });
   }
 

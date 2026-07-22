@@ -130,13 +130,12 @@ const ROLE_KEY = 'portafile.v1.role';     // 'staff' hides every cost/margin fig
    guarantee is server-side redaction (strip unitCost for tokenless GETs and restore it on their
    PUTs), which needs a merge on write because staff push whole-state — do not bolt it on casually,
    a stale read there would silently revert the owner's prices. */
-/* Fails CLOSED: a device that reached a shop through a link and holds no owner token hides costs
-   until the server has said 'owner' at least once. Costs appearing late on an owner's second device
-   is a shrug; costs flashing onto a barista's phone while the first poll is in flight is the bug. */
-const staffView = () => {
-  if (!syncKey || localStorage.getItem(OWNER_KEY)) return false; // local-only shop, or holds proof
-  return localStorage.getItem(ROLE_KEY) !== 'owner';
-};
+/* Fails CLOSED: on a synced device, costs stay hidden until the SERVER has answered 'owner' for
+   the current link. A local owner token proves nothing by itself — it may belong to a different
+   shop (the owner pasting another shop's staff link into their own phone hit exactly that: the
+   stale token unlocked costs the server never approved). The token's only job is to ride the
+   request; the server hash-checks it against THIS shop and answers with the role. */
+const staffView = () => syncKey ? localStorage.getItem(ROLE_KEY) !== 'owner' : false;
 function applyRole(role) {
   const cur = localStorage.getItem(ROLE_KEY);
   // Never downgrade staff→owner on the server's word alone: a flaky owners-record read answers
@@ -150,7 +149,13 @@ function applyRole(role) {
 const hex40 = () => { const b = new Uint8Array(20); crypto.getRandomValues(b); return [...b].map(x => x.toString(16).padStart(2, '0')).join(''); };
 let syncKey = (() => {
   const m = location.search.match(/[?&]k=([a-f0-9]{40})\b/);
-  if (m) { localStorage.setItem(SYNC_KEY, m[1]); return m[1]; }
+  if (m) {
+    // A different link = possibly a different shop: forget the cached role so costs stay hidden
+    // until the server answers for THIS link. Same link (reload, rotate) keeps its role.
+    if (m[1] !== localStorage.getItem(SYNC_KEY)) localStorage.removeItem(ROLE_KEY);
+    localStorage.setItem(SYNC_KEY, m[1]);
+    return m[1];
+  }
   return localStorage.getItem(SYNC_KEY) || '';
 })();
 let syncStatus = syncKey ? 'connecting' : '';
@@ -231,6 +236,7 @@ function syncPush() {
       if (r.status === 409) return syncPull(); // our copy is stale — refresh from cloud instead of clobbering it
       if (r.status === 410) return syncRevokeSignal((await r.json().catch(() => 0))?.owner); // link replaced — kill the device (needs 2 strikes) unless the server says we own this shop
       if (r.status === 404) { syncDead(); return; }             // unrecognised link — stop, but never wipe
+      if (r.ok) applyRole(r.headers.get('x-portafile-role')); // the create path never GETs, so the seeding owner learns their role here
       syncStatus = r.ok ? 'live' : 'offline';
     } catch (e) { syncStatus = 'offline'; }
     syncBadge();
@@ -628,6 +634,7 @@ function dataMenu() {
     // three independent secrets: durable identity, ownership proof, and the rotatable link
     localStorage.setItem(SHOP_KEY, hex40());
     localStorage.setItem(OWNER_KEY, hex40());
+    localStorage.setItem(ROLE_KEY, 'owner'); // this device is creating the shop — it IS the owner
     const k = hex40();
     localStorage.setItem(SYNC_KEY, k);
     location.search = '?k=' + k; // reload with key: sync boot path takes over
