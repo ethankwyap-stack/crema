@@ -62,6 +62,15 @@ Shipped `ONBOARDING.md` — a plain-language guide for the two founding shops.
 
 **Staff view.** Devices on a staff link no longer see costs or margins. Baristas need the recipe; they should not see what the owner pays for oat milk. Fixed a bug where a device holding an unrelated shop's owner token was wrongly treated as the owner and shown costs. Privacy policy updated to describe this honestly.
 
+**Erase a shop's cloud data.** The founder dashboard can now delete a shop's data off the server. This is the thing I'd have to be able to do on demand the first time a customer emails "delete my data" — and I'd rather have it before that email than after.
+
+Two design calls that matter more than the code:
+
+- **The tombstone is written before the data is deleted.** Blob is eventually consistent, so if I deleted the data first, a customer's browser mid-save could quietly write it all back. Marking the shop dead first closes that window; the data is then deleted twice, a second apart, to catch the lag.
+- **The owner's own device keeps its local copy.** My delete button erases *my* server copy, never a shop's last remaining copy of their own recipes. Their staff's devices wipe fully — including the signup record, so those devices see the signup prompt again if they come back.
+
+Verified end-to-end against the live site with a throwaway shop, then deleted the test data. Both real shops untouched.
+
 ---
 
 ## Open threads
