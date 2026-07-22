@@ -71,6 +71,14 @@ Two design calls that matter more than the code:
 
 Verified end-to-end against the live site with a throwaway shop, then deleted the test data. Both real shops untouched.
 
+**The share link was asking baristas to sign up.** I sent my staff link to someone else's phone and it opened a form asking for their email and a shop name. They closed it and told me sharing was broken — which, as a product, it was.
+
+The data was never the problem. I probed the real link and the server returned the whole shop, correctly marked staff-view. Then I drove a phone-sized browser at the live site and watched it happen: the shop synced fully into storage while the signup form sat on top of it, hiding the thing it had just finished loading. The gate skipped `file://`, test browsers, and anyone who'd already filled it in — it never asked whether the visitor had arrived on a staff link. One condition, one line.
+
+The lesson is about what the gate was actually buying me. It captures the owner on their first visit and ties that email to their shop ID — that's the signup worth having, and it's untouched. Every barista pushed through it wrote a row into my leads store with a guessed shop name and no shop ID attached to it: unusable data, collected at the cost of the core feature. And it gated nothing — no password, no verification, so it only ever filtered honest people. Sharing *is* the product; a recipe app one person can see is a notes file.
+
+Cost: one line of code, and some junk rows in the leads store that need a cleanup pass. Staff links now open straight into the recipes.
+
 ---
 
 ## Open threads
