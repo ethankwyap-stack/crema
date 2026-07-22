@@ -12,11 +12,15 @@
    device only on 410. Every read that flakes to null therefore fails SAFE: a wrongly-null pointer
    is a 404 ("link not recognised", no wipe), and a wrongly-null owner record leaves the key valid.
    Requires BLOB_READ_WRITE_TOKEN env var on the Vercel project. */
-import { put, get } from '@vercel/blob';
-import { createHash, randomBytes } from 'node:crypto';
+import { put, get, del } from '@vercel/blob';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 
 const HEX40 = /^[a-f0-9]{40}$/;
 const sha256 = s => createHash('sha256').update(String(s)).digest('hex');
+const safeEqual = (a, b) => {
+  const x = Buffer.from(String(a ?? '')), y = Buffer.from(String(b ?? ''));
+  return x.length === y.length && timingSafeEqual(x, y);
+};
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // best-effort per-instance throttle (same pattern as lead.js): stops a single-source PUT flood
@@ -60,6 +64,7 @@ async function readJsonSure(path, tries = 3) {
 const writeJson = (path, obj) => put(path, JSON.stringify(obj), { access: 'private', addRandomSuffix: false, contentType: 'application/json', allowOverwrite: true, cacheControlMaxAge: 0 });
 
 // 'unknown' → we have no record of this link. 'revoked' → this link was replaced by a newer one.
+// 'deleted' → the founder erased this shop's cloud copy; the tombstone in owners/ is permanent.
 async function resolveKey(k) {
   const ptr = await readJsonSure(`keys/${k}.json`);
   const shopId = String(ptr?.shopId || '');
@@ -68,6 +73,10 @@ async function resolveKey(k) {
   // consistency, and absence here now decides two things — that the link is valid, and that the
   // caller may see costs. Real shops have the record, so the retry costs nothing on the hot path.
   const own = await readJsonSure(`owners/${shopId}.json`);
+  // Deletion is a POSITIVE value read out of the record, never a missing blob — a flaky read
+  // produces absence, and absence lands in the safe branches below. shopIds are never reused,
+  // so a 'deleted' answer can never be a stale lie.
+  if (own && own.deleted) return { state: 'deleted', own };
   // No owner record at all = a pre-owner-token shop (the legacy one): it has no rotation, so its
   // link stays valid forever. A null here from a flaky read lands in the same safe branch.
   if (own && own.currentKey && k !== own.currentKey) return { state: 'revoked', own };
@@ -76,7 +85,11 @@ async function resolveKey(k) {
 // A 410 says WHOSE link died: owner:true only for the shop's real owner (their device settles and
 // retries instead of locking). Without this the client trusted any local owner token — so a device
 // owning a DIFFERENT shop could never be revoked from this one.
-const revoked = (own, owner) => ({ error: 'revoked', owner: !!(own && owner && sha256(owner) === own.ownerHash) });
+const gone = (err, own, owner) => ({ error: err, owner: !!(own && owner && sha256(owner) === own.ownerHash) });
+const revoked = (own, owner) => gone('revoked', own, owner);
+// the tombstone keeps ownerHash (a hash of a random token — zero personal data) for exactly this
+// flag: the owner's device is told "you owned this" so it keeps its LOCAL copy instead of wiping
+const deleted = (own, owner) => gone('deleted', own, owner);
 const UNKNOWN = { error: 'unknown-key' };
 // Display role for the client: 'staff' only when this shop HAS an owner record and the request did
 // not prove ownership. Deciding it here — not from the presence of a local token — is what stops a
@@ -91,9 +104,20 @@ export default async function handler(req, res) {
   const shop = String(req.headers['x-portafile-shop'] || ''); // header, not query — query strings land in access logs
   const owner = String(req.headers['x-portafile-owner'] || '');
 
+  // CORS preflight for the founder dashboard (localhost:4322) calling admin DELETE. Only OPTIONS
+  // and DELETE responses carry ACAO — GET/PUT stay same-origin-only, so a page that somehow learned
+  // a shareKey still can't read shop data cross-origin.
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'x-portafile-admin, x-portafile-shop');
+    return res.status(204).end();
+  }
+
   if (req.method === 'GET') {
     if (!HEX40.test(k)) return res.status(400).json({ error: 'bad key' });
     const r = await resolveKey(k);
+    if (r.state === 'deleted') return res.status(410).json(deleted(r.own, owner));
     if (r.state === 'revoked') return res.status(410).json(revoked(r.own, owner));
     if (r.state === 'unknown') return res.status(404).json(UNKNOWN);
     const state = await readJson(`shops/${r.shopId}.json`);
@@ -112,6 +136,7 @@ export default async function handler(req, res) {
     if (raw.length > 1_000_000) return res.status(413).json({ error: 'too large' }); // ponytail: 1MB cap ≈ 100× a real shop; raise if a legit shop ever hits it
 
     const r = await resolveKey(k);
+    if (r.state === 'deleted') return res.status(410).json(deleted(r.own, owner)); // no write path back from deletion
     if (r.state === 'revoked') return res.status(410).json(revoked(r.own, owner));
     let shopId = r.shopId;
     if (r.state === 'unknown') {
@@ -144,12 +169,33 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
+  // Founder-only: erase a shop's cloud copy. Tombstone FIRST (blocks every read/write path), THEN
+  // delete the data blob — the reverse order would let an owner device's in-flight PUT resurrect
+  // the data after the delete. Pointers stay (77-byte crumbs, no data); all roads end at the
+  // tombstone. ownerHash is kept in it so owner devices keep their local copy instead of wiping.
+  if (req.method === 'DELETE') {
+    const admin = String(req.headers['x-portafile-admin'] || '');
+    if (!process.env.ADMIN_KEY || !safeEqual(admin, process.env.ADMIN_KEY)) {
+      console.error('state admin auth failed', { ip: clientIp(req) || '?' });
+      return res.status(401).json({ error: 'unauthorized' });
+    }
+    if (!HEX40.test(shop)) return res.status(400).json({ error: 'bad shop' });
+    const own = await readJsonSure(`owners/${shop}.json`);
+    await writeJson(`owners/${shop}.json`, { deleted: true, deletedAt: Date.now(), ...(own?.ownerHash ? { ownerHash: own.ownerHash } : {}) });
+    await del(`shops/${shop}.json`).catch(() => {});
+    await sleep(1200); // a poll racing the tombstone's consistency window can re-write the data blob
+    await del(`shops/${shop}.json`).catch(() => {});
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return res.status(200).json({ ok: true });
+  }
+
   if (req.method === 'POST' && String(req.query.action) === 'rotate') {
     if (rateLimited(clientIp(req))) return res.status(429).json({ error: 'slow down' });
     if (!HEX40.test(shop)) return res.status(400).json({ error: 'bad shop' });
     const own = await readJson(`owners/${shop}.json`);
     // same 403 for no-such-shop and wrong token — no existence oracle
     if (!own || sha256(owner) !== own.ownerHash) return res.status(403).json({ error: 'not-owner' });
+    if (own.deleted) return res.status(410).json(deleted(own, owner)); // a deleted shop can't mint new links
     // Write the new pointer first, then flip currentKey — that flip IS the revocation, so if it
     // fails nothing changes and the owner sees an error, rather than being told a live link is dead.
     // ponytail: superseded pointers are left behind (77 bytes each); they resolve to 410 forever.

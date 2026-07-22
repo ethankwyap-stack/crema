@@ -42,6 +42,15 @@ const results = []; const ok = (n, c) => { results.push([c, n]); console.log((c 
   ok('remembered: no gate on reload', await p.locator('.gatewrap').count() === 0);
   ok('remembered: no duplicate POST', posted.length === 1);
 
+  // a barista opening the owner's staff link must never be asked to sign up
+  const ctxS = await b.newContext();
+  await ctxS.addInitScript(() => Object.defineProperty(navigator, 'webdriver', { get: () => false }));
+  await ctxS.route('**/api/lead', r => r.fulfill({ json: { ok: true } }));
+  const pS = await ctxS.newPage();
+  await pS.goto(base + '/index.html?k=' + 'a'.repeat(40), { waitUntil: 'networkidle' });
+  await pS.waitForTimeout(600);
+  ok('staff link (?k=) skips the gate entirely', await pS.locator('.gatewrap').count() === 0);
+
   // automated browsers (the other suites, bots) skip the gate entirely
   const ctx2 = await b.newContext();
   await ctx2.route('**/api/lead', r => r.fulfill({ json: { ok: true } }));

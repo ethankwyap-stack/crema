@@ -18,6 +18,9 @@ Coffee-shop recipe-card + costing app (recipes with live cost/margin, dial-in bo
 ## Local run
 `python3 -m http.server <port>` from repo root, open `/site/index.html`. Verify suites: `node product/verify*.js`.
 
+## Progress journal (REQUIRED)
+`PROGRESS.md` is Ethan's founder's log. **At the end of any session that changed something real** (feature shipped, bug root-caused, deploy done, decision made), append or extend that day's entry — before you finish, unprompted. Write it for a founder, not a changelog: what shipped, *why it mattered to the business*, what it cost, what broke and what that taught. One `##` heading per date, newest at the bottom; keep the "Open threads" list at the end current. `BUILD-LOG.md` is the frozen origin-story log — never edit it.
+
 ## Gotchas
 - Root `/` is a REWRITE of /site/index.html — relative URLs in that page resolve against `/` in production and 404 (only `/assets/:file` has a rewrite). Any new script/asset reference must be absolute (`/site/...`). Bit us: `src="reveal.js"` → silent 404 at root, no animations.
 - CSP (vercel.json) blocks ALL inline `<script>` — page JS must be external same-origin files. Inline `style=` attrs are allowed.

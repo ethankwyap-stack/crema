@@ -164,7 +164,7 @@ function syncBadge() {
   if (!syncKey) { if (el) el.remove(); return; }
   if (!el) { el = document.createElement('div'); el.id = 'syncBadge'; document.body.appendChild(el); }
   el.className = 'syncbadge ' + syncStatus;
-  el.textContent = { connecting: 'sync…', live: 'synced', offline: 'sync offline — working locally', revoked: 'this link no longer works — ask the owner for a new one' }[syncStatus] || '';
+  el.textContent = { connecting: 'sync…', live: 'synced', offline: 'sync offline — working locally', revoked: 'this link no longer works — ask the owner for a new one', deleted: 'this shop was removed — sync is off' }[syncStatus] || '';
 }
 let syncPollT;
 function lockScreen() {
@@ -208,6 +208,33 @@ let revokeStrikes = 0;
 /* isOwner comes from the SERVER's 410 body — it checked our token against THIS shop's owner record.
    A local owner token proves nothing here: it may belong to a different shop, and trusting it made
    such a device unrevokable (it settled-and-retried forever instead of locking). */
+/* The founder deleted this shop's cloud copy — different from a link rotate. Every device
+   disconnects AND forgets its signup record, so returning users meet the access gate as new
+   visitors (that's the point: deleted shop = clean slate). Staff devices also lose the local
+   copy, like revocation. An OWNER device keeps its shop data — the founder's delete button must
+   never be able to destroy a shop's only remaining copy. 'deleted' is a positive tombstone value
+   (a flaky read yields absence, not deleted:true, and shopIds are never reused), so unlike the
+   revoke path one answer is proof enough — no two-strike rule needed. */
+function syncDeletedSignal(isOwner) {
+  clearInterval(syncPollT); clearTimeout(syncPushT);
+  // "part of the shop" = pulled through this link, OR the server hash-confirmed us as its owner
+  // (the seeding device may never have GET-pulled, so it has no synced marker)
+  if (localStorage.getItem(SYNCED_KEY) !== syncKey && !isOwner) {
+    // a stale bookmark of a deleted shop on a device that was never part of it: just stop syncing
+    localStorage.removeItem(SYNC_KEY); localStorage.removeItem(ROLE_KEY);
+    history.replaceState(null, '', location.pathname);
+    syncStatus = 'deleted'; syncBadge();
+    return;
+  }
+  const keep = isOwner ? localStorage.getItem(KEY) : null;
+  Object.keys(localStorage).filter(x => x.startsWith('portafile.v1')).forEach(x => localStorage.removeItem(x)); // INCLUDING lead* — the gate must reappear
+  if (keep) localStorage.setItem(KEY, keep);
+  location.replace(location.pathname); // reload clean: no ?k, no signup record → gate greets them fresh
+}
+/* Routes a 410 by its body: 'deleted' (shop erased by founder) vs 'revoked' (link rotated). */
+function syncGoneSignal(body) {
+  return body?.error === 'deleted' ? syncDeletedSignal(!!body.owner) : syncRevokeSignal(body?.owner);
+}
 function syncRevokeSignal(isOwner) {
   if (isOwner) return syncRestart(3000); // this shop's real owner: never terminal, just settle and retry
   if (++revokeStrikes < 2) { syncRestart(4000); return; }
@@ -234,7 +261,7 @@ function syncPush() {
       if (owner && shopId) { headers['x-portafile-owner'] = owner; headers['x-portafile-shop'] = shopId; } // owner creds ride along; staff devices don't have them
       const r = await fetch('/api/state?k=' + syncKey, { method: 'PUT', headers, body: JSON.stringify({ ...S, ts: Date.now() }) });
       if (r.status === 409) return syncPull(); // our copy is stale — refresh from cloud instead of clobbering it
-      if (r.status === 410) return syncRevokeSignal((await r.json().catch(() => 0))?.owner); // link replaced — kill the device (needs 2 strikes) unless the server says we own this shop
+      if (r.status === 410) return syncGoneSignal(await r.json().catch(() => 0)); // link replaced or shop deleted — body says which
       if (r.status === 404) { syncDead(); return; }             // unrecognised link — stop, but never wipe
       if (r.ok) applyRole(r.headers.get('x-portafile-role')); // the create path never GETs, so the seeding owner learns their role here
       syncStatus = r.ok ? 'live' : 'offline';
@@ -248,7 +275,7 @@ async function syncPull() {
     const owner = localStorage.getItem(OWNER_KEY);
     // owner token rides along so a 410 can say whether WE are this shop's owner (settle) or not (lock)
     const r = await fetch('/api/state?k=' + syncKey, owner ? { headers: { 'x-portafile-owner': owner } } : undefined);
-    if (r.status === 410) return syncRevokeSignal((await r.json().catch(() => 0))?.owner); // the owner replaced this link — wipe and lock (needs 2 strikes)
+    if (r.status === 410) return syncGoneSignal(await r.json().catch(() => 0)); // link replaced or shop deleted — body says which
     // 404 = no record of this link. Only an OWNER device (holds the token) may read that as
     // "shop not created yet" and seed it; anyone else stops, but nothing is destroyed.
     if (r.status === 404) {
@@ -844,8 +871,11 @@ function selftest() {
 const LEAD_KEY = 'portafile.v1.lead';
 function gate() {
   // ponytail: skip for file:// (offline copy has no API), automated browsers (test suites/bots
-  // would only donate fake emails), and anyone who already filled it in this browser
-  if (location.protocol === 'file:' || navigator.webdriver || localStorage.getItem(LEAD_KEY)) return;
+  // would only donate fake emails), and anyone who already filled it in this browser.
+  // ALSO skip anyone arriving on a staff link (?k=): that link only exists because an owner already
+  // signed up and handed it out, so the lead is captured — asking the barista to name a shop reads
+  // as "make an account", which is what made sharing look broken. Staff go straight to the recipes.
+  if (location.protocol === 'file:' || navigator.webdriver || localStorage.getItem(LEAD_KEY) || syncKey) return;
   const g = document.createElement('div'); g.className = 'gatewrap';
   g.innerHTML = `<form class="sheet gate">
     <h3>Before you brew…</h3>

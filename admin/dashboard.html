@@ -90,7 +90,7 @@ button.mini{padding:2px 8px;font-size:12px;background:transparent;color:var(--re
     <span class="tiny" id="leadStatus"></span>
   </div>
   <table id="leadTable"></table>
-  <p class="tiny">Reads the access-gate form submissions. Needs the ADMIN_KEY set on the Vercel project (Settings → Environment Variables) — enter the same value here when prompted; it's remembered in this browser. "→ list" copies a signup into the email list above.</p>
+  <p class="tiny">Reads the access-gate form submissions. Needs the ADMIN_KEY set on the Vercel project (Settings → Environment Variables) — enter the same value here when prompted; it's remembered in this browser. "→ list" copies a signup into the email list above. "delete record" only erases contact details (a "delete my data" request) — it is not a logout or a ban, because there are no accounts: a browser is unlocked by its own local flag. Revoking access is "Reset staff link" in the app.</p>
 </div>
 
 <h2>Launch-post tracker</h2>
@@ -191,17 +191,27 @@ async function fetchLeads() {
     st.textContent = leads.length + ' signup(s)';
     document.getElementById('leadTable').innerHTML =
       '<tr><th>When</th><th>Email</th><th>Shop</th><th>Role</th><th>City</th><th>Phone</th><th></th></tr>' +
-      leads.map((l, i) => `<tr><td>${new Date(l.ts).toLocaleDateString()}</td><td>${esc(l.email)}</td><td>${esc(l.shop)}</td><td>${esc(l.role)}</td><td>${esc(l.city)}</td><td>${esc(l.phone)}</td><td><button class="mini" onclick="toList(${i})">→ list</button> <button class="mini" onclick="delLead(${i})">delete</button></td></tr>`).join('');
+      leads.map((l, i) => `<tr><td>${new Date(l.ts).toLocaleDateString()}</td><td>${esc(l.email)}</td><td>${esc(l.shop)}</td><td>${esc(l.role)}</td><td>${esc(l.city)}</td><td>${esc(l.phone)}</td><td><button class="mini" onclick="toList(${i})">→ list</button> <button class="mini" onclick="delLead(${i})">delete record</button>${/^[a-f0-9]{40}$/.test(l.shopId || '') ? ` <button class="mini" onclick="delCloud(${i})">delete cloud data</button>` : ''}</td></tr>`).join('');
   } catch (e) { st.textContent = 'unreachable (site deployed? API live?)'; }
 }
 function toList(i) { const l = (window._leads || [])[i]; if (l) { autoEmail(l.email, l.shop, 'interested'); save(); } }
 async function delLead(i) {
   const l = (window._leads || [])[i]; if (!l) return;
-  if (!confirm(`Permanently delete the signup from ${l.email}? (use this to honor a "delete my data" request)`)) return;
+  if (!confirm(`Permanently delete the signup record from ${l.email}?\n\nThis erases their contact details from your list — it does NOT log them out. Portafile has no accounts; their browser stays unlocked. To cut off a staff device, use "Reset staff link" in the app instead.`)) return;
   const k = localStorage.getItem('portafile-admin-key');
   if (!k) { alert('Click "Fetch signups" first so the admin key is set.'); return; }
   const r = await fetch(`https://portafile.vercel.app/api/lead?admin=${encodeURIComponent(k)}&ts=${l.ts}`, { method: 'DELETE' });
   if (r.ok) fetchLeads(); else alert('Delete failed: ' + r.status);
+}
+async function delCloud(i) {
+  const l = (window._leads || [])[i]; if (!l || !/^[a-f0-9]{40}$/.test(l.shopId || '')) return;
+  if (!confirm(`Erase the CLOUD DATA for "${l.shop}" (${l.email})?\n\nTheir synced recipes and prices are permanently deleted from Portafile's storage. Every staff device is wiped and disconnected; the shop owner's own device keeps its local copy but goes offline. When they come back to the site, they'll see the signup form again.\n\nThis cannot be undone. Their signup record stays in this list unless you also press "delete record".`)) return;
+  const k = localStorage.getItem('portafile-admin-key');
+  if (!k) { alert('Click "Fetch signups" first so the admin key is set.'); return; }
+  const r = await fetch('https://portafile.vercel.app/api/state', {
+    method: 'DELETE', headers: { 'x-portafile-admin': k, 'x-portafile-shop': l.shopId } });
+  if (r.ok) alert(`Cloud data for "${l.shop}" deleted. Their devices disconnect within ~30 seconds.`);
+  else alert('Delete failed: ' + r.status);
 }
 function addPost() {
   if (!val('tWhere')) return alert('community required');

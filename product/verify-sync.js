@@ -35,6 +35,9 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
       keys[nk] = shop; owners[shop].currentKey = nk;
       return route.fulfill({ json: { k: nk } });
     }
+    // a deleted shop answers 410 deleted from its tombstone for every key that points at it
+    if (keys[k] && owners[keys[k]] && owners[keys[k]].deleted)
+      return route.fulfill({ status: 410, json: { error: 'deleted', owner: owners[keys[k]].hash === owner } });
     // a key that resolves but is no longer the shop's current one is positively revoked → 410
     const revoked = keys[k] && owners[keys[k]] && owners[keys[k]].currentKey !== k;
     if (revoked) return route.fulfill({ status: 410, json: { error: 'revoked', owner: owners[keys[k]].hash === owner } }); // owner flag mirrors api/state.js
@@ -80,7 +83,12 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
 
   // 2. device A (OWNER: holds token + shopId) with key seeds the cloud
   const cA = await b.newContext();
-  await cA.addInitScript(([o, s]) => { localStorage.setItem('portafile.v1.owner', o); localStorage.setItem('portafile.v1.shopid', s); }, [OWNER, SHOP]);
+  // init scripts re-run on EVERY navigation — the stopseed flag (outside the portafile.v1 prefix,
+  // so wipes keep it) lets the deletion tests turn re-seeding off, or they'd test the harness
+  await cA.addInitScript(([o, s]) => {
+    if (localStorage.getItem('pf-test-stopseed')) return;
+    localStorage.setItem('portafile.v1.owner', o); localStorage.setItem('portafile.v1.shopid', s);
+  }, [OWNER, SHOP]);
   const pA = await cA.newPage();
   pA.on('pageerror', e => errs.push('pA: ' + e.message));
   pA.on('dialog', d => d.accept());
@@ -271,6 +279,62 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   ok('owner CANNOT revive a rotated-away key (410)', await restorePut(KEY, OWNER) === 410 && owners[SHOP].currentKey === newK);
   ok('stranger CANNOT restore with the current key', await restorePut(newK, 'f'.repeat(40)) === 404 && !keys[newK]);
   ok('owner CAN restore the pointer with the current key', await restorePut(newK, OWNER) === 200 && keys[newK] === SHOP);
+
+  // 7f. founder deletes the shop's cloud data (tombstone). Staff device: full wipe INCLUDING the
+  // signup record, so the gate greets them fresh. Owner device: keeps its local shop data (the
+  // delete button must never destroy the only copy) but loses signup + sync credentials.
+  const cS = await b.newContext();
+  await cS.addInitScript(() => {
+    if (localStorage.getItem('pf-test-stopseed')) return;
+    localStorage.setItem('portafile.v1.lead', '{"email":"s@y.z"}'); localStorage.setItem('portafile.v1.lead.sent', '1');
+  });
+  const pS = await cS.newPage();
+  pS.on('pageerror', e => errs.push('pS: ' + e.message));
+  await pS.route('**/api/state*', mock);
+  await pS.goto(base + `/index.html?k=${newK}`, { waitUntil: 'networkidle' });
+  await pS.waitForTimeout(1500);
+  ok('delete: staff device synced first', (await pS.inputValue('#shopName')) === JSON.parse(cloud[SHOP]).shop.name);
+  // seed the owner's lead record too, so we can prove deletion clears it
+  await pA.evaluate(() => localStorage.setItem('portafile.v1.lead', '{"email":"o@y.z"}'));
+  // stop the harness re-seeding on the post-wipe reload, or it undoes what we're asserting
+  await pS.evaluate(() => localStorage.setItem('pf-test-stopseed', '1'));
+  await pA.evaluate(() => localStorage.setItem('pf-test-stopseed', '1'));
+  owners[SHOP] = { deleted: true, hash: OWNER }; delete cloud[SHOP]; // the admin DELETE, server-side
+  await pS.evaluate(() => syncPull()); await pS.waitForTimeout(1200);
+  // after the wipe the reload re-seeds the demo shop — so assert the SHOP's data is gone (name is
+  // back to the demo), and the signup record is gone (a real browser would now see the gate)
+  ok('delete: staff device wiped INCLUDING signup record (gate returns)', await pS.evaluate(() =>
+    JSON.parse(localStorage.getItem('portafile.v1')).shop.name === 'Demo Espresso Bar' &&
+    !localStorage.getItem('portafile.v1.lead') && !localStorage.getItem('portafile.v1.lead.sent') &&
+    !localStorage.getItem('portafile.v1.synckey') && !localStorage.getItem('portafile.v1.revoked')));
+  ok('delete: staff device reloaded clean (no ?k, no lock screen)', !pS.url().includes('k=') &&
+    !(await pS.textContent('body')).includes('turned off'));
+  await cS.close();
+  await pA.evaluate(() => syncPull()); await pA.waitForTimeout(1200);
+  ok('delete: owner device KEEPS its local shop data', await pA.evaluate(() => {
+    const s = localStorage.getItem('portafile.v1'); return !!s && JSON.parse(s).recipes.length > 0;
+  }));
+  ok('delete: owner device loses signup + sync credentials', await pA.evaluate(() =>
+    !localStorage.getItem('portafile.v1.lead') && !localStorage.getItem('portafile.v1.synckey') &&
+    !localStorage.getItem('portafile.v1.owner') && !localStorage.getItem('portafile.v1.role')));
+  ok('delete: owner device back on clean URL, app alive', !pA.url().includes('k=') && await pA.locator('.rcard').count() > 0);
+  // a never-synced device opening the dead bookmark: disconnected, never wiped
+  const cN = await b.newContext(); const pN = await cN.newPage();
+  pN.on('pageerror', e => errs.push('pN: ' + e.message));
+  await pN.route('**/api/state*', mock);
+  await pN.goto(base + `/index.html?k=${newK}`, { waitUntil: 'networkidle' });
+  await pN.waitForTimeout(1500);
+  ok('delete: stale bookmark just disconnects — badge says removed, data intact',
+    (await pN.textContent('#syncBadge')).includes('removed') && await pN.locator('.rcard').count() > 0 &&
+    await pN.evaluate(() => !!localStorage.getItem('portafile.v1') && !localStorage.getItem('portafile.v1.synckey')));
+  await cN.close();
+  // owner re-syncs from its kept data: PUT create path with fresh ids must still work post-delete
+  await pA.evaluate(() => dataMenu());
+  await pA.click('#dSyncOn'); await pA.waitForTimeout(1800);
+  const rebornK = await pA.evaluate(() => localStorage.getItem('portafile.v1.synckey'));
+  ok('delete: owner can start a FRESH shop afterwards (new ids, new link)',
+    !!rebornK && rebornK !== newK && !!keys[rebornK] && keys[rebornK] !== SHOP && !!cloud[keys[rebornK]]);
+  ok('delete: old shop stays tombstoned', owners[SHOP].deleted === true && !cloud[SHOP]);
 
   // 8. offline: API dead → badge degrades, app keeps working locally
   await pA.unroute('**/api/state*');
