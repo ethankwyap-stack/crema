@@ -54,7 +54,7 @@ button.mini{padding:2px 8px;font-size:12px;background:transparent;color:var(--re
 
 <h2>Phase-0 kill gates <span class="tiny" id="clock"></span></h2>
 <div class="gates" id="gates"></div>
-<p class="tiny">Gate 2 (prepays) is individually fatal: zero prepays after real effort = thesis falsified. Gate counts derive from the ledger and email list below — keep those current.</p>
+<p class="tiny">Gate 2 (prepays) is individually fatal: zero prepays after real effort = thesis falsified. Prepays and roaster conversations come from the ledger and email list below — keep those current. Gates 1 and 3 also read the live metrics once you press <strong>Load metrics</strong>: gate 1 takes the higher of the two counts (the ledger sees local-only shops, the server sees synced ones you forgot to log), and gate 3 shows how many shops opened the app at all, which is <em>not</em> the same as touching a dial-in or price — that number still comes from you.</p>
 
 <h2>Key metrics (live)</h2>
 <div class="card">
@@ -139,6 +139,8 @@ const fmt = d => d ? new Date(d + 'T12:00').toLocaleDateString('en-US', {month:'
 const addDays = (d, n) => { const x = new Date(d + 'T12:00'); x.setDate(x.getDate() + n); return x; };
 const daysSince = d => Math.floor((Date.now() - new Date(d + 'T12:00')) / 864e5);
 
+let LIVE = null; // last metrics payload, once loaded — lets the gates use server truth, not hand-typed counts
+
 function render() {
   document.getElementById('launchDate').value = S.launch;
   document.getElementById('engaged').value = S.engaged;
@@ -146,20 +148,30 @@ function render() {
   document.getElementById('syncShipped').checked = S.syncShipped;
 
   const shopsWithRecipes = S.emails.filter(e => e.status === 'entered recipes' || e.status === 'paid').length;
+  // The live metrics and the hand-kept email list each see shops the other cannot: the ledger knows
+  // the local-only shops (invisible to the server), the server knows the synced shops I forgot to log.
+  // Neither is a superset, so the gate takes whichever count is higher and shows both.
+  const liveRecipes = LIVE ? Math.round(LIVE.adoption.customised / 100 * LIVE.shops.read) : 0;
+  const recipeShops = Math.max(shopsWithRecipes, liveRecipes);
+  // "Used the app in the last 10 days" is NOT "touched a dial-in or price" — nothing records which
+  // feature was used (usage tracking stores dates only, deliberately). Cross-check only, never the gate.
+  const liveActive10 = LIVE ? (LIVE.perShop || []).filter(s => s.quietDays !== null && s.quietDays <= 10).length : null;
   const prepays = S.pays.length;
   const day = S.launch ? daysSince(S.launch) : null;
   document.getElementById('clock').textContent = S.launch ? `— day ${day} since launch` : '— set a launch date to start the clocks';
   const gates = [
-    { lbl: '15 shops entered real recipes (by day 14)', num: `${shopsWithRecipes}/15`, ok: shopsWithRecipes >= 15, deadline: 14 },
+    { lbl: '15 shops entered real recipes (by day 14)', num: `${recipeShops}/15`, ok: recipeShops >= 15, deadline: 14,
+      hint: LIVE ? `live: ${liveRecipes} of ${LIVE.shops.read} synced · ledger: ${shopsWithRecipes}` : '' },
     { lbl: '10 founding prepays at $99 (by day 30) — FATAL if 0', num: `${prepays}/10`, ok: prepays >= 10, deadline: 30 },
-    { lbl: '≥ half of recipe shops engaged in last 10 days (day 30)', num: `${S.engaged}/${Math.ceil(shopsWithRecipes/2) || '—'}`, ok: shopsWithRecipes > 0 && S.engaged >= shopsWithRecipes/2, deadline: 30 },
+    { lbl: '≥ half of recipe shops engaged in last 10 days (day 30)', num: `${S.engaged}/${Math.ceil(recipeShops/2) || '—'}`, ok: recipeShops > 0 && S.engaged >= recipeShops/2, deadline: 30,
+      hint: liveActive10 === null ? '' : `live: ${liveActive10} opened the app (any use, not just dial-in/price)` },
     { lbl: '3 real roaster conversations', num: `${S.roasters}/3`, ok: S.roasters >= 3, deadline: 30 },
   ];
   document.getElementById('gates').innerHTML = gates.map(g => {
     const overdue = day !== null && day > g.deadline && !g.ok;
     const cls = g.ok ? 'pass' : overdue ? 'fail' : '';
     const left = day !== null && !g.ok && day <= g.deadline ? `${g.deadline - day}d left` : overdue ? 'MISSED' : g.ok ? 'PASSED' : '';
-    return `<div class="gate ${cls}"><div class="num">${esc(g.num)}</div><div class="lbl">${esc(g.lbl)}</div><div class="tiny">${esc(left)}</div></div>`;
+    return `<div class="gate ${cls}"><div class="num">${esc(g.num)}</div><div class="lbl">${esc(g.lbl)}</div><div class="tiny">${esc(left + (g.hint ? (left ? ' · ' : '') + g.hint : ''))}</div></div>`;
   }).join('');
 
   document.getElementById('rev').textContent = '$' + S.pays.reduce((a, p) => a + (+p.amt || 0), 0);
@@ -250,6 +262,7 @@ async function loadMetrics() {
     if (r.status === 401) { localStorage.removeItem('portafile-admin-key'); st.textContent = 'wrong key'; return; }
     if (!r.ok) throw new Error(r.status);
     const m = await r.json();
+    LIVE = m; render(); // re-run the gates now that server truth is available
     const hrs = h => h === null ? '—' : h < 48 ? h + 'h' : Math.round(h / 24 * 10) / 10 + 'd';
     const pos = m.feedback.filter(f => f.sentiment === 'up').length, neg = m.feedback.length - pos;
     const tiles = [

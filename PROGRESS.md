@@ -107,10 +107,25 @@ Verified against the real store with a throwaway shop: created it, read and wrot
 
 Still not deployed. Levels 1, 2 and 3 all go live together, and that deploy changes the public site — the feedback button and the privacy wording — so it's mine to press, not something to slip in as a finishing touch.
 
+**It's live now** — and the first thing it told me was uncomfortable.
+
+I fed an AI's business advice about Portafile into a session and asked for it to be checked rather than agreed with. Most of it was already built. One piece was actively wrong: it wanted a permanent Free / Basic / Pro ladder with team collaboration in the top tier. Team collaboration *is* the $29 Shop tier — staff-phone sync is the only thing the paid tier sells. Following that advice would have made the paid tier feature-identical to the free one, which is the exact mistake my own kill-pass caught months ago. Generic advice can't know what you already decided; the decision log was worth more than the consultant.
+
+Then I stopped arguing and read the numbers off the live store.
+
+**Nobody has ever signed up.** One lead record exists and it's my own test. Both founding shops are live and syncing, and neither owner ever passed through the signup form — because I onboarded them by hand, and a device arriving on a `?k=` link deliberately skips the gate. Everything downstream of that follows: time-to-onboarding has **zero samples** and structurally cannot get one from these two, and both cafes show as unnamed in the dashboard because the name comes from the signup form. This isn't a bug — every line of it is working as designed — but it means the onboarding metric I was proud of is measuring a funnel my only two customers never entered. If I keep onboarding shops personally, it stays at zero forever.
+
+**Nobody is logging dial-ins, and nobody is using training sign-offs.** Zero percent on both, across both shops. One of the two has entered real recipes; the other is still sitting on the demo. My own day-30 moat gate says half the shops with real recipes must have touched a dial-in or a price recently — the "living state" moat only exists if state actually lives. Right now it doesn't. That is the single most important number on the board and no amount of building changes it; it's a phone call.
+
+So the kill gates now read the live metrics instead of waiting for me to hand-type them. Gate 1 takes the higher of the ledger count and the server count, because neither is a superset — the ledger knows local-only shops the server can't see, the server knows synced shops I forgot to log. Gate 3 keeps its manual number and shows the live one beside it, clearly labelled as *any* use: the usage log stores dates only, never which feature was touched, so "opened the app" is not "touched a dial-in" and I refuse to let the dashboard imply otherwise. That's the same line I drew when I killed print tracking — a gate that quietly grades itself on a weaker measure is worse than one I have to fill in myself.
+
+Verified by driving the real dashboard in a browser against the real production store: gates read 0/15 from the ledger alone, then 1/15 with "live: 1 of 2 synced · ledger: 0" after loading metrics, and the per-cafe labels survive the extra redraw.
+
 ---
 
 ## Open threads
 
-- Two founding shops to onboard — the first real users.
+- Both founding shops are live and syncing, but **zero dial-ins and zero training sign-offs** between them, and only one has entered real recipes. The moat gate is failing today — that's a conversation with those two owners, not a feature.
+- Neither founding shop has a signup record, so onboarding time and cafe names stay blank. Either walk the next owner through the signup form on their own device, or accept the metric only covers shops that arrive on their own.
 - Post-launch validation with kill criteria (from `BUILD-LOG.md`) hasn't run yet.
 - Roaster white-label channel is a plan, not a conversation with a roaster.
