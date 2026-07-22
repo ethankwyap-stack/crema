@@ -1,5 +1,5 @@
 # WORKS.md — what Portafile must do
-Updated 2026-07-22 · Run: `/still-works` (add `live` after a deploy)
+Updated 2026-07-22 (2nd run) · Run: `/still-works` (add `live` after a deploy)
 
 The feature checklist and the blast-radius map. `CLAUDE.md` holds the *gotchas* (why the
 code is shaped the way it is); this file holds *what must still be true for a user*.
@@ -36,7 +36,8 @@ code is shaped the way it is); this file holds *what must still be true for a us
 - [ ] A sign-off tick registers and date-stamps · auto: `verify.js`
 - [ ] New-hire pack prints cover, checklist, dial-ins and cards · auto: `verify.js`
 - [ ] **Printed output never shows costs**, on any device — cards, station sheets, packs
-      prove: print preview each of the three, look for a dollar figure · auto: partial
+      prove: print each pack, then check none of the margin report's 15 Cost figures appear
+      in it. Do NOT just grep for `$`: menu prices legitimately print on all three.
 
 ### App — sharing, roles, sync
 - [ ] Sync on → a second browser opening the `?k=` link sees the same shop
@@ -64,7 +65,12 @@ code is shaped the way it is); this file holds *what must still be true for a us
 
 ### Founder dashboard (local only, http://127.0.0.1:4322/admin/dashboard.html)
 - [ ] Load metrics fills the tiles, the per-cafe table and feedback from live production
-- [ ] Per-cafe table sorts stalest-first and flags 14+ days quiet in red
+- [ ] Phase-0 kill gates read those live metrics: gate 1 shows the higher of ledger vs live
+      (neither is a superset), gate 3 keeps its hand-typed number and shows the live one
+      beside it labelled *any use* — the usage log stores dates, never which feature
+      prove: gates read 0/15 before Load metrics, 1/15 + "live: 1 of 2 synced" after
+- [ ] Per-cafe table sorts stalest-first (sorted server-side in `api/metrics.js`) and flags
+      14+ days quiet in red
 - [ ] Hostile text in any live-loaded field renders as literal text, never HTML
 - [ ] Ledger, email list, signups and labels survive a reload (localStorage `portafile-admin-v1`)
 
@@ -81,6 +87,15 @@ code is shaped the way it is); this file holds *what must still be true for a us
   test just wiped — `verify-sync.js` guards this with `pf-test-stopseed`.
 - The staff-link signup wall: sharing looked broken while the data was fine. Any change to
   the gate must be re-tested from a *fresh* browser on a `?k=` link.
+- **Test traps that fake a failure** (all three cost a re-run on 2026-07-22):
+  - Printed cards/station/pack DO contain `$` — those are *menu prices*, which are supposed
+    to print. Only ingredient cost / margin / COGS must be absent. Assert against the
+    margin report's Cost column, not against the dollar sign.
+  - The feedback modal's heading is "How's Portafile working?" — there is no "feedback"
+    text inside the sheet, so a `hasText: /feedback/i` selector finds nothing. The button
+    that opens it is `#hFeedback`.
+  - The dashboard note now contains the words "Load metrics", so `text=Load metrics`
+    matches two nodes — use `button:has-text("Load metrics")`.
 
 ## Cannot be tested automatically
 - Whether a print actually looks right on paper — the browser print dialog needs a human.
