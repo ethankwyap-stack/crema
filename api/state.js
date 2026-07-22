@@ -63,6 +63,29 @@ async function readJsonSure(path, tries = 3) {
 }
 const writeJson = (path, obj) => put(path, JSON.stringify(obj), { access: 'private', addRandomSuffix: false, contentType: 'application/json', allowOverwrite: true, cacheControlMaxAge: 0 });
 
+/* Usage stamping (founder metrics level 3): which DATES a shop was used. Dates only — never a
+   time, a duration or a device — because per-device timing in a two-person shop is one barista's
+   shift behaviour, which is not what this product is. Lives in its OWN blob: activity/<shopId>.json
+   must never go inside the shop state, which syncs down to customer devices.
+   ponytail: dates are UTC, so a late-night California close lands on the next day's count. Fine for
+   "did they use it that day"; if a shop ever disputes a count, store an offset per shop. */
+const utcDay = () => new Date().toISOString().slice(0, 10);
+export const addDay = (days, d) => [...(Array.isArray(days) ? days : []).filter(x => x !== d), d].slice(-60);
+// Same warm-instance trick as HITS: devices poll every 30s, so without this cache every poll would
+// cost a Blob read. A warm instance does one read + at most one write per shop per day; several
+// instances mean a few redundant writes a day, which is harmless.
+const STAMPED = new Map(); // shopId -> UTC date already written by this instance
+async function stamp(shopId) {
+  try {
+    const d = utcDay();
+    if (STAMPED.get(shopId) === d) return;
+    if (STAMPED.size > 5000) STAMPED.clear();
+    const cur = await readJson(`activity/${shopId}.json`);
+    if (!cur?.days?.includes(d)) await writeJson(`activity/${shopId}.json`, { days: addDay(cur?.days, d) });
+    STAMPED.set(shopId, d); // only after it stuck, so a failed write retries on the next request
+  } catch (e) { /* bookkeeping: never turn a good save into an error */ }
+}
+
 // 'unknown' → we have no record of this link. 'revoked' → this link was replaced by a newer one.
 // 'deleted' → the founder erased this shop's cloud copy; the tombstone in owners/ is permanent.
 async function resolveKey(k) {
@@ -122,6 +145,7 @@ export default async function handler(req, res) {
     if (r.state === 'unknown') return res.status(404).json(UNKNOWN);
     const state = await readJson(`shops/${r.shopId}.json`);
     if (!state) return res.status(404).json({ error: 'not found' }); // pointer fine, data missing — client must NOT treat this as revocation
+    await stamp(r.shopId); // GET = someone LOOKED; staff mostly read cards, so PUT-only would miss them
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('x-portafile-role', roleOf(r.own, owner));
     return res.status(200).json(state);
@@ -164,6 +188,7 @@ export default async function handler(req, res) {
     const cur = await readJson(`shops/${shopId}.json`);
     if (cur && (+body.ts || 0) < (+cur.ts || 0)) return res.status(409).json({ error: 'stale' });
     await writeJson(`shops/${shopId}.json`, body);
+    await stamp(shopId);
     // create path (state 'unknown') just proved ownership; existing shops answer from their record
     res.setHeader('x-portafile-role', r.state === 'unknown' ? 'owner' : roleOf(r.own, owner));
     return res.status(200).json({ ok: true });
@@ -185,6 +210,9 @@ export default async function handler(req, res) {
     await del(`shops/${shop}.json`).catch(() => {});
     await sleep(1200); // a poll racing the tombstone's consistency window can re-write the data blob
     await del(`shops/${shop}.json`).catch(() => {});
+    // the usage log goes too — an erased shop must stop appearing in the founder's per-cafe table,
+    // or "delete my data" is a lie. The tombstone already blocks every path that would re-stamp it.
+    await del(`activity/${shop}.json`).catch(() => {});
     res.setHeader('Access-Control-Allow-Origin', '*');
     return res.status(200).json({ ok: true });
   }

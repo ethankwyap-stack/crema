@@ -737,7 +737,47 @@ function helpModal() {
       <h4>Your data</h4><p>Lives in this browser (localStorage). <strong>Data → Export backup</strong> before switching machines. No account, no bill. If you turn on <strong>Sync</strong> (Data menu), your data also lives in Portafile's cloud storage so staff phones share it via a secret link.</p>
       <h4>Staff view</h4><p>Devices that join through the staff link see recipes, dial-ins and training — never ingredient costs, margins or the price table. Those stay on the owner's devices (the ones holding the owner code, under Data ▾).</p>
     </div>
-    <div class="bar"><button class="btn" data-close>Got it</button></div>`);
+    <div class="bar">${location.protocol === 'file:' ? '' : '<button class="ghost" id="hFeedback">Send feedback</button>'}<button class="btn" data-close>Got it</button></div>`);
+  const fb = $('#hFeedback'); if (fb) fb.onclick = feedbackModal;
+}
+
+/* Feedback goes to /api/metrics as its own record. Deliberately carries NOTHING from the shop —
+   no recipes, no prices, no shopId — only what the person typed. */
+function feedbackModal() {
+  openModal(`
+    <h3>How's Portafile working?</h3>
+    <p class="hint">This goes straight to the person who builds it. Nothing from your recipes, prices or staff list is attached — only what you write here.</p>
+    <div class="bar" style="justify-content:flex-start">
+      <button class="ghost" id="fbUp" aria-pressed="false">👍 Working well</button>
+      <button class="ghost" id="fbDown" aria-pressed="false">👎 Something's wrong</button>
+    </div>
+    <label>What happened? <em>(optional)</em><textarea id="fbMsg" rows="4" style="width:100%"></textarea></label>
+    <label>Email, if you want a reply <em>(optional)</em><input id="fbEmail" type="email" style="width:100%"></label>
+    <input id="fbHp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+    <p class="hint" id="fbOut"></p>
+    <div class="bar"><button class="ghost" data-close>Cancel</button><button class="btn" id="fbSend">Send</button></div>`);
+  let sentiment = '';
+  const up = $('#fbUp'), down = $('#fbDown'), out = $('#fbOut'), send = $('#fbSend');
+  const pick = v => () => {
+    sentiment = v;
+    up.setAttribute('aria-pressed', String(v === 'up')); down.setAttribute('aria-pressed', String(v === 'down'));
+    up.classList.toggle('btn', v === 'up'); down.classList.toggle('btn', v === 'down');
+    out.textContent = '';
+  };
+  up.onclick = pick('up'); down.onclick = pick('down');
+  send.onclick = async () => {
+    if (!sentiment) { out.textContent = 'Pick 👍 or 👎 first.'; return; }
+    send.disabled = true; out.textContent = 'Sending…';
+    try {
+      const r = await fetch('/api/metrics', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ sentiment, msg: $('#fbMsg').value, email: $('#fbEmail').value, role: staffView() ? 'staff' : 'owner', hp: $('#fbHp').value }),
+      });
+      if (!r.ok) throw new Error(r.status);
+      out.textContent = 'Thanks — got it.';
+      setTimeout(closeModal, 900);
+    } catch (e) { send.disabled = false; out.textContent = 'Could not send — try again when you have signal.'; }
+  };
 }
 
 /* ---------------- wiring ---------------- */

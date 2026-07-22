@@ -79,6 +79,34 @@ The lesson is about what the gate was actually buying me. It captures the owner 
 
 Cost: one line of code, and some junk rows in the leads store that need a cleanup pass. Staff links now open straight into the recipes.
 
+**I can finally see whether anyone is using this.** The founder dashboard now loads live numbers: how many shops have sync on, how many edited something in the last 7 and 30 days, how long it takes a signup to become a live shop, what share of shops have made the app their own instead of sitting on the demo, and what share use training sign-offs or dial-ins. Underneath it is one new serverless function that computes those numbers and hands back nothing else.
+
+Three decisions worth remembering:
+
+- **The privacy page contradicted the feature before I wrote a line of it.** It said "We never look at, analyze, or share your recipes or costs" — and adoption percentages are computed by reading shop data. So the numbers are computed *inside* the function and only totals come out; no recipe, price, or shop name is ever returned, displayed, or exportable, not even to me. The policy now says exactly that, including the part where I count feature usage in aggregate. A metric that forces you to quietly break a promise you published is not worth having.
+- **Print adoption is the one thing I asked for and did not build.** Nothing records a print, and the only way to measure it is to start writing usage counters into customers' own data. The three signals already stored — did they rename the shop, do they have sign-offs, do they log dial-ins — answer "is this being used and for what" without watching anybody. I'd rather have three honest numbers than four with a tracker behind one of them.
+- **The onboarding clock nearly lied to me.** When a browser links its signup to a shop, the app re-sends the whole signup and the server stamps it with a *fresh* time. Measuring "signup → shop live" from that record would have reported onboarding times near zero and told me the funnel was perfect. The clock now starts from the earliest record for an email; there's a test that fails if anyone changes it back.
+
+Baristas and owners can now send feedback from the app (**? → Send feedback**), a thumbs up or down with an optional note, and it lands in a table on the dashboard with a positive-percentage tally. That's the sentiment metric, and it's the one number here that comes from a person rather than an inference.
+
+Blind spot, stated plainly: every number counts shops with sync **on**. A shop living only in someone's browser is invisible, and no amount of dashboard work can change that without tracking people. Cost: zero — same storage, one more function on the free plan.
+
+**I can now see which cafes are alive and which are drifting away.** The dashboard grew a row per cafe: when their shop first went live, when they last changed anything, how many of the last 30 days they actually used it, and a red flag when nobody has touched it in two weeks. Stalest shop sits on top, because that's the one I should be phoning.
+
+The aggregate numbers told me *how many* shops were using it. They could never tell me *which* shop was quietly dying — which is the only version of that question I can act on with two customers.
+
+Three things I had to get right:
+
+- **Reading recipe cards has to count as usage.** A save is easy to notice; the server sees it. But a barista pulling up a build sheet mid-shift only *reads* — and that's the whole product working exactly as intended. Counting only saves would have told me a busy shop was idle. So both reads and writes stamp the day, which means the usage number reflects the people I built this for and not just the owner doing admin.
+- **Dates only. Never times, never durations, never which device.** In a two-person shop, "when was the app open" is one barista's shift behaviour, and the moment I record that I've built a staff-monitoring tool without anyone asking me to. A list of calendar dates tells me "this shop is alive"; it can't tell me who was working late. The privacy page now says this in those words, and the usage log is deleted along with everything else when a shop asks me to erase their data.
+- **A cafe's name comes from what they typed into my signup form, never from their app.** Their shop data is theirs; the name they handed me is mine to use. It's a narrow line and I wrote it into the project rules, because the aggregate-only promise still holds for everything read out of their recipes. Right now neither real shop is named — linking a name to a shop needs the owner to sign up and turn on sync in the same browser, and neither did — so I can type my own label per shop instead of squinting at ID prefixes.
+
+The cost concern was real and it's handled: devices poll every 30 seconds, and a naive version would have added a storage read to every single poll. Each server instance remembers which shops it already stamped today, so a warm one does one read and at most one write per shop per day. Still $0, still on the free plan, no new service.
+
+Verified against the real store with a throwaway shop: created it, read and wrote as a staff device, confirmed a revoked link and a deleted shop stamp nothing, confirmed my delete button erases the usage log too — then removed every test blob and checked the store was back to exactly the two real shops. The dashboard table was driven in a real browser, including a shop name containing an image tag with a script in it, which rendered as plain text.
+
+Still not deployed. Levels 1, 2 and 3 all go live together, and that deploy changes the public site — the feedback button and the privacy wording — so it's mine to press, not something to slip in as a finishing touch.
+
 ---
 
 ## Open threads

@@ -56,6 +56,25 @@ button.mini{padding:2px 8px;font-size:12px;background:transparent;color:var(--re
 <div class="gates" id="gates"></div>
 <p class="tiny">Gate 2 (prepays) is individually fatal: zero prepays after real effort = thesis falsified. Gate counts derive from the ledger and email list below — keep those current.</p>
 
+<h2>Key metrics (live)</h2>
+<div class="card">
+  <div class="row">
+    <button onclick="loadMetrics()">Load metrics</button>
+    <span class="tiny" id="mStatus">not loaded</span>
+  </div>
+  <div class="gates" id="mTiles" style="margin-top:12px"></div>
+  <p class="tiny" id="mNote"></p>
+  <h3 style="margin:18px 0 6px;font-size:15px">Per cafe</h3>
+  <table id="shopTable"></table>
+  <p class="tiny">Stalest shop on top. A cafe is named only if the owner signed up through the site <em>and</em> turned on sync in that same browser — otherwise you get a short ID, and you can type your own label (saved in this browser, included in Export). "Days used" counts calendar dates only, never times, and starts from the day usage tracking shipped, so it reads low at first. Red = nobody has touched it in 14+ days; that's your cue to phone them.</p>
+</div>
+
+<h2>Feedback</h2>
+<div class="card">
+  <table id="fbTable"></table>
+  <p class="tiny">Sent from the app's <strong>? → Send feedback</strong> sheet. Loaded by the button above. Nothing about a shop's recipes or prices is attached — only what the person typed.</p>
+</div>
+
 <h2>Prepay / revenue ledger</h2>
 <div class="card">
   <div class="bar"><div>Total collected: <span class="money" id="rev">$0</span></div>
@@ -112,8 +131,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const safeUrl = u => /^https?:\/\//i.test(String(u || '')) ? String(u) : '#'; // block javascript:/data: schemes in links
 let S = load();
 function load() {
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.pays)) return s; } catch (e) {}
-  return { launch: '', engaged: 0, roasters: 0, syncShipped: false, pays: [], emails: [], posts: [] };
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.pays)) { s.labels = s.labels || {}; return s; } } catch (e) {}
+  return { launch: '', engaged: 0, roasters: 0, syncShipped: false, pays: [], emails: [], posts: [], labels: {} };
 }
 function save() { localStorage.setItem(KEY, JSON.stringify(S)); render(); }
 const fmt = d => d ? new Date(d + 'T12:00').toLocaleDateString('en-US', {month:'short', day:'numeric'}) : '—';
@@ -212,6 +231,60 @@ async function delCloud(i) {
     method: 'DELETE', headers: { 'x-portafile-admin': k, 'x-portafile-shop': l.shopId } });
   if (r.ok) alert(`Cloud data for "${l.shop}" deleted. Their devices disconnect within ~30 seconds.`);
   else alert('Delete failed: ' + r.status);
+}
+function adminKey() {
+  let k = localStorage.getItem('portafile-admin-key');
+  if (!k) { k = prompt('Admin key (the ADMIN_KEY value from Vercel):'); if (k) localStorage.setItem('portafile-admin-key', k); }
+  return k;
+}
+// The API computes every number server-side and never returns a single shop's CONTENTS, so the
+// privacy promise ("we never read your recipes individually") stays true. The per-cafe rows below
+// are metadata only — signup name, dates — never anything read out of a shop's app data.
+function setLabel(id, v) { S.labels[id] = String(v).slice(0, 40).trim(); save(); }
+async function loadMetrics() {
+  const st = document.getElementById('mStatus');
+  const k = adminKey(); if (!k) return;
+  st.textContent = 'loading…';
+  try {
+    const r = await fetch('https://portafile.vercel.app/api/metrics?admin=' + encodeURIComponent(k));
+    if (r.status === 401) { localStorage.removeItem('portafile-admin-key'); st.textContent = 'wrong key'; return; }
+    if (!r.ok) throw new Error(r.status);
+    const m = await r.json();
+    const hrs = h => h === null ? '—' : h < 48 ? h + 'h' : Math.round(h / 24 * 10) / 10 + 'd';
+    const pos = m.feedback.filter(f => f.sentiment === 'up').length, neg = m.feedback.length - pos;
+    const tiles = [
+      [m.shops.total, 'shops with sync on'],
+      [m.shops.active7, 'edited in last 7 days'],
+      [m.shops.active30, 'edited in last 30 days'],
+      [hrs(m.onboarding.medianHours), `median signup → shop live (${m.onboarding.samples} shops)`],
+      [hrs(m.onboarding.avgHours), 'average signup → shop live'],
+      [m.adoption.customised + '%', 'made it their own shop (not the demo)'],
+      [m.adoption.training + '%', 'using training sign-offs'],
+      [m.adoption.dialin + '%', 'logging dial-ins'],
+      [m.feedback.length ? Math.round(pos / m.feedback.length * 100) + '%' : '—', `feedback positive (👍${pos} / 👎${neg})`],
+    ];
+    document.getElementById('mTiles').innerHTML = tiles.map(([n, l]) =>
+      `<div class="gate"><div class="num">${esc(n)}</div><div class="lbl">${esc(l)}</div></div>`).join('');
+    document.getElementById('mNote').textContent =
+      `${m.onboarding.signups} signups, ${m.onboarding.linkedShops} tied to a cloud shop. Percentages cover the ${m.shops.read} shop file(s) read of ${m.shops.total}. Shops that never turned on sync are invisible here — they live only in someone's browser.`;
+    document.getElementById('fbTable').innerHTML = m.feedback.length
+      ? '<tr><th>When</th><th></th><th>Said</th><th>Email</th><th>From</th></tr>' + m.feedback.map(f =>
+          `<tr><td>${new Date(f.ts).toLocaleDateString()}</td><td>${f.sentiment === 'up' ? '👍' : '👎'}</td><td>${esc(f.msg) || '<span class="tiny">(no message)</span>'}</td><td>${esc(f.email)}</td><td>${esc(f.role)}</td></tr>`).join('')
+      : '<tr><td class="tiny">No feedback yet.</td></tr>';
+    const day = ms => ms ? new Date(ms).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—';
+    document.getElementById('shopTable').innerHTML = (m.perShop || []).length
+      ? '<tr><th>Cafe</th><th>Your label</th><th>First live</th><th>Last active</th><th>Days used<br><span class="tiny">of last 30</span></th><th>Status</th></tr>'
+        + m.perShop.map(s => {
+            const quiet = s.quietDays !== null && s.quietDays >= 14;
+            return `<tr><td>${s.name ? esc(s.name) : `<span class="tiny">${esc(s.id.slice(0, 8))}… (unnamed)</span>`}`
+              + `${s.email ? `<div class="tiny">${esc(s.email)}</div>` : ''}</td>`
+              + `<td><input value="${esc(S.labels[s.id] || '')}" placeholder="your name for them" style="width:150px" onchange="setLabel('${esc(s.id)}',this.value)"></td>`
+              + `<td>${day(s.created)}</td><td>${day(s.lastActive)}</td><td>${esc(s.days30)}</td>`
+              + `<td class="${quiet ? 'due' : ''}">${s.quietDays === null ? '—' : quiet ? `⚠ quiet ${s.quietDays} days — call them` : `active (${s.quietDays}d ago)`}</td></tr>`;
+          }).join('')
+      : '<tr><td class="tiny">No shops with sync on yet.</td></tr>';
+    st.textContent = 'as of ' + new Date(m.generatedAt).toLocaleTimeString();
+  } catch (e) { st.textContent = 'unreachable (site deployed? API live?)'; }
 }
 function addPost() {
   if (!val('tWhere')) return alert('community required');

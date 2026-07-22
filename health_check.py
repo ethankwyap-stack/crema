@@ -30,6 +30,8 @@ CHECKS = [
     # An unknown key must 404 with unknown-key. Proves the serverless function runs AND
     # can read the private Blob store — a dead store throws and turns this into a 500.
     ("Sync API + Blob",     "/api/state?k=" + "0" * 40, 404, "unknown-key"),
+    # Founder metrics must stay admin-only: an unauthenticated GET has to be refused, never served.
+    ("Metrics API locked",  "/api/metrics",             401, "unauthorized"),
     # Load-bearing invariant: admin/ has no auth, so it must never be deployed.
     ("Admin NOT deployed",  "/admin/dashboard.html",    404, None),
 ]
