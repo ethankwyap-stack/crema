@@ -13,6 +13,7 @@ Coffee-shop recipe-card + costing app (recipes with live cost/margin, dial-in bo
 - `admin/` — founder dashboard, **intentionally not deployed** (no auth); served locally on :4322 by LaunchAgent
 - `api/` — Vercel functions (Blob sync, signups)
 - `brand/brand.css` — palette + type tokens, single source of truth
+- `WORKS.md` — what the product must do for a user + the blast-radius map (what breaks what). Read and updated by the `/still-works` skill; run it before any deploy
 - `health_check.py` — daily live-site probe, emailed by `.github/workflows/health.yml` (stdlib only, no deps)
 - `verify-metrics.mjs` — root-level checks for the metrics logic (`node verify-metrics.mjs`, no network, no key)
 
