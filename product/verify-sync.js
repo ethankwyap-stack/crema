@@ -57,7 +57,9 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
     }
     if (!keys[k]) return route.fulfill({ status: 404, json: { error: 'unknown-key' } });
     if (!cloud[keys[k]]) return route.fulfill({ status: 404, json: { error: 'not found' } });
-    return route.fulfill({ contentType: 'application/json', body: cloud[keys[k]] });
+    // mirrors api/state.js roleOf(): staff unless the request proves ownership of THIS shop
+    const role = (owners[keys[k]] && owners[keys[k]].hash !== owner) ? 'staff' : 'owner';
+    return route.fulfill({ contentType: 'application/json', headers: { 'x-portafile-role': role }, body: cloud[keys[k]] });
   };
 
   const b = await pw.chromium.launch();
@@ -103,6 +105,28 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   await pB.goto(base + `/index.html?k=${KEY}`, { waitUntil: 'networkidle' });
   await pB.waitForTimeout(1500);
   ok('B: staff pulled A\'s data', (await pB.inputValue('#shopName')) === 'Sync Test Cafe');
+
+  // 4b. staff view: costs hidden everywhere, Prices tab gone, export redacted; owner still sees all
+  ok('B: staff sees no cost figures on cards', !(await pB.textContent('#view')).includes('costs you'));
+  ok('B: staff has no Prices tab', await pB.locator('[data-tab="prices"]:visible').count() === 0);
+  ok('B: staff has no Margin report pack', await pB.evaluate(() => { S.tab = 'print'; render(); return !document.querySelector('[data-pack="margin"]'); }));
+  ok('B: staff footer says costs stay with the owner', (await pB.textContent('#footNote')).includes('stay with the owner'));
+  ok('B: staff export redacts unit costs', await pB.evaluate(() =>
+    (staffView() ? { ...S, ingredients: S.ingredients.map(i => ({ ...i, unitCost: 0 })) } : S).ingredients.every(i => i.unitCost === 0)));
+  await pB.evaluate(() => { S.tab = 'recipes'; render(); });
+  ok('A: owner still sees costs', (await pA.textContent('#view')).includes('costs you'));
+  // 4c. wrong owner code is rejected by the server; the right one unlocks
+  await pB.evaluate(() => dataMenu());
+  await pB.fill('#dOwnerCode', 'f'.repeat(40)); await pB.click('#dOwnerUnlock');
+  await pB.waitForTimeout(600);
+  ok('B: wrong owner code refused', (await pB.textContent('#dOwnerMsg')).includes('not this shop') &&
+    await pB.evaluate(() => staffView()));
+  await pB.fill('#dOwnerCode', 'd'.repeat(40)); await pB.click('#dOwnerUnlock');
+  await pB.waitForTimeout(600);
+  ok('B: correct owner code unlocks costs', await pB.evaluate(() => !staffView()) &&
+    (await pB.textContent('#view')).includes('costs you'));
+  // put B back to a pure staff device for the revocation tests below
+  await pB.evaluate(() => { localStorage.removeItem('portafile.v1.owner'); localStorage.setItem('portafile.v1.role', 'staff'); render(); });
 
   // 5. B edits → staff write lands, A picks it up on next poll
   await pB.fill('#shopName', 'B Was Here'); await pB.dispatchEvent('#shopName', 'change');

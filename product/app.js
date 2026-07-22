@@ -121,6 +121,32 @@ const SYNC_KEY = 'portafile.v1.synckey';
 const OWNER_KEY = 'portafile.v1.owner';  // owner devices only — proves ownership, sent as a header, never in a URL
 const SHOP_KEY = 'portafile.v1.shopid';  // durable shop identity; the share link is a rotatable pointer to it
 const SYNCED_KEY = 'portafile.v1.synced'; // the link this device actually pulled a shop through
+const ROLE_KEY = 'portafile.v1.role';     // 'staff' hides every cost/margin figure — set by the SERVER, not by us
+
+/* Staff view: a device that reached this shop through a staff link and has never proven ownership.
+   ponytail: this hides costs from the SCREEN, it does not encrypt them — the synced copy on the
+   device still contains them, so a barista who opens devtools can read them. That is the honest
+   ceiling of a shared-link product with no accounts; upgrade path if a shop ever needs a real
+   guarantee is server-side redaction (strip unitCost for tokenless GETs and restore it on their
+   PUTs), which needs a merge on write because staff push whole-state — do not bolt it on casually,
+   a stale read there would silently revert the owner's prices. */
+/* Fails CLOSED: a device that reached a shop through a link and holds no owner token hides costs
+   until the server has said 'owner' at least once. Costs appearing late on an owner's second device
+   is a shrug; costs flashing onto a barista's phone while the first poll is in flight is the bug. */
+const staffView = () => {
+  if (!syncKey || localStorage.getItem(OWNER_KEY)) return false; // local-only shop, or holds proof
+  return localStorage.getItem(ROLE_KEY) !== 'owner';
+};
+function applyRole(role) {
+  const cur = localStorage.getItem(ROLE_KEY);
+  // Never downgrade staff→owner on the server's word alone: a flaky owners-record read answers
+  // 'owner' for everyone. Only a device actually holding an owner token may be promoted.
+  if (role === 'owner' && cur === 'staff' && !localStorage.getItem(OWNER_KEY)) return;
+  if (role !== 'staff' && role !== 'owner') return;
+  if (role === cur) return;
+  localStorage.setItem(ROLE_KEY, role);
+  render(); // costs appear or vanish immediately, without waiting for the next state change
+}
 const hex40 = () => { const b = new Uint8Array(20); crypto.getRandomValues(b); return [...b].map(x => x.toString(16).padStart(2, '0')).join(''); };
 let syncKey = (() => {
   const m = location.search.match(/[?&]k=([a-f0-9]{40})\b/);
@@ -228,6 +254,7 @@ async function syncPull() {
       return;
     }
     if (!r.ok) throw new Error(r.status);
+    applyRole(r.headers.get('x-portafile-role'));
     const s = await r.json();
     syncPulled = true;
     localStorage.setItem(SYNCED_KEY, syncKey); // this link genuinely let us in — makes a later revoke wipe-worthy
@@ -264,6 +291,15 @@ const dialRefText = r => {
 
 /* ---------------- render root ---------------- */
 function render() {
+  const staff = staffView();
+  // The synced state carries the owner's last open tab — never land a staff device on the cost table.
+  if (staff && S.tab === 'prices') S.tab = 'recipes';
+  $('[data-tab="prices"]').hidden = staff;
+  $('#footNote').textContent = staff
+    ? 'Staff view — this device shows recipes and dial-ins. Ingredient costs and margins stay with the owner.'
+    : syncKey
+      ? 'Synced: your shop also has a cloud copy so staff devices share it. Export a backup from Data.'
+      : 'Everything lives in this browser. Export a backup from Data.';
   $('#shopName').value = S.shop.name;
   $$('.tab').forEach(b => { const on = b.dataset.tab === S.tab; b.classList.toggle('active', on); b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
   const v = $('#view');
@@ -282,13 +318,17 @@ function viewRecipes() {
   const avg = priced.length ? priced.reduce((t, r) => t + cogsPct(r), 0) / priced.length : 0;
   const over = rs.filter(r => cogsPct(r) > S.shop.cogsTarget);
   const worst = [...rs].sort((a, b) => cogsPct(b) - cogsPct(a))[0];
+  const beans = new Set(S.recipes.map(r => r.bean).filter(Boolean)).size;
   return `
   <div class="dash">
     <div class="stat"><div class="k">drinks</div><div class="v">${rs.length}</div></div>
+    ${staffView() ? `
+    <div class="stat"><div class="k">beans on the board</div><div class="v">${beans}</div></div>
+    <div class="stat"><div class="k">baristas</div><div class="v">${S.baristas.length}</div></div>` : `
     <div class="stat"><div class="k">avg cost of goods</div><div class="v ${avg > S.shop.cogsTarget ? 'bad' : 'good'}">${avg.toFixed(1)}%</div></div>
     <div class="stat"><div class="k">over ${S.shop.cogsTarget}% target</div><div class="v ${over.length ? 'bad' : 'good'}">${over.length}</div></div>
     ${worst ? `<div class="stat"><div class="k">thinnest margin</div><div class="v">${esc(worst.name)}</div><div class="hint">${money(recipeCost(worst))} cost on ${money(worst.price)} — ${isFinite(cogsPct(worst)) ? cogsPct(worst).toFixed(0) + '%' : 'no menu price'}</div></div>` : ''}
-    <div class="stat"><div class="k">COGS target</div><div class="v"><input id="cogsTarget" style="width:64px;font-family:var(--font-mono);font-size:20px;border:none;background:transparent;border-bottom:1px dashed var(--crema)" value="${S.shop.cogsTarget}">%</div></div>
+    <div class="stat"><div class="k">COGS target</div><div class="v"><input id="cogsTarget" style="width:64px;font-family:var(--font-mono);font-size:20px;border:none;background:transparent;border-bottom:1px dashed var(--crema)" value="${S.shop.cogsTarget}">%</div></div>`}
   </div>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
     <h2 style="margin:0">Recipe cards</h2>
@@ -297,16 +337,18 @@ function viewRecipes() {
   <div class="cardgrid">${rs.map(cardHTML).join('')}</div>`;
 }
 function cardHTML(r) {
-  const cost = recipeCost(r), m = r.price - cost, p = cogsPct(r);
+  const cost = recipeCost(r), m = r.price - cost, p = cogsPct(r), staff = staffView();
+  // Staff keep the menu price — it is on the menu board anyway — and lose every cost figure.
   return `<article class="rcard" data-id="${esc(r.id)}">
     <header><h3>${esc(r.name)}</h3><span class="cat">${esc(r.cat)} · ${esc(r.size)}</span></header>
     <div class="money">
       <span>menu <b>${money(r.price)}</b></span>
+      ${staff ? '' : `
       <span>costs you <b>${money(cost)}</b></span>
       <span class="badge ${cogsBadge(r)}">${isFinite(p) ? p.toFixed(0) + '% COGS' : 'underwater'}</span>
-      <span style="color:var(--spruce)">keeps ${money(m)}</span>
+      <span style="color:var(--spruce)">keeps ${money(m)}</span>`}
     </div>
-    <ul class="ing-list">${r.items.map(it => { const i = ingById(it.ing); return i ? `<li><span>${esc(i.name)} — ${it.qty} ${esc(i.unit)}</span><span class="c">${money(i.unitCost * it.qty)}</span></li>` : ''; }).join('')}</ul>
+    <ul class="ing-list">${r.items.map(it => { const i = ingById(it.ing); return i ? `<li><span>${esc(i.name)} — ${it.qty} ${esc(i.unit)}</span>${staff ? '' : `<span class="c">${money(i.unitCost * it.qty)}</span>`}</li>` : ''; }).join('')}</ul>
     <ol class="steps">${r.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
     ${r.bean ? `<div class="dial-ref">⏚ ${esc(dialRefText(r))}</div>` : ''}
     <div class="actions">
@@ -364,6 +406,8 @@ function recipeForm(r) {
 
 /* ---------------- prices ---------------- */
 function viewPrices() {
+  // Belt and braces: render() already keeps staff off this tab and hides the button.
+  if (staffView()) return '<h2>Ingredient prices</h2><p class="hint">This page is the owner\'s. Ask them if a build looks wrong.</p>';
   return `
   <h2>Ingredient prices</h2>
   <p class="hint">Starter numbers are estimates — put in what you actually pay. Every card re-prices the moment you change a number here. That laminated price list from 2023? This is the version that can't go stale.</p>
@@ -479,7 +523,7 @@ function viewPrint() {
     <div class="pack"><h3>Recipe cards</h3><p>Every drink as a 4×6-style card: build, steps, current dial-in. Two per page.</p><button class="btn" data-pack="cards">Print cards</button></div>
     <div class="pack"><h3>Station sheet</h3><p>The whole menu on one dense page. Tape it to the low-boy.</p><button class="btn" data-pack="station">Print sheet</button></div>
     <div class="pack"><h3>New-hire pack</h3><p>Cover + training checklist + every card + today's dial-ins. Ready before Monday.</p><button class="btn" data-pack="hire">Print pack</button></div>
-    <div class="pack"><h3>Margin report</h3><p>Owner-only: cost, margin and COGS% per drink, flagged against your target.</p><button class="btn sub" data-pack="margin">Print report</button></div>
+    ${staffView() ? '' : `<div class="pack"><h3>Margin report</h3><p>Owner-only: cost, margin and COGS% per drink, flagged against your target.</p><button class="btn sub" data-pack="margin">Print report</button></div>`}
   </div>`;
 }
 
@@ -495,6 +539,7 @@ const pHead = title => `<div class="phead"><span>${esc(S.shop.name)} — ${title
 
 function buildPrint(kind) {
   const root = $('#printRoot');
+  if (kind === 'margin' && staffView()) return; // the button is gone for staff; never build the page either
   if (kind === 'cards') {
     root.innerHTML = pHead('recipe cards') + `<div class="pcards">${S.recipes.map(pCard).join('')}</div>`;
   } else if (kind === 'station') {
@@ -548,7 +593,9 @@ function closeModal() { $('#modal').classList.add('hidden'); $('#modal').innerHT
 function dataMenu() {
   openModal(`
     <h3>Your data</h3>
-    <p class="hint">Everything lives in this browser only. Export a JSON backup and keep it with the shop docs; import it on any other machine.</p>
+    <p class="hint">${syncKey
+      ? 'This shop has a cloud copy so every device on the staff link shares it. Export a JSON backup too — that file is yours and needs no internet.'
+      : 'Everything lives in this browser only. Export a JSON backup and keep it with the shop docs; import it on any other machine.'}</p>
     <div class="bar" style="justify-content:flex-start">
       <button class="btn" id="dExport">Export backup</button>
       <label class="ghost" style="display:inline-block;padding:8px 14px;border-radius:9px">Import<input id="dImport" type="file" accept=".json" style="display:none"></label>
@@ -561,9 +608,20 @@ function dataMenu() {
       <p><input id="dSyncLink" readonly value="${esc(location.origin + location.pathname + '?k=' + syncKey)}" style="width:100%"></p>
       <div class="bar" style="justify-content:flex-start">
         <button class="btn" id="dSyncCopy">Copy link</button>
-        ${localStorage.getItem(OWNER_KEY) ? '<button class="ghost" id="dSyncRotate">Reset staff link</button>' : ''}
+        ${localStorage.getItem(OWNER_KEY) && localStorage.getItem(SHOP_KEY) ? '<button class="ghost" id="dSyncRotate">Reset staff link</button>' : ''}
         <button class="ghost danger" id="dSyncOff">Turn off sync on this device</button>
-      </div>` : `
+      </div>
+      ${staffView() ? `
+      <h4 style="margin-top:18px">Owner?</h4>
+      <p class="hint">This device is on the staff link, so ingredient costs and margins are hidden. If the shop is yours, paste your owner code to see them here. Find it on the device where you first turned on sync, under Data ▾.</p>
+      <div class="bar" style="justify-content:flex-start">
+        <input id="dOwnerCode" placeholder="owner code" style="flex:1;min-width:0;font-family:var(--font-mono)">
+        <button class="btn" id="dOwnerUnlock">Unlock</button>
+      </div>
+      <p class="hint" id="dOwnerMsg"></p>` : localStorage.getItem(OWNER_KEY) ? `
+      <h4 style="margin-top:18px">Owner code</h4>
+      <p class="hint">Unlocks the cost pages on your <em>own</em> other devices. Treat it like a key: anyone who has it can also reset the staff link. Never give it to staff.</p>
+      <p><input id="dOwnerShow" readonly value="${esc(localStorage.getItem(OWNER_KEY))}" style="width:100%;font-family:var(--font-mono)"></p>` : ''}` : `
       <p class="hint">Turn on sync to get a secret link: open it on any phone or laptop and everyone shares the same live data. Your data then also lives in Portafile's cloud storage.</p>
       <div class="bar" style="justify-content:flex-start"><button class="btn" id="dSyncOn">Turn on sync</button></div>`}`}`);
   const syncOn = $('#dSyncOn'); if (syncOn) syncOn.onclick = () => {
@@ -591,9 +649,26 @@ function dataMenu() {
       alert('New staff link created. Every old link has stopped working and those devices have been wiped — share the new link with your staff.');
     } catch (e) { syncRotate.disabled = false; alert('Could not reset the link — check your connection and try again.'); }
   };
-  const syncOff = $('#dSyncOff'); if (syncOff) syncOff.onclick = () => { localStorage.removeItem(SYNC_KEY); location.search = ''; };
+  const syncOff = $('#dSyncOff'); if (syncOff) syncOff.onclick = () => { localStorage.removeItem(SYNC_KEY); localStorage.removeItem(ROLE_KEY); location.search = ''; };
+  /* Owner on a second device. The pasted code is checked by the SERVER before we store it, so a
+     staff member typing 40 random characters gets nothing — the role header still says 'staff'. */
+  const unlock = $('#dOwnerUnlock'); if (unlock) unlock.onclick = async () => {
+    const code = $('#dOwnerCode').value.trim(), msg = $('#dOwnerMsg');
+    if (!/^[a-f0-9]{40}$/.test(code)) { msg.textContent = 'That does not look like an owner code.'; return; }
+    unlock.disabled = true; msg.textContent = 'Checking…';
+    try {
+      const r = await fetch('/api/state?k=' + syncKey, { headers: { 'x-portafile-owner': code } });
+      if (r.ok && r.headers.get('x-portafile-role') === 'owner') {
+        localStorage.setItem(OWNER_KEY, code); // only ever stored after the server agreed
+        localStorage.setItem(ROLE_KEY, 'owner');
+        closeModal(); render();
+      } else { msg.textContent = "That is not this shop's owner code."; unlock.disabled = false; }
+    } catch (e) { msg.textContent = 'Could not check right now — try again when you have signal.'; unlock.disabled = false; }
+  };
   $('#dExport').onclick = () => {
-    const blob = new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' });
+    // Hiding costs on screen is pointless if a staff device can export the cost sheet to a file.
+    const out = staffView() ? { ...S, ingredients: S.ingredients.map(i => ({ ...i, unitCost: 0 })) } : S;
+    const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `portafile-${S.shop.name.replace(/\W+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.json`;
@@ -626,6 +701,7 @@ function helpModal() {
       <h4>Training</h4><p>Order the path (drinks + custom skills, grouped by day), pick a barista, tick sign-offs. Progress is saved per barista.</p>
       <h4>Print</h4><p>Cards and the new-hire pack hide costs on purpose — they get taped where customers can see. The margin report is the owner-only page.</p>
       <h4>Your data</h4><p>Lives in this browser (localStorage). <strong>Data → Export backup</strong> before switching machines. No account, no bill. If you turn on <strong>Sync</strong> (Data menu), your data also lives in Portafile's cloud storage so staff phones share it via a secret link.</p>
+      <h4>Staff view</h4><p>Devices that join through the staff link see recipes, dial-ins and training — never ingredient costs, margins or the price table. Those stay on the owner's devices (the ones holding the owner code, under Data ▾).</p>
     </div>
     <div class="bar"><button class="btn" data-close>Got it</button></div>`);
 }

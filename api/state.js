@@ -64,17 +64,27 @@ async function resolveKey(k) {
   const ptr = await readJsonSure(`keys/${k}.json`);
   const shopId = String(ptr?.shopId || '');
   if (!HEX40.test(shopId)) return { state: 'unknown' };
-  const own = await readJson(`owners/${shopId}.json`);
+  // readJsonSure, not readJson: an existing record CAN read as absent under Blob's eventual
+  // consistency, and absence here now decides two things — that the link is valid, and that the
+  // caller may see costs. Real shops have the record, so the retry costs nothing on the hot path.
+  const own = await readJsonSure(`owners/${shopId}.json`);
   // No owner record at all = a pre-owner-token shop (the legacy one): it has no rotation, so its
   // link stays valid forever. A null here from a flaky read lands in the same safe branch.
   if (own && own.currentKey && k !== own.currentKey) return { state: 'revoked', own };
-  return { state: 'ok', shopId };
+  return { state: 'ok', shopId, own };
 }
 // A 410 says WHOSE link died: owner:true only for the shop's real owner (their device settles and
 // retries instead of locking). Without this the client trusted any local owner token — so a device
 // owning a DIFFERENT shop could never be revoked from this one.
 const revoked = (own, owner) => ({ error: 'revoked', owner: !!(own && owner && sha256(owner) === own.ownerHash) });
 const UNKNOWN = { error: 'unknown-key' };
+// Display role for the client: 'staff' only when this shop HAS an owner record and the request did
+// not prove ownership. Deciding it here — not from the presence of a local token — is what stops a
+// staff device from unhiding ingredient costs by writing a made-up token into its own localStorage.
+// A shop with no owner record (the legacy one) has no staff links at all, so it stays 'owner'; the
+// same branch catches a flaky null read, and the client refuses to downgrade staff→owner without a
+// token of its own, so an eventually-consistent miss can never flash costs onto a barista's phone.
+const roleOf = (own, owner) => (own && own.ownerHash && sha256(owner) !== own.ownerHash) ? 'staff' : 'owner';
 
 export default async function handler(req, res) {
   const k = String(req.query.k || '');
@@ -89,6 +99,7 @@ export default async function handler(req, res) {
     const state = await readJson(`shops/${r.shopId}.json`);
     if (!state) return res.status(404).json({ error: 'not found' }); // pointer fine, data missing — client must NOT treat this as revocation
     res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('x-portafile-role', roleOf(r.own, owner));
     return res.status(200).json(state);
   }
 
