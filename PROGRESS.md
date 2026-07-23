@@ -123,6 +123,16 @@ Verified by driving the real dashboard in a browser against the real production 
 
 ---
 
+## 2026-07-23 — The policy caught up with the feedback button
+
+Ran a second opinion on my legal and privacy setup past what I'd already written, and the useful thing it produced was not its advice — most of which was wrong about my own app, telling me I don't store costs on my servers (I do, when sync is on), don't analyze user data (the adoption percentages read shop state), and that browser data disappears when you close the tab (it doesn't). Pasting its suggested wording onto the site would have published four false statements on the one page whose whole job is to be true. **The risk was never the collecting. It was the claiming.**
+
+What it did surface, indirectly: the in-app 👍/👎 feedback button sends a note, an optional email and the owner/staff role to my server and keeps it, and the privacy policy never said so. The modal says it in context; the modal is not the document anyone reads when they're deciding whether to trust me. Added a "Feedback you send us" paragraph, bumped the effective date, deployed, confirmed live.
+
+Still open: both legal pages describe Stripe payments, refunds and auto-renewal as though the payment path exists. It doesn't yet. A refund clause for a charge that can't happen is the same class of untrue as everything I just rejected.
+
+---
+
 ## Open threads
 
 - Both founding shops are live and syncing, but **zero dial-ins and zero training sign-offs** between them, and only one has entered real recipes. The moat gate is failing today — that's a conversation with those two owners, not a feature.
