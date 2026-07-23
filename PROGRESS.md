@@ -133,6 +133,18 @@ Still open: both legal pages describe Stripe payments, refunds and auto-renewal 
 
 ---
 
+## 2026-07-23 — I orphaned my own test shop, and found a hole in the delete path
+
+Deleted a signup record during a test without first erasing that shop's cloud data, and discovered the "delete cloud data" button only exists on rows of the *signups* table — it reads the shopId out of the lead record. Delete the record and you throw away the only copy of the id the dashboard holds, while the actual data blob sits in storage with nothing pointing at it. No way back through the UI.
+
+The data was never lost — the metrics endpoint enumerates the shop blobs themselves, so the orphan was sitting right there in the per-cafe table with its id, just with no button next to it. That's the fix: the per-cafe table is the one view that can always see an orphan, so the delete button belongs there too. Both buttons now call one `wipeShop(shopId, label)` so the confirm wording and the auth can't drift apart.
+
+Why it matters beyond my own mess: if a customer ever asks me to erase their data and I'd already tidied up their signup record, I'd have had no honest way to do it. "Delete my data" has to work from whichever view I happen to be standing in, or it's a promise with a footnote.
+
+Verified by driving the real dashboard against production: all three shops rendered a button, clicking the orphan's returned ok, and it was gone from the table on reload with the other two untouched. Cost: nothing. `admin/` is never deployed, so this ships to my laptop only.
+
+---
+
 ## Open threads
 
 - Both founding shops are live and syncing, but **zero dial-ins and zero training sign-offs** between them, and only one has entered real recipes. The moat gate is failing today — that's a conversation with those two owners, not a feature.

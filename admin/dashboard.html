@@ -236,12 +236,20 @@ async function delLead(i) {
 }
 async function delCloud(i) {
   const l = (window._leads || [])[i]; if (!l || !/^[a-f0-9]{40}$/.test(l.shopId || '')) return;
-  if (!confirm(`Erase the CLOUD DATA for "${l.shop}" (${l.email})?\n\nTheir synced recipes and prices are permanently deleted from Portafile's storage. Every staff device is wiped and disconnected; the shop owner's own device keeps its local copy but goes offline. When they come back to the site, they'll see the signup form again.\n\nThis cannot be undone. Their signup record stays in this list unless you also press "delete record".`)) return;
+  await wipeShop(l.shopId, `"${l.shop}" (${l.email})`, 'Their signup record stays in this list unless you also press "delete record".');
+}
+/* The signups table is NOT the only way in: deleting a lead record throws away the only copy of that
+   shop's id it holds, orphaning live cloud data with no button pointing at it (happened once). The
+   per-cafe table below enumerates the shop BLOBS, so it can always reach an orphan. Both go through
+   here so the confirm wording and the auth stay identical. */
+async function wipeShop(shopId, label, tail = '') {
+  if (!/^[a-f0-9]{40}$/.test(shopId || '')) return;
+  if (!confirm(`Erase the CLOUD DATA for ${label}?\n\nTheir synced recipes and prices are permanently deleted from Portafile's storage. Every staff device is wiped and disconnected; the shop owner's own device keeps its local copy but goes offline. When they come back to the site, they'll see the signup form again.\n\nThis cannot be undone.${tail ? ' ' + tail : ''}`)) return;
   const k = localStorage.getItem('portafile-admin-key');
   if (!k) { alert('Click "Fetch signups" first so the admin key is set.'); return; }
   const r = await fetch('https://portafile.vercel.app/api/state', {
-    method: 'DELETE', headers: { 'x-portafile-admin': k, 'x-portafile-shop': l.shopId } });
-  if (r.ok) alert(`Cloud data for "${l.shop}" deleted. Their devices disconnect within ~30 seconds.`);
+    method: 'DELETE', headers: { 'x-portafile-admin': k, 'x-portafile-shop': shopId } });
+  if (r.ok) alert(`Cloud data for ${label} deleted. Their devices disconnect within ~30 seconds.`);
   else alert('Delete failed: ' + r.status);
 }
 function adminKey() {
@@ -286,14 +294,17 @@ async function loadMetrics() {
       : '<tr><td class="tiny">No feedback yet.</td></tr>';
     const day = ms => ms ? new Date(ms).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—';
     document.getElementById('shopTable').innerHTML = (m.perShop || []).length
-      ? '<tr><th>Cafe</th><th>Your label</th><th>First live</th><th>Last active</th><th>Days used<br><span class="tiny">of last 30</span></th><th>Status</th></tr>'
+      ? '<tr><th>Cafe</th><th>Your label</th><th>First live</th><th>Last active</th><th>Days used<br><span class="tiny">of last 30</span></th><th>Status</th><th></th></tr>'
         + m.perShop.map(s => {
             const quiet = s.quietDays !== null && s.quietDays >= 14;
+            // label for the confirm/alert copy: their name if we have one, else the id stub
+            const label = s.name ? `"${s.name}"` : `the unnamed shop ${s.id.slice(0, 8)}…`;
             return `<tr><td>${s.name ? esc(s.name) : `<span class="tiny">${esc(s.id.slice(0, 8))}… (unnamed)</span>`}`
               + `${s.email ? `<div class="tiny">${esc(s.email)}</div>` : ''}</td>`
               + `<td><input value="${esc(S.labels[s.id] || '')}" placeholder="your name for them" style="width:150px" onchange="setLabel('${esc(s.id)}',this.value)"></td>`
               + `<td>${day(s.created)}</td><td>${day(s.lastActive)}</td><td>${esc(s.days30)}</td>`
-              + `<td class="${quiet ? 'due' : ''}">${s.quietDays === null ? '—' : quiet ? `⚠ quiet ${s.quietDays} days — call them` : `active (${s.quietDays}d ago)`}</td></tr>`;
+              + `<td class="${quiet ? 'due' : ''}">${s.quietDays === null ? '—' : quiet ? `⚠ quiet ${s.quietDays} days — call them` : `active (${s.quietDays}d ago)`}</td>`
+              + `<td><button class="mini" onclick="wipeShop('${esc(s.id)}', ${esc(JSON.stringify(label))})">delete cloud data</button></td></tr>`;
           }).join('')
       : '<tr><td class="tiny">No shops with sync on yet.</td></tr>';
     st.textContent = 'as of ' + new Date(m.generatedAt).toLocaleTimeString();
