@@ -10,7 +10,33 @@ the Blob store. The store is now empty — see §3.
 
 ---
 
-## 1. TL;DR
+## 0. RESOLVED 2026-07-24 — read this before anything below
+
+**This handoff is history. Everything it lists as pending is committed, pushed and
+deployed.** `main` is at `6c81a07`, clean and in sync with `origin/main`.
+
+Verified live 2026-07-24, not remembered: `GET /api/state?k=187cdea…` returns
+`{"error":"deleted","owner":false,"shopId":"187cdea…"}` — the `shopId` field is
+present, which §5 below names as the exact tell that the server half is deployed.
+All five verify suites pass (**126 checks**, up from the 96 quoted below).
+
+Two things changed after this file was written, and it contradicts both:
+
+1. **A delete now wipes the owner's device too.** §2 and §5 describe owner devices
+   deliberately keeping their local copy. Ethan tested that on 2026-07-24, saw the
+   signup form sitting on top of his still-populated shop, and called it a bug —
+   correctly, since it reads as "the delete did nothing." Delete now means clean
+   slate everywhere, which makes it the one button that can erase a café's last
+   copy; the confirm dialog and the privacy page both say so now.
+2. **The security audit is fully closed.** `safetysurface.md` was itself stale for
+   three days — it described HIGH-1 (public blobs) as open long after the migration
+   to the private store. Corrected and re-verified from scratch on 2026-07-24.
+
+**There is no pending task in this file.**
+
+---
+
+## 1. TL;DR *(as written 2026-07-23 — superseded by §0)*
 
 Ethan pressed **delete cloud data** in his founder dashboard while testing, and the shop's own browser
 did not return to the signup gate — it just carried on as if nothing happened. That is root-caused,
