@@ -1,12 +1,11 @@
 """Portafile site health check — run daily by .github/workflows/health.yml.
 
 Probes the live site the way a real visitor does (plain HTTPS, no credentials) and
-emails the operator when something is broken. Stdlib only: urllib + smtplib, so the
-workflow needs no pip install and nothing can drift or cost money.
+emails the operator the result every run, pass or fail. Stdlib only: urllib + smtplib,
+so the workflow needs no pip install and nothing can drift or cost money.
 
-  python3 health_check.py            # check, email if broken (or if it's Monday)
+  python3 health_check.py            # check + email the result, pass or fail
   python3 health_check.py --dry-run  # check + print, never email; exit 1 if broken
-  python3 health_check.py --email    # force an email even when everything passes
 
 Needs GMAIL_ADDRESS + GMAIL_APP_PASSWORD (same 16-char app password reg-diff-engine
 uses) in the environment. Reads them from a local .env line as a fallback.
@@ -128,9 +127,9 @@ def main():
     results, secs = check(retry=not dry)
     subject, body, failures = report(results, secs)
     print(subject + "\n" + body)
-    # ponytail: mail on every failure, plus a Monday all-clear so silence stays meaningful.
-    weekly = datetime.now(timezone.utc).weekday() == 0
-    if not dry and (failures or weekly or "--email" in sys.argv):
+    # ponytail: mail every run, pass or fail — a daily all-clear, so a MISSING email is
+    # itself the alarm (it means the workflow stopped running).
+    if not dry:
         send(subject, body)
         print(f"emailed {TO}")
     return 1 if failures else 0

@@ -1,15 +1,10 @@
 name: Site health check
-# Probes the live site daily and emails ethankw.yap@gmail.com when anything breaks
-# (plus a Monday all-clear). Stdlib-only Python, so there is nothing to install.
+# Probes the live site daily and emails ethankw.yap@gmail.com the result every run,
+# pass or fail. Stdlib-only Python, so there is nothing to install.
 on:
   schedule:
     - cron: "0 15 * * *"   # 15:00 UTC daily (~8am US Pacific)
   workflow_dispatch:        # "Run workflow" button for an on-demand check
-    inputs:
-      email:
-        description: "Email the result even if everything passes"
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -26,4 +21,4 @@ jobs:
         env:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: python3 health_check.py ${{ inputs.email && '--email' || '' }}
+        run: python3 health_check.py

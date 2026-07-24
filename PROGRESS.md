@@ -165,6 +165,10 @@ Deployed the delete-to-gate fix to production and proved it end to end against t
 
 Ran the regression pass before deploying and again after. The only thing that could have gone wrong here wasn't the delete at all — it was the second half of the fix, which re-checks sync every time you look at the tab. If that ever pulled the cloud copy on top of an edit I'd just typed, I'd have traded one silent bug for a worse one. Watched both sides of it: mid-edit, the focus check stays out of the way; once the save lands, it pulls. Cost of the whole thing: nothing new, one extra read when a synced tab regains focus.
 
+**Then I noticed I'd never seen a health email, and that turned out to be the design's fault, not a bug.** The checker had run four times, passed every time, and mailed me exactly once — the forced test on Wednesday, which was sitting in my inbox the whole time. It was built to stay quiet unless something breaks, plus a Monday all-clear so silence would still mean something. On paper that's correct. In practice I spent a week unable to tell "the site is fine" from "the alarm is dead," which is the only question an alarm exists to answer. So it now emails every single run, pass or fail. A missing email is now itself the alarm.
+
+The obvious objection is that a daily email you stop reading is exactly how a real outage gets ignored. Two things make that survivable: the subject line is either *Portafile healthy* or *Portafile DOWN — N checks failing*, so it's a glance and not a read; and I'd rather scan a boring inbox line than trust silence from a job I can't see. Cost is zero — stdlib Python on GitHub's free runners, about 15 seconds a day, no model and no API anywhere in it. Also found that the delete→gate work from yesterday was still sitting on my laptop, never pushed. GitHub had no copy of it. Fixed that in the same push.
+
 ---
 
 ## Open threads
