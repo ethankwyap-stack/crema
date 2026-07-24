@@ -1,5 +1,5 @@
 # WORKS.md — what Portafile must do
-Updated 2026-07-22 (2nd run) · Run: `/still-works` (add `live` after a deploy)
+Updated 2026-07-24 (3rd run) · Run: `/still-works` (add `live` after a deploy)
 
 The feature checklist and the blast-radius map. `CLAUDE.md` holds the *gotchas* (why the
 code is shaped the way it is); this file holds *what must still be true for a user*.
@@ -41,7 +41,7 @@ code is shaped the way it is); this file holds *what must still be true for a us
 
 ### App — sharing, roles, sync
 - [ ] Sync on → a second browser opening the `?k=` link sees the same shop
-      auto: `node product/verify-sync.js` (59 checks)
+      auto: `node product/verify-sync.js` (64 checks)
 - [ ] A staff link opens **straight into the recipes** — never a signup form
       prove: fresh browser + `?k=` → cards visible, no gate · auto: `verify-gate.js`
 - [ ] Staff devices see no ingredient costs, margins or price table; owner devices do
@@ -50,6 +50,9 @@ code is shaped the way it is); this file holds *what must still be true for a us
       auto: `verify-killpass.js` (10 checks)
 - [ ] A revoked device keeps its signup record (no duplicate lead on re-entry) · auto: `verify-killpass.js`
 - [ ] Founder delete: staff devices wipe fully, owner keeps its local copy · auto: `verify-sync.js`
+- [ ] Founder delete sends the shop's OWN browser back to the signup gate — even a seeding
+      owner whose device has no `synced` marker and whose tombstone lost its ownerHash
+      auto: `verify-sync.js` (the five `delete:` cases; three fail on pre-fix code)
 
 ### App — access gate and feedback
 - [ ] First-time visitor (no `?k=`) gets the signup form; it unlocks and never returns
@@ -87,6 +90,14 @@ code is shaped the way it is); this file holds *what must still be true for a us
   test just wiped — `verify-sync.js` guards this with `pf-test-stopseed`.
 - The staff-link signup wall: sharing looked broken while the data was fine. Any change to
   the gate must be re-tested from a *fresh* browser on a `?k=` link.
+- Founder delete failed to return the shop's own browser to the gate when the deleting
+  device was a *seeding owner* (no `synced` marker yet) whose tombstone had lost its
+  ownerHash to a flaky read — both proofs of "is this shop mine?" failed together. Never
+  build the client's identity check on a server value an eventually-consistent read can
+  erase; the 410 body now carries the dead shopId as local proof.
+- The 30s poll freezes in a background tab; the app re-pulls on `visibilitychange`→visible
+  and `online`. That focus-pull is guarded by `!syncPushT` so it can't overwrite an edit
+  still inside its 800ms save debounce (`smoke.js` observes both sides).
 - **Test traps that fake a failure** (all three cost a re-run on 2026-07-22):
   - Printed cards/station/pack DO contain `$` — those are *menu prices*, which are supposed
     to print. Only ingredient cost / margin / COGS must be absent. Assert against the

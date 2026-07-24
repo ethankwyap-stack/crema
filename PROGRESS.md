@@ -159,6 +159,14 @@ Wrote the failing test first — three checks red on the old code, green on the 
 
 ---
 
+## 2026-07-24 — shipped it, then watched it work on the real site
+
+Deployed the delete-to-gate fix to production and proved it end to end against the live API, not just the tests. The run that matters recreated the exact case that broke: a freshly-seeded owner device with no "I pulled this" marker yet. Deleted it through the dashboard's real button, and the app returned to the signup gate in 4 seconds while keeping its own local copy — the owner's data on their own machine is never what my delete button erases. Health check 8/8, and the one production fact I most wanted to see is now true: the server names the dead shop in its reply, which is the whole reason the browser can recognize its own without trusting a flag that can vanish.
+
+Ran the regression pass before deploying and again after. The only thing that could have gone wrong here wasn't the delete at all — it was the second half of the fix, which re-checks sync every time you look at the tab. If that ever pulled the cloud copy on top of an edit I'd just typed, I'd have traded one silent bug for a worse one. Watched both sides of it: mid-edit, the focus check stays out of the way; once the save lands, it pulls. Cost of the whole thing: nothing new, one extra read when a synced tab regains focus.
+
+---
+
 ## Open threads
 
 - **The store is empty.** I deleted both founding shops while testing this. Their owners' devices keep local copies, but the cloud side is gone and those shopIds are dead forever — re-syncing makes a brand-new shop. Worth a message to whoever was on the second one.
