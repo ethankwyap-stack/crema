@@ -145,9 +145,23 @@ Verified by driving the real dashboard against production: all three shops rende
 
 ---
 
+## 2026-07-23 — "Delete my data" was quietly a no-op on the one device that mattered
+
+Pressed delete cloud data again, this time on a shop I'd just made, and the app in the other tab carried on as if nothing had happened. No gate, no disconnect, nothing.
+
+First thing I did was try to reproduce it on a clean browser against the real site — and it worked perfectly, back to the signup form in 24 seconds. So the feature wasn't broken; a branch nobody had ever exercised was. The client, before wiping anything, has to answer "is this dead shop mine?" It had two ways to know, and my exact test pattern kills both at once. A device that *creates* a shop doesn't get its "I pulled this" marker until its first poll thirty seconds later — so any shop I delete right after making it has none. And the server's "you owned this" flag is read out of the tombstone, which copies it from a storage read that this project already knows can come back empty (and the legacy shop never had one at all). With neither proof, the app decided the dead shop belonged to someone else, silently switched sync off, and left everything on screen.
+
+The same missing flag had a nastier twin: it also decided whether to *keep* the local copy. So on an unlucky read, my own delete button could have wiped a shop's last remaining copy off the owner's laptop — the exact thing the whole tombstone design exists to prevent. That one never bit me and I'd never have found it looking at the symptom I was chasing.
+
+Fix is small: the server now says *which* shop died in the 410, and the browser compares that to the shopId it created. That's a fact it can check itself instead of trusting a flag that can go missing. Second half: the app now re-checks whenever you look at the tab again, because browsers freeze background timers and I was staring at the dashboard, not the app. Live, that's 24 seconds down to 4.
+
+Wrote the failing test first — three checks red on the old code, green on the new — so this exact hole can't come back. 96 checks pass. Honest limit, worth saying out loud: a browser that never turned sync on can't be reached by anything I press. There's no account to disable. If someone wants their local copy gone, they have to clear it themselves, and I should say that plainly rather than pretend the button is stronger than it is.
+
+---
+
 ## Open threads
 
-- Both founding shops are live and syncing, but **zero dial-ins and zero training sign-offs** between them, and only one has entered real recipes. The moat gate is failing today — that's a conversation with those two owners, not a feature.
-- Neither founding shop has a signup record, so onboarding time and cafe names stay blank. Either walk the next owner through the signup form on their own device, or accept the metric only covers shops that arrive on their own.
+- **The store is empty.** I deleted both founding shops while testing this. Their owners' devices keep local copies, but the cloud side is gone and those shopIds are dead forever — re-syncing makes a brand-new shop. Worth a message to whoever was on the second one.
+- Neither founding shop had a signup record, so onboarding time and cafe names stayed blank. Either walk the next owner through the signup form on their own device, or accept the metric only covers shops that arrive on their own.
 - Post-launch validation with kill criteria (from `BUILD-LOG.md`) hasn't run yet.
 - Roaster white-label channel is a plan, not a conversation with a roaster.

@@ -37,7 +37,7 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
     }
     // a deleted shop answers 410 deleted from its tombstone for every key that points at it
     if (keys[k] && owners[keys[k]] && owners[keys[k]].deleted)
-      return route.fulfill({ status: 410, json: { error: 'deleted', owner: owners[keys[k]].hash === owner } });
+      return route.fulfill({ status: 410, json: { error: 'deleted', owner: owners[keys[k]].hash === owner, shopId: keys[k] } });
     // a key that resolves but is no longer the shop's current one is positively revoked → 410
     const revoked = keys[k] && owners[keys[k]] && owners[keys[k]].currentKey !== k;
     if (revoked) return route.fulfill({ status: 410, json: { error: 'revoked', owner: owners[keys[k]].hash === owner } }); // owner flag mirrors api/state.js
@@ -77,7 +77,10 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   await p0.goto(base + '/index.html?selftest=1', { waitUntil: 'networkidle' });
   await p0.waitForTimeout(1200);
   ok('no-key: selftest still passes', (await p0.textContent('.selftest')).includes('PASS'));
-  ok('no-key: zero API calls', apiCalls === 0);
+  // focus/online wake the sync recheck — a local-only shop must still touch the network NEVER
+  await p0.evaluate(() => { document.dispatchEvent(new Event('visibilitychange')); window.dispatchEvent(new Event('online')); });
+  await p0.waitForTimeout(600);
+  ok('no-key: zero API calls (even on tab focus)', apiCalls === 0);
   ok('no-key: no sync badge', await p0.locator('#syncBadge').count() === 0);
   await c0.close();
 
@@ -335,6 +338,35 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   ok('delete: owner can start a FRESH shop afterwards (new ids, new link)',
     !!rebornK && rebornK !== newK && !!keys[rebornK] && keys[rebornK] !== SHOP && !!cloud[keys[rebornK]]);
   ok('delete: old shop stays tombstoned', owners[SHOP].deleted === true && !cloud[SHOP]);
+
+  /* 7g. The two ways the founder's delete used to look like it did nothing.
+     (a) The tombstone has no ownerHash — api/state.js copies it from a Blob read that CAN flake to
+     null, and a pre-owner-token shop never had one — so the server can only answer owner:false.
+     (b) The owner device that SEEDED the shop has no `synced` marker until its first 200 GET, so a
+     shop deleted in its first 30 seconds (every test cycle) has neither proof. With both missing the
+     device fell into the stale-bookmark branch: sync stopped, the app stayed open, the gate never
+     came back. It must recognise its OWN shop from the shopId in the 410 body instead.
+     Same section covers the other half of "guaranteed": a hidden tab reacts on focus, not 30s later. */
+  const shop2 = keys[rebornK];
+  await pA.evaluate(() => localStorage.setItem('portafile.v1.lead', '{"email":"o2@y.z"}'));
+  ok('delete: seeding owner really has no synced marker', await pA.evaluate(() => !localStorage.getItem('portafile.v1.synced')));
+  owners[shop2] = { deleted: true }; delete cloud[shop2]; // the admin DELETE, with the ownerHash lost
+  await pA.waitForTimeout(2500);
+  ok('delete: nothing has happened yet (30s poll not due)', await pA.evaluate(() => !!localStorage.getItem('portafile.v1.lead')));
+  // headless Chromium reports every tab as visible, so the browser's own "you're back" signal is
+  // dispatched here instead of by backgrounding the tab — the handler it wakes is the real one
+  await pA.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await pA.waitForTimeout(2500);
+  ok('delete: tab reacts the moment it is looked at', await pA.evaluate(() => !localStorage.getItem('portafile.v1.lead')));
+  ok('delete: hashless tombstone still leaves the owner its data', await pA.evaluate(() => {
+    const s = localStorage.getItem('portafile.v1'); return !!s && JSON.parse(s).recipes.length > 0;
+  }));
+  ok('delete: hashless tombstone still clears the dead credentials', await pA.evaluate(() =>
+    !localStorage.getItem('portafile.v1.synckey') && !localStorage.getItem('portafile.v1.owner') &&
+    !localStorage.getItem('portafile.v1.shopid') && !localStorage.getItem('portafile.v1.synced')));
+  // re-sync so the offline section below still has a keyed device
+  await pA.evaluate(() => dataMenu());
+  await pA.click('#dSyncOn'); await pA.waitForTimeout(1800);
 
   // 8. offline: API dead → badge degrades, app keeps working locally
   await pA.unroute('**/api/state*');

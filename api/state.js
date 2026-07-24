@@ -99,7 +99,7 @@ async function resolveKey(k) {
   // Deletion is a POSITIVE value read out of the record, never a missing blob — a flaky read
   // produces absence, and absence lands in the safe branches below. shopIds are never reused,
   // so a 'deleted' answer can never be a stale lie.
-  if (own && own.deleted) return { state: 'deleted', own };
+  if (own && own.deleted) return { state: 'deleted', own, shopId };
   // No owner record at all = a pre-owner-token shop (the legacy one): it has no rotation, so its
   // link stays valid forever. A null here from a flaky read lands in the same safe branch.
   if (own && own.currentKey && k !== own.currentKey) return { state: 'revoked', own };
@@ -111,8 +111,13 @@ async function resolveKey(k) {
 const gone = (err, own, owner) => ({ error: err, owner: !!(own && owner && sha256(owner) === own.ownerHash) });
 const revoked = (own, owner) => gone('revoked', own, owner);
 // the tombstone keeps ownerHash (a hash of a random token — zero personal data) for exactly this
-// flag: the owner's device is told "you owned this" so it keeps its LOCAL copy instead of wiping
-const deleted = (own, owner) => gone('deleted', own, owner);
+// flag: the owner's device is told "you owned this" so it keeps its LOCAL copy instead of wiping.
+// The dead shopId rides along so a device can recognise its OWN shop without that flag — the
+// ownerHash comes from a read that can flake to null, and a pre-owner-token shop never had one.
+// Safe to disclose only because it is disclosed only for a DELETED shop: the tombstone is
+// permanent, so every path (GET, PUT create, rotate) answers 410 or 404 for it forever. It is a
+// response body, never a URL — the "shopId never in a URL" rule is about access logs.
+const deleted = (own, owner, shopId) => ({ ...gone('deleted', own, owner), shopId });
 const UNKNOWN = { error: 'unknown-key' };
 // Display role for the client: 'staff' only when this shop HAS an owner record and the request did
 // not prove ownership. Deciding it here — not from the presence of a local token — is what stops a
@@ -140,7 +145,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     if (!HEX40.test(k)) return res.status(400).json({ error: 'bad key' });
     const r = await resolveKey(k);
-    if (r.state === 'deleted') return res.status(410).json(deleted(r.own, owner));
+    if (r.state === 'deleted') return res.status(410).json(deleted(r.own, owner, r.shopId));
     if (r.state === 'revoked') return res.status(410).json(revoked(r.own, owner));
     if (r.state === 'unknown') return res.status(404).json(UNKNOWN);
     const state = await readJson(`shops/${r.shopId}.json`);
@@ -160,7 +165,7 @@ export default async function handler(req, res) {
     if (raw.length > 1_000_000) return res.status(413).json({ error: 'too large' }); // ponytail: 1MB cap ≈ 100× a real shop; raise if a legit shop ever hits it
 
     const r = await resolveKey(k);
-    if (r.state === 'deleted') return res.status(410).json(deleted(r.own, owner)); // no write path back from deletion
+    if (r.state === 'deleted') return res.status(410).json(deleted(r.own, owner, r.shopId)); // no write path back from deletion
     if (r.state === 'revoked') return res.status(410).json(revoked(r.own, owner));
     let shopId = r.shopId;
     if (r.state === 'unknown') {
@@ -223,7 +228,7 @@ export default async function handler(req, res) {
     const own = await readJson(`owners/${shop}.json`);
     // same 403 for no-such-shop and wrong token — no existence oracle
     if (!own || sha256(owner) !== own.ownerHash) return res.status(403).json({ error: 'not-owner' });
-    if (own.deleted) return res.status(410).json(deleted(own, owner)); // a deleted shop can't mint new links
+    if (own.deleted) return res.status(410).json(deleted(own, owner, shop)); // a deleted shop can't mint new links
     // Write the new pointer first, then flip currentKey — that flip IS the revocation, so if it
     // fails nothing changes and the owner sees an error, rather than being told a live link is dead.
     // ponytail: superseded pointers are left behind (77 bytes each); they resolve to 410 forever.

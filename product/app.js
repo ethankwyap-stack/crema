@@ -215,25 +215,32 @@ let revokeStrikes = 0;
    never be able to destroy a shop's only remaining copy. 'deleted' is a positive tombstone value
    (a flaky read yields absence, not deleted:true, and shopIds are never reused), so unlike the
    revoke path one answer is proof enough — no two-strike rule needed. */
-function syncDeletedSignal(isOwner) {
+function syncDeletedSignal(isOwner, deletedShop) {
   clearInterval(syncPollT); clearTimeout(syncPushT);
-  // "part of the shop" = pulled through this link, OR the server hash-confirmed us as its owner
-  // (the seeding device may never have GET-pulled, so it has no synced marker)
-  if (localStorage.getItem(SYNCED_KEY) !== syncKey && !isOwner) {
+  /* Is the dead shop OURS? Two independent proofs, either is enough. The server's hash check
+     (isOwner) alone was not: the tombstone copies its ownerHash from a Blob read that CAN flake to
+     null, and a pre-owner-token shop never had one — so the real owner gets owner:false. Combined
+     with a seeding device having no `synced` marker until its first 200 GET (true for every shop
+     deleted in its first 30 seconds), that dropped the owner into the stale-bookmark branch below:
+     sync stopped, the app stayed open, the gate never returned. The shopId in the 410 body settles
+     it locally. It can't misfire on a stale bookmark — that device's shopId is its own live shop. */
+  const mine = isOwner || (!!deletedShop && deletedShop === localStorage.getItem(SHOP_KEY));
+  // "part of the shop" = ours, or we pulled its data through this link (a staff device)
+  if (!mine && localStorage.getItem(SYNCED_KEY) !== syncKey) {
     // a stale bookmark of a deleted shop on a device that was never part of it: just stop syncing
     localStorage.removeItem(SYNC_KEY); localStorage.removeItem(ROLE_KEY);
     history.replaceState(null, '', location.pathname);
     syncStatus = 'deleted'; syncBadge();
     return;
   }
-  const keep = isOwner ? localStorage.getItem(KEY) : null;
+  const keep = mine ? localStorage.getItem(KEY) : null;
   Object.keys(localStorage).filter(x => x.startsWith('portafile.v1')).forEach(x => localStorage.removeItem(x)); // INCLUDING lead* — the gate must reappear
   if (keep) localStorage.setItem(KEY, keep);
   location.replace(location.pathname); // reload clean: no ?k, no signup record → gate greets them fresh
 }
 /* Routes a 410 by its body: 'deleted' (shop erased by founder) vs 'revoked' (link rotated). */
 function syncGoneSignal(body) {
-  return body?.error === 'deleted' ? syncDeletedSignal(!!body.owner) : syncRevokeSignal(body?.owner);
+  return body?.error === 'deleted' ? syncDeletedSignal(!!body.owner, String(body.shopId || '')) : syncRevokeSignal(body?.owner);
 }
 function syncRevokeSignal(isOwner) {
   if (isOwner) return syncRestart(3000); // this shop's real owner: never terminal, just settle and retry
@@ -255,6 +262,7 @@ function syncPush() {
   if (!syncKey || !syncPulled || locked) return;
   clearTimeout(syncPushT);
   syncPushT = setTimeout(async () => {
+    syncPushT = 0; // no longer pending — lets the focus recheck below know a save isn't in flight
     try {
       const owner = localStorage.getItem(OWNER_KEY), shopId = localStorage.getItem(SHOP_KEY);
       const headers = { 'content-type': 'application/json' };
@@ -964,5 +972,14 @@ else {
   render();
   gate();
   if (syncKey) { syncPull(); syncPollT = setInterval(syncPull, 30000); syncBadge(); }
+  /* Browsers throttle and eventually freeze timers in a background tab, so the 30s poll is not a
+     promise — a deleted shop or a dead link could sit unnoticed for minutes behind another tab.
+     Re-check whenever the tab is looked at again, and when the network comes back. syncPull()
+     already no-ops without a key or on a locked device. Skipped while a save is still debounced:
+     that PUT is about to run, it gets the same 410, and pulling first could apply older cloud
+     state over the edit the user just made. */
+  const syncRecheck = () => { if (!syncPushT) syncPull(); };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') syncRecheck(); });
+  window.addEventListener('online', syncRecheck);
   if (location.search.includes('selftest=1')) selftest();
 }

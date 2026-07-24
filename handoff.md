@@ -1,295 +1,243 @@
-# HANDOFF — Portafile: build per-cafe usage tracking (Levels 2 + 3), then deploy everything
+# HANDOFF — Portafile: the founder's "delete cloud data" didn't send the shop's browser back to the signup gate
 
-**Written 2026-07-22. Every fact below was verified by a command run in the session that wrote this,
-unless it is explicitly labelled otherwise. You are picking this up cold.** The product is LIVE with
-two real coffee shops on it — breaking it is worse than being slow.
+**Written 2026-07-23. Every fact below was verified by a command run in the session that wrote it,
+unless labelled otherwise. You are picking this up cold.**
 
-This file replaces a 2026-07-21 handoff about a security audit. That work is **finished and shipped**
-(see §8). The still-true warnings from it are carried forward in §7 and §9 — do not discard them.
+This file replaces the 2026-07-22 handoff about founder metrics (Levels 1–3). That work is **finished,
+deployed and live** — do not rebuild it. The still-true warnings from it are carried forward in §6, §8
+and §9. One thing in it is now **false and dangerous to trust**: it said two real shops must survive in
+the Blob store. The store is now empty — see §3.
 
 ---
-
-> **STATUS 2026-07-22, later that day: Levels 2 and 3 are BUILT and verified — do not rebuild them.**
-> Still true and still the point: §6 (deploy is Ethan's call — nothing is deployed), §7 (the two real
-> shops), §9 and §10. Everything else below is the spec that was already carried out.
 
 ## 1. TL;DR
 
-Ethan asked for founder metrics. **Level 1 is built and verified but NOT deployed.** He then chose to
-add **Level 2 and Level 3** — per-cafe usage — which is your job. Level 4 (minutes on site) he
-declined; do not build it.
+Ethan pressed **delete cloud data** in his founder dashboard while testing, and the shop's own browser
+did not return to the signup gate — it just carried on as if nothing happened. That is root-caused,
+fixed, and verified. **Nothing is committed and nothing is deployed.**
 
-- **Your task:** build Level 2 (per-cafe last active) and Level 3 (days used per cafe), then deploy
-  Levels 1–3 together and verify live. Full spec in §4.
-- **Do NOT redo:** the Level 1 metrics endpoint, the in-app feedback button, the dashboard metrics
-  tiles, or the privacy rewrite. All built, all tested, listed in §8.
-- **Do NOT build:** minutes-in-app, session timing, per-section time, print counters, or any client-side
-  heartbeat. Ethan explicitly chose against Level 4 after seeing the tradeoff. If you think he needs it,
-  say so — do not build it.
-- **Nothing is deployed.** The working tree has 6 modified and 2 new files, uncommitted, and
-  `https://portafile.vercel.app/api/metrics` returns **404** because the function does not exist in
-  production yet. Deploy is Ethan's call — see §6.
-
----
-
-## 2. What happened in the previous session
-
-Ethan asked for dashboard tracking of: number of shops, average time to onboarding, feature adoption
-(% using training or print), and feedback sentiment. Before building, four things were found by reading
-the code — they shape everything below:
-
-1. **The live privacy page contradicted the feature.** `site/privacy.html` said *"We never look at,
-   analyze, or share your recipes or costs"*, and adoption percentages require reading shop data.
-   Ethan chose: compute aggregates **inside** the serverless function, return only totals, and amend
-   the privacy wording to say so honestly. That is now the governing constraint (§5, first gotcha).
-2. **Print adoption was deliberately NOT built.** Nothing records a print, and measuring it means
-   writing usage counters into customers' own data. Ethan chose the three signals already stored
-   instead. Do not "finish" this by adding a print counter.
-3. **The onboarding clock nearly lied.** When a browser links its shopId to a signup, `product/app.js`
-   re-POSTs the whole lead and `api/lead.js` stamps a **fresh** server `ts` — a second record for the
-   same person. Measuring from it reports onboarding times near zero. Fixed, and `verify-metrics.mjs`
-   fails if anyone reverts it.
-4. **Only shops with sync ON are visible, ever.** A shop living purely in a browser cannot be counted
-   by anything. Say this plainly to Ethan rather than presenting numbers as total users.
-
-He then asked whether per-cafe usage time is a privacy breach. The answer given, which he accepted:
-usage *metadata* is not the content he promised to leave alone, but (a) the privacy page needs a line
-about it, and (b) in a two-person shop, per-device usage timing **is** one barista's shift behavior,
-which turns the product into an employee-monitoring tool. He chose Levels 2 and 3, which record dates
-only — never times, never durations, never device identity.
+- **Done:** the bug is reproduced in a test that failed before the fix and passes after it, the fix is
+  written in `product/app.js` + `api/state.js`, and all 96 automated checks pass.
+- **Pending, and it is Ethan's call:** commit, then `vercel deploy --prod --yes`. The client half of
+  the fix works without the server half; the server half only starts helping once deployed. See §5.
+- **Do NOT redo:** the investigation, the reproduction, or the test additions. §7 lists them.
+- **Do not "fix" the one case that remains unfixable:** a browser that never turned on sync, or that
+  already went local-only after an earlier delete, cannot be reached by anything the founder presses.
+  There is no channel to it. Say that plainly to Ethan rather than adding a phone-home ping — he has
+  repeatedly chosen dropping a metric over tracking a user.
 
 ---
 
-## 3. Verified state (checked 2026-07-22)
+## 2. What was actually wrong (the part that would take you an hour to re-derive)
+
+The delete flow is: founder's dashboard → `DELETE /api/state` → a permanent tombstone at
+`owners/<shopId>.json` → every later read of that shop answers **410 deleted** → the customer's browser
+reacts in `syncDeletedSignal()` in `product/app.js`.
+
+The happy path was never broken. A clean browser, driven against **production**, went back to the gate
+in 24 seconds — measured, not assumed. So the reported symptom had to come from a branch nobody had
+exercised, and it did:
+
+`syncDeletedSignal()` had to decide "is this dead shop mine?" before wiping anything. It accepted two
+proofs, and Ethan's exact test pattern defeats **both at once**:
+
+1. **`portafile.v1.synced`** is only written after a device's first successful *200 GET*. The device
+   that **creates** a shop seeds it with a PUT and doesn't GET until its next 30-second poll — so any
+   shop deleted within ~30 seconds of being made (i.e. every test cycle) has no `synced` marker.
+2. **the server's `owner:true` flag** is computed from `ownerHash` inside the tombstone, which
+   `api/state.js` copies from a Blob read that **can flake to null** (this repo already documents
+   measuring exactly that), and which a pre-owner-token shop such as the legacy one never had at all.
+
+With neither proof, the code fell into its "stale bookmark of someone else's shop" branch: it dropped
+the sync key quietly, left the app open and the signup record intact, and **never showed the gate**.
+That is precisely what Ethan saw.
+
+A second, independent reason the delete can *look* dead: the browser only notices on its 30-second
+poll, and browsers throttle and eventually freeze timers in a **background tab**. He was looking at the
+dashboard, not the app. Both are fixed.
+
+### The fix
+
+- **`api/state.js`** — the 410 `deleted` body now carries the dead `shopId` (`resolveKey` returns it;
+  `deleted()` includes it; all three call sites pass it). Safe to disclose *because* it is only ever
+  disclosed for a tombstoned shop, which every path answers 410/404 for forever. It is a response body,
+  never a URL, so the "shopId never in a URL" rule is untouched.
+- **`product/app.js`** — `syncDeletedSignal(isOwner, deletedShop)` now treats
+  `deletedShop === localStorage['portafile.v1.shopid']` as proof the dead shop is this browser's own.
+  It cannot misfire on a real stale bookmark, because that device's shopid is its own *live* shop.
+  The same `mine` flag now decides whether the local copy is kept — so a tombstone that lost its
+  `ownerHash` can no longer make the founder's delete destroy an owner's only copy. That was a latent
+  data-loss bug, not just a cosmetic one.
+- **`product/app.js`** — re-checks sync on `visibilitychange` → visible and on `online`, so a
+  backgrounded tab reacts the moment it is looked at instead of whenever the browser next unfreezes its
+  timer. Guarded by `if (!syncPushT)`: a focus-pull must not land on top of an edit whose save is still
+  inside its 800 ms debounce. `syncPush()` now zeroes `syncPushT` when it fires so that guard is real.
+
+**Measured against live production, same flow, twice:** 24 s via the poll → **4 s** when the tab is
+focused (and most of that 4 s was the test's own wait before simulating the focus).
+
+---
+
+## 3. Verified state (checked 2026-07-23)
 
 | Thing | State |
 |---|---|
-| Repo | `/Users/ethanyap/portafile`, branch `main`, HEAD `c4fe401` |
-| Working tree | **Uncommitted.** Modified: `CLAUDE.md`, `PROGRESS.md`, `admin/dashboard.html`, `health_check.py`, `product/app.js`, `site/privacy.html`. New: `api/metrics.js`, `verify-metrics.mjs` |
-| Live site | `https://portafile.vercel.app` — up. `/api/state?k=0000…` (40 zeros) → `404 {"error":"unknown-key"}`, which is the healthy answer and proves both the function and the private Blob read path work |
-| `/api/metrics` live | **404 — not deployed yet** |
-| Founder dashboard | `admin/dashboard.html`, served locally on `http://127.0.0.1:4322` by LaunchAgent `com.ethanyap.portafile-dashboard` (PID 20868, listening — verified). Intentionally never deployed |
-| Blob store | Private store, migration **complete** (`api/state.js` and `api/lead.js` both read with `access:'private'`). The old handoff's "HIGH-1 pending" is stale — ignore it |
-| Real data in store | **2 shops**, 1 signup record, 0 feedback records, 0 signups linked to a shop (verified by running the metrics endpoint against the real store) |
-| Secrets | `BLOB_READ_WRITE_TOKEN` in gitignored `.env.local`; `ADMIN_KEY` in Vercel prod env + gitignored `.admin-key`. Never commit, never echo |
-| Cost | Everything is free-tier: Vercel Hobby + Vercel Blob, spend cap $0. Levels 2–3 add no paid service |
-| Tests | All 4 existing suites pass (`product/verify.js` 11, `verify-gate.js` 11, `verify-sync.js` 59, `verify-killpass.js` 10) plus `verify-metrics.mjs` (20 checks) |
-| Disk | 32 GB free (`df -h /`) |
+| Repo | `/Users/ethanyap/portafile`, branch `main`, in sync with `origin/main`, HEAD `7c6a818` |
+| Working tree | **Uncommitted.** Modified: `product/app.js`, `api/state.js`, `product/verify-sync.js` (+ `PROGRESS.md`, `CLAUDE.md`, `handoff.md` from the wrap-up) |
+| Live site | `https://portafile.vercel.app` → 200; `/product/` → 200 |
+| Deployed API | The server half is **NOT live**: `GET /api/state?k=187cdea…` returns `{"error":"deleted","owner":false}` with **no `shopId`** — that field appears only after a deploy |
+| Founder dashboard | `http://localhost:4322/admin/dashboard.html` → 200, served by the LaunchAgent. Intentionally never deployed; `health_check.py` asserts it 404s in production |
+| **Blob store contents** | **EMPTY.** `shops/` 0, `leads/` 0, `feedback/` 0 (metrics endpoint, read twice, agreed). The legacy shop `187cdea…` answers **410 deleted** — its tombstone is permanent and its shopId is dead forever |
+| Tests | 96 checks, 0 failures: `verify-sync.js` 64 (was 59 — 5 added here), `verify-gate.js` 11, `verify-killpass.js` 10, `verify.js` 11, plus `verify-metrics.mjs` |
+| Secrets | `ADMIN_KEY` in Vercel prod env + gitignored `.admin-key`; `BLOB_READ_WRITE_TOKEN` in gitignored `.env.local`. Never commit, never echo |
+| Cost | Unchanged and free: Vercel Hobby + Vercel Blob, spend cap $0. This change adds no service and no new requests beyond one extra GET when a synced tab is focused |
+
+**About the empty store:** the previous handoff insisted two real shops must survive. They no longer
+exist — Ethan deleted them himself while testing this feature. Both `187cdeade66450652b3553fe8f758b24d7220ea6`
+(the legacy shop, which deliberately had no `owners/` record) and `82ebcd8e73ff82f9c96da597cfb81bf3f3facf9c`
+(his phone) are gone from the cloud. By design, an owner device keeps its **local** copy after a founder
+delete, so his phone should still hold its own data — that was not verified from here, and it is worth
+asking him. Nothing in this session deleted anything of his: the only shops this session created and
+deleted were three throwaway test shops it made itself.
 
 ---
 
-## 4. YOUR TASK — Levels 2 and 3
+## 4. How to re-verify, and what was not checked
 
-### 4a. What Ethan was promised
+Run from `/Users/ethanyap/portafile`:
 
-**Level 2 — per-cafe last active.** A row per cafe in the founder dashboard: cafe name, when their shop
-first went live, when they last changed anything, sorted so the stalest shop is on top. Costs no new
-data collection — every save already writes that shop's file and the store records when.
+1. `node product/verify-sync.js` — 64 checks. The five that matter here are named
+   `delete: seeding owner really has no synced marker`, `delete: nothing has happened yet (30s poll
+   not due)`, `delete: tab reacts the moment it is looked at`, `delete: hashless tombstone still leaves
+   the owner its data`, `delete: hashless tombstone still clears the dead credentials`. Three of them
+   **fail on the pre-fix code** — that is the proof the fix is real, not decorative.
+2. `node product/verify.js`, `node product/verify-gate.js`, `node product/verify-killpass.js`,
+   `node verify-metrics.mjs`.
+3. Two throwaway scripts live in this session's scratchpad — **a temp directory; copy them before
+   relying on them**:
+   `/private/tmp/claude-501/-Users-ethanyap-portafile/89fcb31d-e40e-43fe-89ea-bd9a212e6f27/scratchpad/`
+   - `repro-delete.js` — drives the **real production** site end to end: signs up, turns on sync,
+     deletes that shop through the dashboard's own button, then waits for the gate. It creates one real
+     shop in the real store and deletes it in the same run; `/api/lead` is intercepted so no junk signup
+     is written. It spoofs `navigator.webdriver` off, because the access gate deliberately skips
+     automated browsers.
+   - `smoke.js` — feedback modal, data menu, and the deep test that a focus-pull cannot clobber an
+     unsaved edit.
 
-**Level 3 — days used per cafe.** "Northside: 22 of the last 30 days. Bellview: 2." Plus a silence
-alert when a shop has gone quiet for 14+ days, which is his cue to phone them. Dates only — never
-times, never durations.
-
-### 4b. The privacy line you must not cross
-
-The previous session shipped a rule, now in `CLAUDE.md`: the metrics endpoint returns **aggregate only,
-never a per-shop row**. Levels 2–3 deliberately relax that, and the distinction is narrow and
-load-bearing:
-
-- **Allowed as per-cafe rows:** metadata — the shop's name *as the owner typed it into the signup form*,
-  when their shop was created, when they last saved, which dates they were active.
-- **Still aggregate-only, never per-shop:** anything derived from reading their app data — recipes,
-  ingredients, prices, the adoption booleans, the shop name *as stored in their synced state*.
-
-Use the name from the **lead record**, not from the shop state. He gave that name to Ethan directly;
-the state is their data. **Update the `CLAUDE.md` gotcha to state the new rule** — leaving it saying
-"never a per-shop row" while the code emits per-shop rows is worse than either version alone.
-
-`site/privacy.html` also needs one added line: that Portafile records which days a shop uses the app.
-The page was just rewritten for Level 1, so match its voice — plain, specific, no legalese.
-
-### 4c. Level 2 implementation
-
-Extend the GET in `api/metrics.js` with a `perShop` array. Everything needed is already read there:
-
-- `list({prefix:'shops/'})` → `pathname` (shopId) and `uploadedAt` (last save).
-- `owners/<shopId>.json` → `created` (first live) and, if it's a tombstone, `deleted`/`deletedAt`.
-- The leads it already loads → `shopId` → the cafe name and email.
-
-**Real limitation to surface in the dashboard, not hide:** a name attaches to a shop only when the
-owner signs up through the gate form *and* turns on sync in that same browser. **Right now zero of the
-two shops are linked**, so both render as anonymous IDs. Show a short ID prefix and a plain-language
-note. Recommended (small, and the difference between useful and useless with two shops): let Ethan type
-a label per shopId, stored in the dashboard's own localStorage state `S` — the dashboard already
-persists `S` under key `portafile-admin-v1` and has export/import for it.
-
-### 4d. Level 3 implementation — the careful part
-
-Store dates in a **separate** blob per shop, `activity/<shopId>.json`, shaped like
-`{ days: ["2026-07-22", …] }`, trimmed to the last 60 entries. It must never go inside the shop state
-blob — that syncs to customer devices.
-
-Where to stamp, and why it matters: **PUT means someone edited; GET means someone looked.** Staff
-devices mostly read recipe cards, so a PUT-only stamp would badly under-count exactly the usage Ethan
-cares about. Stamp on **both**, in `api/state.js`, only after the request has already been authorized
-and answered successfully.
-
-To keep the cost near zero, copy the pattern the file already uses for rate limiting (the in-memory
-`HITS` map): keep a warm-instance `Map` of shopId → last-stamped date, and touch Blob only when the
-in-memory date is missing or stale. Devices poll every 30 seconds, so without that cache you would add
-a Blob read to every poll. With it, a warm instance does one read plus at most one write per shop per
-day. Multiple instances mean a few redundant writes daily — harmless.
-
-**Non-negotiables for this edit** — `api/state.js` is the most dangerous file in the repo:
-
-1. Wrap the stamping in `try/catch` and ignore failures. It is bookkeeping; it must never change a
-   status code, never block a save, never turn a 200 into a 500.
-2. Do not touch `resolveKey`, the revocation/tombstone branches, the stale-write guard, or the
-   `allowOverwrite:false` claim. Read the gotchas in `CLAUDE.md` before editing — the eventual-consistency
-   rules there are load-bearing and were expensive to learn.
-3. Never stamp for a request that resolved to `revoked`, `deleted`, or `unknown`.
-4. **The founder's DELETE path must also `del('activity/<shopId>.json')`.** Otherwise an erased shop
-   keeps showing usage, which breaks the "delete my data" promise the delete button exists to honor.
-5. Dates are UTC. A late-night close in California lands on the next UTC day; that's acceptable for a
-   day-count, but note it with a `ponytail:` comment rather than leaving it as a silent surprise.
-6. **No changes to `product/app.js` are needed for Levels 2–3.** If you find yourself editing the client,
-   stop — you have probably drifted into Level 4, which Ethan declined.
-
-### 4e. Dashboard rendering
-
-`admin/dashboard.html`, in the "Key metrics (live)" card added last session. Add a per-cafe table under
-the existing tiles: cafe (or label), first live, last active, days used of the last 30, and a status
-that turns red past 14 days quiet — the file already has a `.due` class doing exactly that for refund
-deadlines. Escape everything through the existing `esc()` helper; a feedback/lead string reaching raw
-HTML was a real stored-XSS break-out in this file's history.
-
-### 4f. How to prove it works
-
-Do all of these; the last one is the one Ethan actually asked for.
-
-1. Extend `verify-metrics.mjs` (root, runs with `node verify-metrics.mjs`, no network, no key) with the
-   day-counting math: de-duplicating a repeat visit on the same day, trimming to 60, counting days
-   within a 30-day window, and an empty log.
-2. Re-run all four suites in `product/` — they take a few minutes and use Playwright from
-   `/Users/ethanyap/.npm/_npx/e41f203b7505f1fb/node_modules/playwright`.
-3. Drive `admin/dashboard.html` in Playwright with a stubbed `/api/metrics` response to confirm the new
-   table renders, sorts by staleness, flags a quiet shop, and escapes hostile text. The previous session
-   did this; a working example is at
-   `/private/tmp/claude-501/-Users-ethanyap-portafile/85404df0-c9c0-492f-b99a-4142157aa8c8/scratchpad/verify-dashboard.js`
-   (temp directory — copy it before relying on it).
-4. After deploy: load the dashboard on `http://127.0.0.1:4322`, press "Load metrics", confirm real
-   numbers appear; then open the app, change something, and confirm that shop's "last active" moves and
-   today appears in its day count.
+**Not checked this session (say so, don't imply otherwise):** the marketing site's scroll-reveal
+animations, the dashboard's metrics/feedback tables rendering, and printed output — none of their files
+were touched. `health_check.py` was not run. Nothing was verified against the deployed version of the
+server change, because it is not deployed.
 
 ---
 
-## 5. Gotchas that will bite you
+## 5. The decision that is Ethan's, not yours
 
-- **`CLAUDE.md` in the repo root is the real gotcha list — read it fully before editing `api/state.js`.**
-  It is auto-loaded into every session in this repo. The eventual-consistency rules ("never build an
-  authorization check on a read", "revocation is a value comparison, never a missing blob", "a 404 never
-  means revoked") were learned the hard way and are not negotiable.
-- **Vercel Blob is eventually consistent.** Back-to-back reads of the same existing path have returned
-  found, then null. `list()` lags both writes and deletes by seconds. That's fine for counting; it is
-  never acceptable for resolving one known path or deciding authorization.
-- **`git push` does NOT deploy.** Despite `vercel git connect`, deployment only happens via
-  `vercel deploy --prod --yes` from the repo root.
-- **`.vercelignore` publishes only `site/`, `product/`, `video/`, `api/`, `vercel.json`, `package.json`.**
-  A new top-level directory will silently not deploy. Root-level files like `verify-metrics.mjs` are
-  correctly excluded; do not move test files into `api/`, where they would deploy as functions.
+**Committing and deploying.** `git push` does **not** deploy this project; deployment is
+`vercel deploy --prod --yes` from the repo root, and a previous session recorded that the agent's own
+deploy/push commands were blocked — he runs them himself by typing the command with a `!` prefix.
+
+Worth telling him when you ask:
+- The client fix (`product/app.js`) helps as soon as it deploys, on its own.
+- The server fix (`api/state.js`) is what closes the "seeding owner device" hole for good; until it
+  deploys, a browser can still only fall back on the server's `owner` flag.
+- Deploying touches the public product. Project rule: run `/still-works` before a deploy, and
+  `/still-works live` after one.
+
+---
+
+## 6. Gotchas that will bite you
+
+New from this session:
+
+- **`admin/` is never deployed, so a dashboard-only change needs no deploy — but this change is not
+  dashboard-only.** `product/` and `api/` both changed here, so this one does need a deploy to matter.
+- **Headless Chromium reports every tab as `visible`**, and `page.bringToFront()` does not change that.
+  You cannot test background-tab behaviour by opening a second page — dispatch the `visibilitychange`
+  event directly and say in the test that that is what you did.
+- **`#shopName` saves on `change`, not `input`.** A test that fills the field and fires `input` changes
+  the DOM and nothing else, then quietly "passes".
+- **The feedback modal opens from `#btnHelp` → `#hFeedback`**, not from a top-level button.
+
+Carried forward and still true:
+
+- **The repo's `CLAUDE.md` is the real gotcha list — read it fully before editing `api/state.js`.**
+  The eventual-consistency rules ("never build an authorization check on a read", "revocation is a value
+  comparison, never a missing blob", "a 404 never means revoked") were expensive to learn and are not
+  negotiable. This session added a corollary: **do not build the client's own identity check on a
+  server-side value that a flaky read can erase either.**
+- **Vercel Blob is eventually consistent.** `list()` lags writes and deletes by seconds — fine for
+  counting, never for resolving a known path or deciding authorization.
 - **CSP blocks all inline `<script>` on deployed pages.** `admin/dashboard.html` uses inline script and
-  `onclick=` attributes and is fine **only** because it is never deployed. Never move that pattern into
-  `site/` or `product/`.
-- **`health_check.py` runs daily at 15:00 UTC and emails Ethan on failure.** It now asserts
-  `GET /api/metrics` → **401 unauthorized**. That assertion is currently *failing-by-absence* in the
-  sense that the endpoint 404s until deploy — deploy before the next 15:00 UTC run, or expect one alarm
-  email. It also asserts `admin/dashboard.html` 404s in production; that must stay true forever.
-- **The dashboard fetches the production origin cross-origin.** `vercel.json` pins
-  `Access-Control-Allow-Origin` to the prod origin for everything **except** `/api/`, so `/api/*`
-  handlers must set their own CORS header or the localhost:4322 dashboard breaks.
-- **Playwright `addInitScript` re-runs on every navigation**, so a test whose subject calls
-  `location.replace()` after wiping localStorage silently gets its seed restored. `verify-sync.js`
-  guards against this with a `pf-test-stopseed` flag.
+  `onclick=` and is safe only because it never deploys. Never move that pattern into `site/` or `product/`.
+- **`.vercelignore` publishes only `site/`, `product/`, `video/`, `api/`, `vercel.json`, `package.json`.**
+  A new top-level directory silently does not deploy.
+- **`vercel.json` pins CORS to the prod origin except under `/api/`** — the localhost:4322 dashboard
+  depends on that exception.
+- **Playwright `addInitScript` re-runs on every navigation**, restoring a seed the test just wiped;
+  `verify-sync.js` guards this with `pf-test-stopseed`.
+- **`health_check.py` runs daily at 15:00 UTC** and emails him on failure. If you change page copy,
+  update its expected marker strings or he gets a false alarm.
 
 ---
 
-## 6. The decision that is Ethan's, not yours
+## 7. Don't redo
 
-**Deploying.** Levels 1–3 all go live in one `vercel deploy --prod --yes`, which changes the public site
-(the in-app feedback button and the privacy page wording) and adds a publicly-writable feedback endpoint.
-The previous session asked and he had not yet answered. **Ask him before deploying; do not deploy as a
-"finishing touch."** He also has not committed the working tree — ask rather than assuming.
-
-Everything else about Levels 2–3 he has already decided. Do not re-litigate Level 4 with him; he heard
-the tradeoff and said no.
-
----
-
-## 7. Real data — do not destroy (carried forward, still true)
-
-Two shops in the Blob store are real and must survive anything you do. The metrics run this session
-confirmed the store holds exactly 2 shops.
-
-- `187cdeade66450652b3553fe8f758b24d7220ea6` — legacy shop. Its pointer is the same string as its
-  shopId and it deliberately has **no `owners/` record**, so its link cannot rotate. Ethan's choice;
-  keep it that way.
-- `82ebcd8e73ff82f9c96da597cfb81bf3f3facf9c` — Ethan's phone.
-
-Never delete blobs without an explicit yes from him. If you write test data into the real store, delete
-it in the same script and prove the count returned to where it started.
+- The root-cause investigation in §2. It is settled and evidenced, not a theory.
+- The five new cases in `product/verify-sync.js` and the no-key focus case added to
+  `no-key: zero API calls (even on tab focus)`.
+- Reproducing the happy path against production — done three times; it works.
+- Searching for the bug in the founder dashboard. `admin/dashboard.html` is **not** at fault and was not
+  changed this session; the previous session's addition of a delete button to the per-cafe table
+  (commit `7c6a818`) is committed, pushed and fine.
 
 ---
 
-## 8. Don't redo — completed and verified in the previous session
-
-- `api/metrics.js` (new): admin-gated aggregate GET plus a public feedback POST. Tested against the
-  **real** Blob store: auth rejection, bad-input rejection, honeypot, message truncation, no per-shop
-  leakage, and cleanup that returned the store to its exact prior state.
-- In-app feedback UI in `product/app.js` (**? → Send feedback**): thumbs up/down, optional note and
-  email. Driven in a real browser including the validation guard and the server-error path.
-- Founder dashboard "Key metrics (live)" tiles and "Feedback" table, including a hostile
-  `<img onerror=…>` payload proven inert.
-- `site/privacy.html` rewritten so the aggregate counting is disclosed.
-- `health_check.py` gained the `/api/metrics` → 401 assertion.
-- `verify-metrics.mjs` (new, 20 checks) and `PROGRESS.md` + `CLAUDE.md` updated.
-- **Older, from 2026-07-21:** the security audit and its fixes are done, including the migration to a
-  **private** Blob store. Do not re-run the audit or re-migrate.
-
----
-
-## 9. How to work with Ethan (carried forward — durable)
+## 8. How to work with Ethan (durable)
 
 College student, learning developer. Not fluent in git, terminals, or deployment, but learning — teach
-while doing. Typos are common; infer intent and proceed.
+while doing. Typos are common; infer intent and proceed rather than asking about an obvious one.
 
 - **Zero cost, always.** Cost questions get certainty, never "probably free" — name every service and
-  whether it can bill him. Levels 2–3 add no paid service; say that plainly.
-- **Terminal and dashboard steps: numbered, ONE command per step, say what he should see, then wait**
-  for his confirmation or screenshot before the next step. Watch for a stray leading space in a pasted
-  command — ` cd …` fails with "command not found".
-- **He runs deploys and pushes himself** by typing the command with a `!` prefix in the session. A prior
-  session recorded that the agent's own `vercel deploy` and `git push` were blocked; treat deploy as
-  his action unless he says otherwise.
+  whether it can bill him.
+- **Terminal steps: numbered, ONE command per step, say what he should see, then wait** for his
+  confirmation or screenshot before the next.
+- **He runs deploys and pushes himself**, typing the command with a `!` prefix in the session.
 - **Verify before saying done** — exercise the real feature, not just the tests. He asks for this
   explicitly and notices when it is skipped.
 - **Lead with the outcome.** Short replies ("yes", "proceed", "yes push") mean: do exactly the pending
   step, nothing more.
-- **Ponytail mode is on**: smallest solution that works, native/stdlib before dependencies, deliberate
-  shortcuts marked with a `ponytail:` comment naming the ceiling. The codebase already uses that
-  convention.
-- **After a milestone**, update `PROGRESS.md` (the founder's log — write it for a founder, not as a
-  changelog), the repo `CLAUDE.md` gotchas, and the auto-memory at
-  `~/.claude/projects/-Users-ethanyap-portafile/memory/`. `BUILD-LOG.md` is frozen — never edit it.
+- **Ponytail mode is on**: smallest solution that works, deliberate shortcuts marked with a `ponytail:`
+  comment naming the ceiling.
+- **After a milestone**, update `PROGRESS.md` (a founder's log, not a changelog), the repo `CLAUDE.md`
+  gotchas, and the auto-memory at `~/.claude/projects/-Users-ethanyap-portafile/memory/`.
+  `BUILD-LOG.md` is frozen — never edit it.
 
-## 10. Machine-level warnings (outlive this task)
+## 9. Machine-level warnings (outlive this task)
 
 1. **Never trust System Settings → Storage for free space** — it counts iCloud-purgeable files and has
    been wrong by ~50 GB. Use `df -h /`.
 2. **Do not touch the `flowise-main` or `postgres:16-alpine` Docker containers** — a separate live
    project on localhost:3010.
-3. `Docker.raw` is ~13 GB and does not shrink on prune. Don't plan on Docker cleanup for space.
+3. `Docker.raw` is ~13 GB and does not shrink on prune.
 4. **Do not touch `~/Library/Application Support/Claude/vm_bundles`** (~6.8 GB) — Claude Desktop's VM.
 5. **Never suggest "Keep Messages: 1 Year"** — it permanently deletes messages across all his devices.
-   Data loss is a top anxiety.
-6. Claude Code dies when Wi-Fi drops (`ENOTFOUND`). For any offline test, hand him ONE self-contained
-   checklist he can run unattended, then report back.
+6. Claude Code dies when Wi-Fi drops (`ENOTFOUND`). For an offline test, hand him ONE self-contained
+   checklist he can run unattended.
+
+---
+
+## 10. The next task
+
+**Ask him — do not guess.** The pending step is: commit the three changed files, then decide whether to
+`vercel deploy --prod --yes`. He was told the fix is verified locally and against the live API, and that
+the server half only takes effect once deployed.
+
+Two things worth raising with him unprompted:
+
+1. His Blob store is empty — both of his real shops are gone from the cloud (§3). If his phone still has
+   its local copy, turning sync back on there re-creates a cloud shop with a **new** shopId; the old one
+   is permanently dead.
+2. The unreachable case: a browser that never synced, or that already went local-only from an earlier
+   delete, will never return to the signup gate no matter what he presses. That is a property of a
+   product with no accounts, not a bug to fix.
