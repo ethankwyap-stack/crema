@@ -175,6 +175,8 @@ Changed it: delete now means clean slate on every device, owner included — bac
 
 **The second bug wasn't a bug, and saying so is the fix.** Shops that never turned on Sync show no "delete cloud data" button, and I read that as the dashboard being incomplete. It isn't: those browsers never contact my server at all after their one signup POST, so there's nothing of theirs to delete and no way to reach them. That's the same local-first promise the landing page sells. I could have added a check-in on every app load to make everyone reachable, but that means putting a phone-home into an app whose whole pitch is that your data stays in your browser — for a gate that isn't a password anyway. Instead those rows now say "local only — nothing to delete," so future-me doesn't go looking for a broken button. Deleting their signup record already erases everything I actually hold about them.
 
+Shipped both. Regression pass first — the five suites, plus the marketing site and the dashboard, which no suite had ever covered: 36 of 36 scroll-reveal sections firing, hostile text in a signup row still rendering as plain text, live metrics and signups still loading from production. Then deployed and re-tested against the real site: the deployed app really is the new one, and running the delete against production's own copy gives back the signup form on a clean demo shop. Health check 8/8 before and after. One thing I chose not to redo live: creating a throwaway shop just to delete it for real. The earlier fix already proved that path against production, this change is entirely in the browser, and a real delete leaves a permanently dead shopId behind — not worth littering the store to re-prove the half I'd already watched work.
+
 ---
 
 ## Open threads
