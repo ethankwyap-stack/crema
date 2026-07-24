@@ -210,9 +210,10 @@ let revokeStrikes = 0;
    such a device unrevokable (it settled-and-retried forever instead of locking). */
 /* The founder deleted this shop's cloud copy — different from a link rotate. Every device
    disconnects AND forgets its signup record, so returning users meet the access gate as new
-   visitors (that's the point: deleted shop = clean slate). Staff devices also lose the local
-   copy, like revocation. An OWNER device keeps its shop data — the founder's delete button must
-   never be able to destroy a shop's only remaining copy. 'deleted' is a positive tombstone value
+   visitors (that's the point: deleted shop = clean slate). EVERY device loses the local copy,
+   the owner's included: a delete that left the owner's recipes on screen behind the signup form
+   read as "nothing happened". That makes this the one button that can destroy a shop's last
+   copy, so the founder's dashboard warns and asks first. 'deleted' is a positive tombstone value
    (a flaky read yields absence, not deleted:true, and shopIds are never reused), so unlike the
    revoke path one answer is proof enough — no two-strike rule needed. */
 function syncDeletedSignal(isOwner, deletedShop) {
@@ -233,10 +234,8 @@ function syncDeletedSignal(isOwner, deletedShop) {
     syncStatus = 'deleted'; syncBadge();
     return;
   }
-  const keep = mine ? localStorage.getItem(KEY) : null;
   Object.keys(localStorage).filter(x => x.startsWith('portafile.v1')).forEach(x => localStorage.removeItem(x)); // INCLUDING lead* — the gate must reappear
-  if (keep) localStorage.setItem(KEY, keep);
-  location.replace(location.pathname); // reload clean: no ?k, no signup record → gate greets them fresh
+  location.replace(location.pathname); // reload clean: no ?k, no signup record, demo seed → gate greets them fresh
 }
 /* Routes a 410 by its body: 'deleted' (shop erased by founder) vs 'revoked' (link rotated). */
 function syncGoneSignal(body) {

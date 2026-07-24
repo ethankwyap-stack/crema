@@ -222,7 +222,7 @@ async function fetchLeads() {
     st.textContent = leads.length + ' signup(s)';
     document.getElementById('leadTable').innerHTML =
       '<tr><th>When</th><th>Email</th><th>Shop</th><th>Role</th><th>City</th><th>Phone</th><th></th></tr>' +
-      leads.map((l, i) => `<tr><td>${new Date(l.ts).toLocaleDateString()}</td><td>${esc(l.email)}</td><td>${esc(l.shop)}</td><td>${esc(l.role)}</td><td>${esc(l.city)}</td><td>${esc(l.phone)}</td><td><button class="mini" onclick="toList(${i})">→ list</button> <button class="mini" onclick="delLead(${i})">delete record</button>${/^[a-f0-9]{40}$/.test(l.shopId || '') ? ` <button class="mini" onclick="delCloud(${i})">delete cloud data</button>` : ''}</td></tr>`).join('');
+      leads.map((l, i) => `<tr><td>${new Date(l.ts).toLocaleDateString()}</td><td>${esc(l.email)}</td><td>${esc(l.shop)}</td><td>${esc(l.role)}</td><td>${esc(l.city)}</td><td>${esc(l.phone)}</td><td><button class="mini" onclick="toList(${i})">→ list</button> <button class="mini" onclick="delLead(${i})">delete record</button>${/^[a-f0-9]{40}$/.test(l.shopId || '') ? ` <button class="mini" onclick="delCloud(${i})">delete cloud data</button>` : ` <span class="tiny" title="This shop never turned on Sync. None of their data is on our servers and their browser never contacts us, so there is nothing to delete and no way to reach it — deleting the record erases everything we hold about them.">local only — nothing to delete</span>`}</td></tr>`).join('');
   } catch (e) { st.textContent = 'unreachable (site deployed? API live?)'; }
 }
 function toList(i) { const l = (window._leads || [])[i]; if (l) { autoEmail(l.email, l.shop, 'interested'); save(); } }
@@ -244,7 +244,7 @@ async function delCloud(i) {
    here so the confirm wording and the auth stay identical. */
 async function wipeShop(shopId, label, tail = '') {
   if (!/^[a-f0-9]{40}$/.test(shopId || '')) return;
-  if (!confirm(`Erase the CLOUD DATA for ${label}?\n\nTheir synced recipes and prices are permanently deleted from Portafile's storage. Every staff device is wiped and disconnected; the shop owner's own device keeps its local copy but goes offline. When they come back to the site, they'll see the signup form again.\n\nThis cannot be undone.${tail ? ' ' + tail : ''}`)) return;
+  if (!confirm(`Erase the CLOUD DATA for ${label}?\n\nTheir synced recipes and prices are permanently deleted from Portafile's storage — and every device that shop uses, the OWNER'S OWN INCLUDED, is wiped back to the demo shop and disconnected. If they never exported a backup, this destroys their only copy of their recipes. When they come back to the site, they'll see the signup form again.\n\nThis cannot be undone.${tail ? ' ' + tail : ''}`)) return;
   const k = localStorage.getItem('portafile-admin-key');
   if (!k) { alert('Click "Fetch signups" first so the admin key is set.'); return; }
   const r = await fetch('https://portafile.vercel.app/api/state', {

@@ -49,7 +49,7 @@ code is shaped the way it is); this file holds *what must still be true for a us
 - [ ] Reset staff link kills old links; the old device locks and wipes, the owner's does not
       auto: `verify-killpass.js` (10 checks)
 - [ ] A revoked device keeps its signup record (no duplicate lead on re-entry) · auto: `verify-killpass.js`
-- [ ] Founder delete: staff devices wipe fully, owner keeps its local copy · auto: `verify-sync.js`
+- [ ] Founder delete: EVERY device (owner included) wipes back to the demo shop · auto: `verify-sync.js`
 - [ ] Founder delete sends the shop's OWN browser back to the signup gate — even a seeding
       owner whose device has no `synced` marker and whose tombstone lost its ownerHash
       auto: `verify-sync.js` (the five `delete:` cases; three fail on pre-fix code)
@@ -74,6 +74,8 @@ code is shaped the way it is); this file holds *what must still be true for a us
       prove: gates read 0/15 before Load metrics, 1/15 + "live: 1 of 2 synced" after
 - [ ] Per-cafe table sorts stalest-first (sorted server-side in `api/metrics.js`) and flags
       14+ days quiet in red
+- [ ] A signup with no cloud shop shows "local only — nothing to delete", never a dead button
+      prove: a lead with no `shopId` renders the muted span; the row's other buttons keep their index
 - [ ] Hostile text in any live-loaded field renders as literal text, never HTML
 - [ ] Ledger, email list, signups and labels survive a reload (localStorage `portafile-admin-v1`)
 
@@ -95,6 +97,16 @@ code is shaped the way it is); this file holds *what must still be true for a us
   ownerHash to a flaky read — both proofs of "is this shop mine?" failed together. Never
   build the client's identity check on a server value an eventually-consistent read can
   erase; the 410 body now carries the dead shopId as local proof.
+- Founder delete used to spare the owner device's local data, so the returning signup gate sat
+  on top of the owner's still-populated shop and read as "the delete did nothing" (2026-07-24).
+  Delete now wipes every device back to the demo seed. A guard the user can't see looks like a
+  bug; if a protective rule makes an action half-apply, say so in the confirm copy instead.
+- Automated browsers set `navigator.webdriver`, and `gate()` skips itself for them — so no verify
+  suite can ever show the signup form. To *see* the gate, spoof it away with an init script
+  (`Object.defineProperty(navigator,'webdriver',{get:()=>false})`).
+- A shop that never turned on Sync makes zero requests after its signup POST: no cloud data to
+  delete, no way to reach that browser. The missing "delete cloud data" button on those rows is
+  the design, not a gap — don't "fix" it by adding a phone-home.
 - The 30s poll freezes in a background tab; the app re-pulls on `visibilitychange`→visible
   and `online`. That focus-pull is guarded by `!syncPushT` so it can't overwrite an edit
   still inside its 800ms save debounce (`smoke.js` observes both sides).

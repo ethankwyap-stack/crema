@@ -283,9 +283,10 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   ok('stranger CANNOT restore with the current key', await restorePut(newK, 'f'.repeat(40)) === 404 && !keys[newK]);
   ok('owner CAN restore the pointer with the current key', await restorePut(newK, OWNER) === 200 && keys[newK] === SHOP);
 
-  // 7f. founder deletes the shop's cloud data (tombstone). Staff device: full wipe INCLUDING the
-  // signup record, so the gate greets them fresh. Owner device: keeps its local shop data (the
-  // delete button must never destroy the only copy) but loses signup + sync credentials.
+  // 7f. founder deletes the shop's cloud data (tombstone). EVERY device — staff and owner alike —
+  // is wiped back to the demo shop and forgets its signup record, so the gate greets them fresh.
+  // (The owner used to keep its recipes; that left the signup form sitting on top of a live shop,
+  // which read as "the delete did nothing". Deleting means clean slate on every device now.)
   const cS = await b.newContext();
   await cS.addInitScript(() => {
     if (localStorage.getItem('pf-test-stopseed')) return;
@@ -313,9 +314,10 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   ok('delete: staff device reloaded clean (no ?k, no lock screen)', !pS.url().includes('k=') &&
     !(await pS.textContent('body')).includes('turned off'));
   await cS.close();
+  const preName = await pA.inputValue('#shopName'); // the owner's real shop name, so the check below can't pass vacuously
   await pA.evaluate(() => syncPull()); await pA.waitForTimeout(1200);
-  ok('delete: owner device KEEPS its local shop data', await pA.evaluate(() => {
-    const s = localStorage.getItem('portafile.v1'); return !!s && JSON.parse(s).recipes.length > 0;
+  ok('delete: owner device ALSO wiped back to the demo shop', preName !== 'Demo Espresso Bar' && await pA.evaluate(() => {
+    const s = localStorage.getItem('portafile.v1'); return !!s && JSON.parse(s).shop.name === 'Demo Espresso Bar';
   }));
   ok('delete: owner device loses signup + sync credentials', await pA.evaluate(() =>
     !localStorage.getItem('portafile.v1.lead') && !localStorage.getItem('portafile.v1.synckey') &&
@@ -331,7 +333,7 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
     (await pN.textContent('#syncBadge')).includes('removed') && await pN.locator('.rcard').count() > 0 &&
     await pN.evaluate(() => !!localStorage.getItem('portafile.v1') && !localStorage.getItem('portafile.v1.synckey')));
   await cN.close();
-  // owner re-syncs from its kept data: PUT create path with fresh ids must still work post-delete
+  // owner starts over from the demo seed: the PUT create path with fresh ids must still work post-delete
   await pA.evaluate(() => dataMenu());
   await pA.click('#dSyncOn'); await pA.waitForTimeout(1800);
   const rebornK = await pA.evaluate(() => localStorage.getItem('portafile.v1.synckey'));
@@ -348,6 +350,10 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
      came back. It must recognise its OWN shop from the shopId in the 410 body instead.
      Same section covers the other half of "guaranteed": a hidden tab reacts on focus, not 30s later. */
   const shop2 = keys[rebornK];
+  // rename BEFORE the tombstone (and let the 800ms save debounce flush) so the wipe check below is
+  // real — the reborn shop starts on the demo seed, so "name is the demo name" would pass vacuously
+  await pA.fill('#shopName', 'Second Cafe'); await pA.dispatchEvent('#shopName', 'change');
+  await pA.waitForTimeout(1400);
   await pA.evaluate(() => localStorage.setItem('portafile.v1.lead', '{"email":"o2@y.z"}'));
   ok('delete: seeding owner really has no synced marker', await pA.evaluate(() => !localStorage.getItem('portafile.v1.synced')));
   owners[shop2] = { deleted: true }; delete cloud[shop2]; // the admin DELETE, with the ownerHash lost
@@ -358,8 +364,9 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   await pA.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
   await pA.waitForTimeout(2500);
   ok('delete: tab reacts the moment it is looked at', await pA.evaluate(() => !localStorage.getItem('portafile.v1.lead')));
-  ok('delete: hashless tombstone still leaves the owner its data', await pA.evaluate(() => {
-    const s = localStorage.getItem('portafile.v1'); return !!s && JSON.parse(s).recipes.length > 0;
+  ok('delete: hashless tombstone still wipes the owner back to the demo shop', await pA.evaluate(() => {
+    const s = localStorage.getItem('portafile.v1');
+    return !!s && JSON.parse(s).shop.name === 'Demo Espresso Bar' && JSON.parse(s).recipes.length > 0;
   }));
   ok('delete: hashless tombstone still clears the dead credentials', await pA.evaluate(() =>
     !localStorage.getItem('portafile.v1.synckey') && !localStorage.getItem('portafile.v1.owner') &&
