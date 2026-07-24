@@ -2,20 +2,67 @@
 
 **Audit date:** 2026-07-21 · **Risk tier:** ASVS Level 2 (holds personal data — signup emails/phones + shops' business data) · **Auditor:** `/security-audit` (senior appsec pass)
 
+---
+
+## STATUS 2026-07-24 — every finding in this report is CLOSED
+
+The findings below are kept as written for history. **All of them were fixed on
+2026-07-21 evening** (commits `2b53edd`, `9a301d7`, `c2e7d2b`, `6e42b97`), but this
+report was never updated, so for three days it read as if a High finding were still
+open — which is exactly what it was mistaken for. Re-verified from scratch on
+2026-07-24 at `8054d22` (clean tree, in sync with `origin/main`):
+
+| Finding | Status | How it was re-verified today |
+|---|---|---|
+| HIGH-1 (public blobs) | **CLOSED** | `access: 'private'` at every read and write in `api/state.js`, `api/lead.js`, `api/metrics.js`. The old public store host `x5ibk…` returns **404** — the store was emptied and deleted after a byte-verified backup. The live private read path is healthy: `GET /api/state?k=0*40` → `404 unknown-key` (a dead store 500s instead). |
+| MEDIUM-1 (shopId in query) | **CLOSED** | No `shop=` remains in `product/app.js`; it rides `x-portafile-shop` (app.js:268, 682; read at state.js:132). |
+| LOW (CI tag pinning) | **CLOSED** | Both workflows pin actions by commit SHA. |
+| LOW (dependabot cooldown) | **CLOSED** | `default-days: 7` on both ecosystems. |
+
+Also re-run today, all green: **126 checks** across `verify.js` (11), `verify-gate.js`
+(11), `verify-killpass.js` (10), `verify-sync.js` (64), `verify-metrics.mjs` (30).
+Live probes: `/admin/dashboard.html` → **404** (the not-deployed invariant holds),
+`GET /api/lead` with no key → **401**, HTTP → HTTPS **308**, and the full header set
+(CSP `script-src 'self'`, HSTS preload, nosniff, `X-Frame-Options: DENY`, COOP, CORP,
+Referrer-Policy, Permissions-Policy) still present.
+
+**Not re-verified today, because they are out of repo:** the $0 spend cap, 2FA, and
+the Vercel env vars. Ethan confirmed the spend cap and 2FA on 2026-07-21.
+
+---
+
 > This report **supersedes the 2026-07-18 version** (archived at `extras/safetysurface-2026-07-18.md`). That one described the pre–owner-token world and is history. Today's model (three-part key, hard-kill revocation) was re-audited from the code, not from the old docs. A clean report means *no known patterns were found*, not that the app is provably secure — AI review shares blind spots with AI-generated code, so the tool findings and live probes below carry more weight than the reading.
 
 ---
 
 ## Go / no-go
 
-**Conditional go** for onboarding the two trusted founding shops. The data is low-sensitivity (recipes, prices, a few emails/phones), there are no accounts or payments, and every automated tool came back clean. **One High finding must be fixed before the app is shared wider or the repo/store hostname could ever leak** — it silently defeats the link-revocation feature that was just built. Details below.
+**GO as of 2026-07-24** — the one condition below was met three days after this was
+written. The original text is kept for history:
+
+> **Conditional go** for onboarding the two trusted founding shops. The data is low-sensitivity (recipes, prices, a few emails/phones), there are no accounts or payments, and every automated tool came back clean. **One High finding must be fixed before the app is shared wider or the repo/store hostname could ever leak** — it silently defeats the link-revocation feature that was just built. Details below.
+
+The High finding is fixed and re-verified (see STATUS above). Blobs are private, so
+the access model no longer rests on the store hostname staying secret — which also
+means **making this repo public is no longer gated on a security fix.** The hostname
+sitting in git history became harmless when the store it named was deleted.
 
 ---
 
 ## Findings
 
-### 🟠 HIGH-1 — Revocation is bypassable at the storage layer; an old link can recover the current one
+### ✅ HIGH-1 — CLOSED 2026-07-21 — Revocation is bypassable at the storage layer; an old link can recover the current one
 **OWASP A01 (Broken Access Control) · ASVS V4**
+
+> **Fixed.** Migrated to a new **private** Blob store `portafile-data-private`
+> (`store_MV2S1GMPuIcxqXW5`, iad1) — store access is fixed at creation and cannot be
+> flipped public→private, so all 27 blobs were copied across and byte-verified, then
+> the old public store was emptied and deleted. `access:'private'` is now used on
+> every blob path. The attack chain below is dead at step one: the old host 404s and
+> private URLs are not anonymously fetchable. **Trap for the future:** the
+> `@vercel/blob` SDK prefers OIDC + `BLOB_STORE_ID` over `BLOB_READ_WRITE_TOKEN`, and
+> creating a store sets `BLOB_STORE_ID` — which silently redirects the *next* deploy.
+> Pass an explicit `token:` in any migration script. Original finding follows.
 
 Every blob is written `access: 'public'` (`api/state.js:46,60,116`). The store is served at a fixed host, and `keys/`, `owners/`, and `shops/` objects are readable directly, bypassing the API entirely. Because pointer blobs are **never deleted** (a deliberate, correct choice for the eventual-consistency problem), the bypass survives revocation forever:
 
@@ -31,14 +78,17 @@ old share link  →  GET keys/<oldKey>.json      → { shopId }
 
 **Fix (small, but re-test required):** store `owners/`, `keys/`, and `shops/` as **private** blobs — the SDK supports it (`presignUrl` / `issueSignedToken` are exported by `@vercel/blob` 2.6.1). The API already reads these server-side via `get()` with the store token, so the client code barely changes; direct reads then return `401`. Existing public blobs must be migrated, and the full revocation flow re-verified afterward. Leave `leads/` and the marketing assets as-is. **Do not touch this without Ethan's go-ahead — it changes the live storage model for two shops about to onboard.**
 
-### 🟡 MEDIUM-1 — shopId travels in the PUT query string
+### ✅ MEDIUM-1 — CLOSED 2026-07-21 — shopId travels in the PUT query string
 **OWASP A01 · ASVS V4/V7**
+
+> **Fixed.** The shopId moved to the `x-portafile-shop` header on both PUT and
+> rotate; the server ignores `?shop=` entirely. Original finding follows.
 
 `product/app.js:201` sends `&shop=<shopId>` on the owner's PUT. Query strings land in access logs, and `api/state.js:4` deliberately keeps the *owner token* out of the query for exactly that reason — but the shopId still goes there. While blobs are public (HIGH-1), a leaked shopId is a direct read key. Once HIGH-1 is fixed this is minor (shopId alone can't write — that needs the header token). **Fix if convenient:** move `shop` into a header like the owner token. Low urgency; note it, don't block on it.
 
 ### 🔵 LOW / hardening (no action needed to launch)
-- **`.github/workflows/security.yml` pins actions by mutable tag** (semgrep) — pin to commit SHAs to harden the CI supply chain. Cosmetic for a private repo.
-- **`.github/dependabot.yml` missing cooldown** (semgrep) — optional.
+- ✅ **CLOSED** — **`.github/workflows/security.yml` pins actions by mutable tag** (semgrep). Both workflows now pin every action by commit SHA, with the reason in a trailing comment.
+- ✅ **CLOSED** — **`.github/dependabot.yml` missing cooldown** (semgrep). Now `default-days: 7` on both ecosystems, so a fresh release soaks a week before it is proposed.
 - The three semgrep code findings are **false positives**, shown here with reasoning rather than suppressed silently:
   - `missing-integrity` on the favicon (`site/index.html:16`, `product/index.html:8`) — it's an inline `data:` URI, not an external resource; SRI is impossible and unneeded.
   - `using-http-server` in `verify-gate.js` / `verify-sync.js` — test-only, binds localhost, **not deployed** (`.vercelignore` ships only site/product/video).
@@ -84,14 +134,17 @@ old share link  →  GET keys/<oldKey>.json      → { shopId }
 ## Launch checklist
 
 **Before sharing beyond the two trusted shops (or ever making the repo/hostname public):**
-- [ ] Fix **HIGH-1** — private blobs for owners/keys/shops, then re-verify the revocation flow end-to-end.
+- [x] Fix **HIGH-1** — private blobs for owners/keys/shops, then re-verify the revocation flow end-to-end. *(Done 2026-07-21; Ethan hand-confirmed the app and revocation on his phone before the old store was deleted.)*
 
 **This week:**
-- [ ] Confirm the three NOT-VERIFIABLE dashboard items (spend cap, 2FA, env vars).
-- [ ] Optional: move `shop` out of the PUT query string (MEDIUM-1).
+- [x] Confirm the dashboard items: **spend cap** and **2FA** confirmed by Ethan 2026-07-21. Env vars are exercised indirectly — the live API's private Blob read path answers correctly, which it cannot do without a valid token.
+- [x] Move `shop` out of the PUT query string (MEDIUM-1). *(Done 2026-07-21.)*
 
 **Nice-to-have:**
-- [ ] Pin CI actions to SHAs; add dependabot cooldown.
+- [x] Pin CI actions to SHAs; add dependabot cooldown. *(Both done.)*
+
+**Genuinely still open — nothing blocking:**
+- [ ] Independent external scans (securityheaders.com, an OWASP ZAP baseline) against the live URL. Everything above is this project's own tooling checking itself.
 
 ---
 
