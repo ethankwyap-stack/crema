@@ -482,10 +482,10 @@ function viewDialin() {
       return `<section class="bean" data-id="${esc(b.id)}">
         <h3>${esc(b.name)}</h3><div class="roaster">${esc(b.roaster)}</div>
         ${cur ? `<div class="dial-now">
-          <div class="cell"><div class="num">${cur.grind}</div><div class="lbl">grind</div></div>
-          <div class="cell"><div class="num">${cur.dose}g</div><div class="lbl">dose in</div></div>
-          <div class="cell"><div class="num">${cur.yield}g</div><div class="lbl">yield out</div></div>
-          <div class="cell"><div class="num">${cur.time}s</div><div class="lbl">time</div></div>
+          <div class="cell"><div class="num">${esc(cur.grind)}</div><div class="lbl">grind</div></div>
+          <div class="cell"><div class="num">${esc(cur.dose)}g</div><div class="lbl">dose in</div></div>
+          <div class="cell"><div class="num">${esc(cur.yield)}g</div><div class="lbl">yield out</div></div>
+          <div class="cell"><div class="num">${esc(cur.time)}s</div><div class="lbl">time</div></div>
         </div><div class="dial-updated">set ${ago(cur.ts)}${cur.note ? ' — ' + esc(cur.note) : ''}</div>` : '<div class="dial-updated">no dial-in yet — log the first one below</div>'}
         <div class="dial-form">
           <input placeholder="grind" data-f="grind" value="${cur ? esc(cur.grind) : ''}">
@@ -495,7 +495,7 @@ function viewDialin() {
           <input class="note" placeholder="note (optional)" data-f="note">
           <button class="btn small" data-act="logDial">Log</button>
         </div>
-        <table class="dial-hist">${hist.map(d => `<tr><td>${new Date(d.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td><td>g${d.grind}</td><td>${d.dose}→${d.yield}g</td><td>${d.time}s</td><td class="n">${esc(d.note || '')}</td></tr>`).join('')}</table>
+        <table class="dial-hist">${hist.map(d => `<tr><td>${new Date(d.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td><td>g${esc(d.grind)}</td><td>${esc(d.dose)}→${esc(d.yield)}g</td><td>${esc(d.time)}s</td><td class="n">${esc(d.note || '')}</td></tr>`).join('')}</table>
         <p><button class="mini danger" data-act="delBean">remove bean</button></p>
       </section>`;
     }).join('')}
@@ -609,7 +609,7 @@ function buildPrint(kind) {
       </div>
       <div class="pagebreak"></div>
       ${pHead("today's dial-ins")}
-      ${S.beans.map(b => { const d = latestDial(b.id); return d ? `<div class="pdial"><h4>${esc(b.name)} — ${esc(b.roaster)}</h4><div class="nums">grind ${d.grind} · ${d.dose}g in → ${d.yield}g out · ${d.time}s</div></div>` : ''; }).join('')}
+      ${S.beans.map(b => { const d = latestDial(b.id); return d ? `<div class="pdial"><h4>${esc(b.name)} — ${esc(b.roaster)}</h4><div class="nums">grind ${esc(d.grind)} · ${esc(d.dose)}g in → ${esc(d.yield)}g out · ${esc(d.time)}s</div></div>` : ''; }).join('')}
       <div class="pagebreak"></div>
       ${pHead('recipe cards')}
       <div class="pcards">${S.recipes.map(pCard).join('')}</div>`;

@@ -214,7 +214,7 @@ async function fetchLeads() {
   localStorage.setItem('portafile-admin-key', k);
   st.textContent = 'fetching…';
   try {
-    const r = await fetch('https://portafile.vercel.app/api/lead?admin=' + encodeURIComponent(k));
+    const r = await fetch('https://portafile.vercel.app/api/lead', { headers: { 'x-portafile-admin': k } });
     if (r.status === 401) { localStorage.removeItem('portafile-admin-key'); st.textContent = 'wrong key'; return; }
     if (!r.ok) throw new Error(r.status);
     const leads = await r.json();
@@ -231,7 +231,7 @@ async function delLead(i) {
   if (!confirm(`Permanently delete the signup record from ${l.email}?\n\nThis erases their contact details from your list — it does NOT log them out. Portafile has no accounts; their browser stays unlocked. To cut off a staff device, use "Reset staff link" in the app instead.`)) return;
   const k = localStorage.getItem('portafile-admin-key');
   if (!k) { alert('Click "Fetch signups" first so the admin key is set.'); return; }
-  const r = await fetch(`https://portafile.vercel.app/api/lead?admin=${encodeURIComponent(k)}&ts=${l.ts}`, { method: 'DELETE' });
+  const r = await fetch(`https://portafile.vercel.app/api/lead?ts=${l.ts}`, { method: 'DELETE', headers: { 'x-portafile-admin': k } });
   if (r.ok) fetchLeads(); else alert('Delete failed: ' + r.status);
 }
 async function delCloud(i) {
@@ -266,7 +266,7 @@ async function loadMetrics() {
   const k = adminKey(); if (!k) return;
   st.textContent = 'loading…';
   try {
-    const r = await fetch('https://portafile.vercel.app/api/metrics?admin=' + encodeURIComponent(k));
+    const r = await fetch('https://portafile.vercel.app/api/metrics', { headers: { 'x-portafile-admin': k } });
     if (r.status === 401) { localStorage.removeItem('portafile-admin-key'); st.textContent = 'wrong key'; return; }
     if (!r.ok) throw new Error(r.status);
     const m = await r.json();

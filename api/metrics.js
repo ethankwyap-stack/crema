@@ -91,7 +91,7 @@ export async function onboarding(leads, getOwner) {
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*'); // founder dashboard runs on localhost; GET needs the admin key
-  res.setHeader('Access-Control-Allow-Headers', 'content-type');
+  res.setHeader('Access-Control-Allow-Headers', 'content-type, x-portafile-admin');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(204).end();
 
@@ -110,7 +110,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    if (!process.env.ADMIN_KEY || !safeEqual(req.query.admin, process.env.ADMIN_KEY)) {
+    if (!process.env.ADMIN_KEY || !safeEqual(req.headers['x-portafile-admin'], process.env.ADMIN_KEY)) {
       console.error('metrics admin auth failed', { ip: clientIp(req) || '?' });
       return res.status(401).json({ error: 'unauthorized' });
     }

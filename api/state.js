@@ -25,14 +25,19 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // best-effort per-instance throttle (same pattern as lead.js): stops a single-source PUT flood
 // from burning Blob ops. A distributed flood is the Vercel spend cap's job.
-const HITS = new Map(); // ip -> recent ms timestamps
+const HITS = new Map();      // ip -> recent ms timestamps (writes)
+const GET_HITS = new Map();  // separate bucket for reads — see RATE_GET_N
 const RATE_N = 120, RATE_MS = 10 * 60 * 1000; // saves are debounced 800ms client-side — 120/10min never throttles a real editing session
-function rateLimited(ip) {
+// Reads need a far bigger budget than writes: every device re-pulls every 30s (~20/10min each)
+// and a whole cafe's devices share ONE public IP behind the shop wifi. 600 still caps a flood at
+// 1 req/sec sustained, while leaving a 6-device shop (~120/10min) a 5x margin.
+const RATE_GET_N = 600;
+function rateLimited(ip, store = HITS, max = RATE_N) {
   if (!ip) return false;
-  const now = Date.now(), win = (HITS.get(ip) || []).filter(t => now - t < RATE_MS);
-  win.push(now); HITS.set(ip, win);
-  if (HITS.size > 5000) HITS.clear(); // crude memory bound
-  return win.length > RATE_N;
+  const now = Date.now(), win = (store.get(ip) || []).filter(t => now - t < RATE_MS);
+  win.push(now); store.set(ip, win);
+  if (store.size > 5000) store.clear(); // crude memory bound
+  return win.length > max;
 }
 const clientIp = req => String(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || '').split(',')[0].trim();
 
@@ -143,6 +148,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
+    if (rateLimited(clientIp(req), GET_HITS, RATE_GET_N)) return res.status(429).json({ error: 'slow down' });
     if (!HEX40.test(k)) return res.status(400).json({ error: 'bad key' });
     const r = await resolveKey(k);
     if (r.state === 'deleted') return res.status(410).json(deleted(r.own, owner, r.shopId));
@@ -178,6 +184,12 @@ export default async function handler(req, res) {
         // owner holding the CURRENT key, so a rotated-away link can never come back to life.
         if (sha256(owner) !== own.ownerHash || k !== own.currentKey) return res.status(404).json(UNKNOWN);
       } else {
+        // Absence must not grant authority. A shopId with no owner record but WITH data is a
+        // pre-owner-token shop (the legacy one, whose share key IS its shopId — so every staff
+        // holder knows it). Claiming it would overwrite their data AND revoke their link, which
+        // hard-kills every one of their devices. A first-time seed has no shop blob, so this
+        // never blocks a legitimate create. readJsonSure retries 3x: one null is not evidence.
+        if (await readJsonSure(`shops/${shop}.json`)) return res.status(404).json(UNKNOWN);
         // allowOverwrite:false is the store's only ATOMIC check — a flaky read can say "no owner
         // record" when one exists, but this put cannot overwrite one. Conflict = someone owns it.
         try {

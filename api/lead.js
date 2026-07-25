@@ -1,11 +1,12 @@
 /* Portafile lead capture — POST stores one lead per blob (no read-modify-write races),
-   GET lists them for the founder dashboard (requires ADMIN_KEY env var to match ?admin=). */
+   GET lists them for the founder dashboard (ADMIN_KEY must match the x-portafile-admin header —
+   never a query string, those land in access logs). */
 import { put, get, list, del } from '@vercel/blob';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 
 const cors = res => {
   res.setHeader('Access-Control-Allow-Origin', '*'); // ponytail: dashboard runs on localhost; leads are only readable/deletable with the admin key
-  res.setHeader('Access-Control-Allow-Headers', 'content-type');
+  res.setHeader('Access-Control-Allow-Headers', 'content-type, x-portafile-admin');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS'); // dashboard DELETE is cross-origin → needs this on the preflight
 };
 
@@ -53,7 +54,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    if (!process.env.ADMIN_KEY || !safeEqual(req.query.admin, process.env.ADMIN_KEY)) {
+    if (!process.env.ADMIN_KEY || !safeEqual(req.headers['x-portafile-admin'], process.env.ADMIN_KEY)) {
       console.error('lead admin auth failed', { ip: clientIp(req) || '?' });
       return res.status(401).json({ error: 'unauthorized' });
     }
@@ -68,7 +69,7 @@ export default async function handler(req, res) {
 
   // admin-gated single-lead delete — lets the founder honor a "delete my data" request (GDPR)
   if (req.method === 'DELETE') {
-    if (!process.env.ADMIN_KEY || !safeEqual(req.query.admin, process.env.ADMIN_KEY)) {
+    if (!process.env.ADMIN_KEY || !safeEqual(req.headers['x-portafile-admin'], process.env.ADMIN_KEY)) {
       console.error('lead delete auth failed', { ip: clientIp(req) || '?' });
       return res.status(401).json({ error: 'unauthorized' });
     }

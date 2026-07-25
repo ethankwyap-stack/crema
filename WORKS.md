@@ -1,5 +1,5 @@
 # WORKS.md — what Portafile must do
-Updated 2026-07-24 (3rd run) · Run: `/still-works` (add `live` after a deploy)
+Updated 2026-07-25 (4th run) · Run: `/still-works` (add `live` after a deploy)
 
 The feature checklist and the blast-radius map. `CLAUDE.md` holds the *gotchas* (why the
 code is shaped the way it is); this file holds *what must still be true for a user*.
@@ -16,6 +16,7 @@ code is shaped the way it is); this file holds *what must still be true for a us
 | `vercel.json` | CSP (inline `<script>` dies on deployed pages), the CORS pin (the localhost:4322 dashboard's fetches), and the `/` → `/site/index.html` rewrite |
 | `.vercelignore` | what gets published at all — a new top-level directory silently doesn't deploy |
 | `esc()` in `admin/dashboard.html` | XSS safety of every dashboard table; feedback and lead text reach HTML through it |
+| the admin-key transport (`x-portafile-admin` header) | all four admin routes at once. The dashboard's three fetches and `api/lead.js`/`api/metrics.js`/`api/state.js` must agree, AND the two lead/metrics functions must advertise the header in `Access-Control-Allow-Headers` — a mismatch means the browser never sends the request at all |
 | page copy in `site/` | `health_check.py` matches marker strings and emails a false alarm if they move |
 | tab ids in `product/index.html` (`recipes`/`prices`/`dialin`/`training`/`print`) | every verify suite's selectors |
 
@@ -54,6 +55,22 @@ code is shaped the way it is); this file holds *what must still be true for a us
       owner whose device has no `synced` marker and whose tombstone lost its ownerHash
       auto: `verify-sync.js` (the five `delete:` cases; three fail on pre-fix code)
 
+### Server API — the real handlers (`node verify-api.mjs`, 27 checks)
+Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *mirror* of
+`api/state.js` written inside the test, so it can pass while the real handler is broken.
+`verify-api.mjs` swaps `@vercel/blob` for an in-memory store and calls the real handlers.
+- [ ] A flood of anonymous `GET /api/state` is throttled — but on a read budget (600/10min),
+      never the 120 write budget: a whole café shares one public IP and every device polls
+      every 30s, so reusing the write bucket would throttle a busy real shop
+      prove: 601 GETs from one IP → 429, and that same IP can still SAVE
+- [ ] A shopId that already has data but no `owners/` record **cannot be claimed** — that
+      takeover would overwrite the café's data and hard-kill every staff device
+      prove: PUT with a stranger's owner token → 404, no owner record, data untouched
+- [ ] A brand-new shop can still seed the cloud, and its real owner can still repair a lost
+      pointer (the regression the claim-guard could plausibly break)
+- [ ] All four admin routes take the key as `x-portafile-admin`; the old `?admin=` form is
+      refused, and both lead/metrics preflights advertise the header
+
 ### App — access gate and feedback
 - [ ] First-time visitor (no `?k=`) gets the signup form; it unlocks and never returns
       auto: `node product/verify-gate.js` (11 checks)
@@ -84,6 +101,22 @@ code is shaped the way it is); this file holds *what must still be true for a us
 - [ ] **`/admin/dashboard.html` → 404.** The dashboard has no auth; it must never deploy.
 
 ## Known traps — bugs that already escaped once
+- **A custom request header turns a dashboard fetch into a *preflighted* one.** Moving the
+  admin key from `?admin=` to `x-portafile-admin` (2026-07-25) meant the browser sent an
+  `OPTIONS` first — and against not-yet-deployed production that preflight failed, so the
+  request never left the browser: `net::ERR_FAILED`, **not** a 401. The dashboard and the two
+  API files must therefore deploy together, and any future custom header must be added to
+  `Access-Control-Allow-Headers` in the same commit. Observed in a browser, not guessed.
+- A `[data-reveal]`/`0 of 0 elements` style assertion passes vacuously when the selector is
+  wrong — the site's reveal hook is `[data-reveal]`, and the product's feedback button
+  (`#hFeedback`) only exists *inside* the `?` help modal (`#btnHelp`), not on the toolbar.
+  A check that matched nothing cost a re-run on 2026-07-25; assert the element count too.
+- The dashboard writes `portafile-admin-v1` only on an **edit** (`save()`), never on load, so
+  "did it persist" must drive a real change first or it reads as a broken store.
+- Dial-in values are only numbers when typed locally (`parseFloat`); nothing coerces them
+  when state arrives from the cloud or an import, so every dial-in **render site** must
+  `esc()` — the board, the history table, AND the new-hire print pack. The 2026-07-25 audit
+  named only the board; the other two were the same live bug.
 - Relative asset URLs on the landing page 404 at `/` (root is a rewrite) — use `/site/...`.
 - Inline `<script>` is killed by CSP on any deployed page.
 - Old headless Chrome clamps width to ~500px (fake mobile overflow — test narrow in an

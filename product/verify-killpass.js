@@ -63,6 +63,45 @@ const check = (name, cond) => { console.log((cond ? 'PASS' : 'FAIL') + '  ' + na
   const avg = await page.evaluate(() => document.querySelectorAll('.dash .stat .v')[1]?.textContent.trim());
   check('dashboard avg finite with unpriced drink (got: ' + avg + ')', !!avg && !avg.includes('Infinity') && !avg.includes('NaN'));
 
+  // 3b. Hostile dial-in numbers (MED-4). Dial-ins typed locally are parseFloat'd, but state
+  // arriving from the cloud or an import is never coerced — validBackup only checks Array.isArray.
+  // This runs on file:// with NO CSP, the one context where the audit proved the payload executes,
+  // so it fails loudly if any of the three render sites stops escaping.
+  const PAY = '<img src=x onerror="window.__dial=1" id="pwned">';
+  const dialBackup = {
+    ...xssBackup,
+    recipes: [{ id: 'r1', name: 'Latte', cat: 'c', size: 's', price: 5, items: [{ ing: 'i1', qty: 1 }], steps: [], bean: 'b1' }],
+    beans: [{ id: 'b1', name: 'House', roaster: 'Roaster' }],
+    dialins: [
+      { beanId: 'b1', grind: PAY, dose: PAY, yield: PAY, time: PAY, note: 'newest', ts: Date.now() },
+      { beanId: 'b1', grind: PAY, dose: PAY, yield: PAY, time: PAY, note: 'older', ts: Date.now() - 8.64e7 },
+    ],
+    path: [{ day: 1, type: 'recipe', ref: 'r1' }],
+  };
+  fs.writeFileSync(tmp('dial-backup.json'), JSON.stringify(dialBackup));
+  await page.click('#btnData');
+  await page.setInputFiles('#dImport', tmp('dial-backup.json'));
+  await page.waitForTimeout(400);
+  await page.click('[data-tab="dialin"]');
+  await page.waitForTimeout(200);
+  const dial = await page.evaluate(() => ({
+    fired: window.__dial,
+    injected: document.querySelectorAll('#pwned').length,
+    board: document.querySelector('.dial-now .num')?.textContent || '',
+    hist: document.querySelector('.dial-hist td:nth-child(2)')?.textContent || '',
+  }));
+  check('hostile dial-in does not execute (board + history)', dial.fired === undefined);
+  check('no injected node anywhere in the dial-in view', dial.injected === 0);
+  check('board shows the payload as literal text', dial.board.includes('<img src=x'));
+  check('history row shows the payload as literal text', dial.hist.includes('<img src=x'));
+  const pack = await page.evaluate(() => {
+    window.buildPrint('hire');
+    return { fired: window.__dial, injected: document.querySelectorAll('#printRoot #pwned').length,
+             nums: document.querySelector('#printRoot .pdial .nums')?.textContent || '' };
+  });
+  check('new-hire print pack does not execute the payload', pack.fired === undefined);
+  check('print pack renders the payload as literal text', pack.injected === 0 && pack.nums.includes('<img src=x'));
+
   // 4. Reset back to demo so the shipped state is clean
   await page.evaluate(() => { localStorage.clear(); });
   await page.reload();
