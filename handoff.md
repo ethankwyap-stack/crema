@@ -1,5 +1,13 @@
 # HANDOFF — Portafile speaks European Portuguese and prices in euros
 
+> ## ✅ RESOLVED 2026-07-26 — committed as `0c32daa` and deployed to production.
+> All three §4 questions were answered by Ethan: **deploy** (done, verified live — `/pt`, `site.css`,
+> `i18n.js` and the PT legal pages all 200, 12/12 health checks, privacy-link 404 gone); **paid tiers
+> stay in USD** with the explanatory line; **GDPR noted, not solved** — deferred deliberately while
+> nobody is paying, and kept in `PROGRESS.md`'s open threads. **Do not rebuild any of this.** The
+> gotchas in §5, the machine warnings in §9 and the "how to work with Ethan" notes in §8 are still
+> true and worth reading; §1's "nothing is deployed" and §10's next task are now historical.
+
 **Written 2026-07-26.** Project: `/Users/ethanyap/portafile`. Owner: Ethan (learning developer).
 You are picking this up cold. Every fact below was checked by a command in the session that wrote
 this file, unless labelled otherwise.
