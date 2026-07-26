@@ -1,0 +1,222 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Portafile — a guide for your shop</title>
+<!--
+  English onboarding guide, printed to PDF. Sibling of guia-pt.html — same design,
+  ADAPTED not translated: the US demo (15 drinks, dollars, fluid ounces, °F), the
+  placeholder tiers in dollars, and no "how to switch to English" section, because an
+  English browser already opens in English. Content source: ONBOARDING.md.
+  Every <span class="btn"> names a real button and is checked against product/i18n.js
+  on each render — for this guide those labels are the dictionary KEYS.
+  Render:  node guide/render-pdf.js
+-->
+<style>
+  :root {
+    --espresso: #2A1A12; --roast: #4A3527; --ink-soft: #6B5544;
+    --paper: #FAF4EA; --card: #FFFDF8; --crema: #D9A05B;
+    --terra: #C4502F; --spruce: #5B7065; --line: #E7DACA;
+    --font-display: "Iowan Old Style", Palatino, Georgia, serif;
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  @page { size: A4; margin: 14mm 13mm 12mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: var(--font-ui); color: var(--espresso);
+    background: var(--paper); font-size: 9.1pt; line-height: 1.36;
+  }
+  h1 { font-family: var(--font-display); font-size: 19pt; margin: 0 0 2pt; letter-spacing: -.2pt; }
+  .sub { color: var(--roast); font-size: 9.4pt; margin: 0 0 2.5pt; }
+  .url { font-size: 8.6pt; color: var(--terra); font-weight: 600; margin: 0; }
+  header { border-bottom: 2.5px solid var(--espresso); padding-bottom: 5pt; margin-bottom: 8pt; }
+
+  section { break-inside: avoid; margin-bottom: 7pt; }
+  h2 {
+    font-family: var(--font-display); font-size: 11.6pt; margin: 0 0 4pt;
+    padding-bottom: 2pt; border-bottom: 1px solid var(--line);
+    display: flex; align-items: baseline; gap: 7pt;
+  }
+  h2 .n {
+    font-family: var(--font-ui); font-size: 8pt; font-weight: 700; color: var(--card);
+    background: var(--terra); border-radius: 50%; width: 15pt; height: 15pt;
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+  }
+  h2 .when { margin-left: auto; font-family: var(--font-ui); font-size: 8pt; font-weight: 400; color: var(--ink-soft); }
+
+  p { margin: 0 0 3.2pt; }
+  ol, ul { margin: 0 0 3.2pt; padding-left: 14pt; }
+  li { margin-bottom: 1.8pt; }
+  b, strong { color: var(--roast); }
+  .btn {
+    font-family: var(--font-ui); font-size: 8.4pt; font-weight: 600; white-space: nowrap;
+    background: var(--card); border: 1px solid var(--crema); border-radius: 4pt;
+    padding: 0.5pt 3.5pt; color: var(--roast);
+  }
+  .muted { color: var(--ink-soft); }
+
+  .callout {
+    background: var(--card); border: 1px solid var(--crema);
+    border-left: 3.5px solid var(--terra); border-radius: 5pt;
+    padding: 6pt 8.5pt; margin: 0 0 4pt;
+  }
+  .callout h3 {
+    margin: 0 0 3pt; font-size: 9pt; font-family: var(--font-ui);
+    color: var(--terra); text-transform: uppercase; letter-spacing: .4pt;
+  }
+  .warn { border-left-color: var(--spruce); }
+  .warn h3 { color: var(--spruce); }
+
+  .tabs { display: grid; grid-template-columns: 62pt 1fr; gap: 3pt 9pt; margin-bottom: 4pt; }
+  .tabs dt { font-weight: 700; color: var(--terra); }
+  .tabs dd { margin: 0; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16pt; }
+  footer {
+    margin-top: 8pt; padding-top: 5pt; border-top: 1px solid var(--line);
+    font-size: 8.2pt; color: var(--ink-soft); display: flex; justify-content: space-between; gap: 10pt;
+  }
+</style>
+
+<header>
+  <h1>Portafile</h1>
+  <p class="sub">Recipe cards, real costs, dial-ins and training — on your phone and your staff's.</p>
+  <p class="url">portafile.vercel.app/product/</p>
+</header>
+
+<section>
+  <h2><span class="n">1</span> Setting up your shop <span class="when">about ten minutes</span></h2>
+  <p>Do this on the phone or laptop you'll actually keep — see <b>the owner device</b> in section 4.</p>
+  <ol>
+    <li>Open <b>portafile.vercel.app/product/</b>.</li>
+    <li><b>Fill in the short form.</b> Email and shop name are required; role, city and phone are
+    optional. It's one time per device, with no password and no confirmation email. It's how I know
+    which shops are using this, so I can help when something breaks.</li>
+    <li><b>You'll land in a demo shop</b> with fifteen drinks already in it. That's a starting point,
+    not your menu. Tap the shop name at the top and type yours.</li>
+    <li><b>Put in what you actually pay, on the <span class="btn">Prices</span> tab</b> — per gram of
+    beans, per fluid ounce of milk, per cup, per pump of syrup. This is the step that makes everything
+    else true.</li>
+    <li><b>Fix up the drinks on the <span class="btn">Recipes</span> tab</b> — delete what you don't
+    serve, add what you do, and set your real menu prices.</li>
+    <li><b>Turn on sync</b> when you're ready to share with your team (section 3).</li>
+  </ol>
+  <p class="muted"><b>The starter costs are plausible guesses, not your invoices.</b> They exist so the
+  app opens with believable numbers instead of zeros — replace them with yours.</p>
+</section>
+
+<section>
+  <h2><span class="n">2</span> The five tabs</h2>
+  <dl class="tabs">
+    <dt>Recipes</dt>
+    <dd>Every drink as a card: what it costs you to make, what you keep, and its COGS percentage —
+    cost of goods sold, the share of the menu price eaten by ingredients. The top of the page shows
+    your average, how many drinks are over target, and your thinnest margin. The target is yours to
+    set; 30% is the default. Change <i>one</i> ingredient price and every card re-prices immediately.</dd>
+
+    <dt>Prices</dt>
+    <dd>Your ingredient list: name, unit, what you pay per unit, and which drinks use it. This is the
+    engine room. On a phone the table scrolls sideways — swipe it to reach the last columns.</dd>
+
+    <dt>Dial-in</dt>
+    <dd>A board per bean: grind, dose, yield, time and a note. Log it in five seconds. The most recent
+    dial-in shows up on every recipe card using that bean, and the history stays — so when that
+    seasonal Ethiopia comes back, you're not starting from scratch.</dd>
+
+    <dt>Training</dt>
+    <dd>A day-by-day path built from your drinks plus any skills you add ("closing checklist", "milk
+    steaming"), with sign-offs and a progress bar per barista. Add and remove baristas as your team
+    changes.</dd>
+
+    <dt>Print</dt>
+    <dd>Four documents made to be printed and taped where the work happens: <b>Recipe cards</b> (two
+    per page, build, steps and current dial-in), <b>Station sheet</b> (the whole menu on one dense
+    page), <b>New-hire pack</b> (cover, checklist, every card, today's dial-ins) and
+    <b>Margin report</b>.</dd>
+  </dl>
+  <div class="callout warn">
+    <h3>Only the margin report shows your money</h3>
+    <p style="margin-bottom:0">The recipe cards, the station sheet and the new-hire pack
+    <b>never show costs or margins</b>, so you can hand them to anyone without handing over your
+    books. The <b>Margin report</b> is the one page that does: that one's for you.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">3</span> Sharing with your staff</h2>
+  <p>Everything lives only in your browser until you decide otherwise. To put it on your team's phones:</p>
+  <ol>
+    <li><b><span class="btn">Data ▾</span> → <span class="btn">Turn on sync</span>.</b>
+    Your shop gets a secret link.</li>
+    <li><b><span class="btn">Copy link</span></b> and send it to your baristas.</li>
+    <li>They open it. No account, no password, nothing to install. They see the same live data, and
+    edits show up in about <b>30 seconds</b>.</li>
+  </ol>
+  <p><b>When someone leaves the team, reset the link:</b>
+  <span class="btn">Data ▾</span> → <span class="btn">Reset staff link</span>. The old link stops
+  working, devices still using it have the shop's data cleared from them and show a "link turned off"
+  screen, and you get a fresh link to send to everyone still there. Give it up to about 90 seconds to
+  take effect. <b>It cannot be undone</b>, and old links never come back to life.</p>
+  <p class="muted"><b>Two honest limits.</b> Someone technical enough could clear their browser storage
+  and get a blank app back — they'd have none of your data, but the lock isn't a vault. And a phone
+  that's switched off or offline won't find out it's been cut off until it reconnects. Anyone who
+  exported a backup before you reset still has that file.</p>
+</section>
+
+<section>
+  <h2><span class="n">4</span> Things worth knowing</h2>
+  <div class="cols">
+    <div>
+      <p><b>The owner device.</b> Whichever phone or laptop you used to turn on sync becomes the owner
+      device. It's the only one that can reset the staff link. Your data is safe either way, but if you
+      wipe that browser you lose the ability to revoke links. Pick a device you'll keep.</p>
+      <p><b>One shop per link.</b> A link is one specific shop's data. Don't share the same link
+      between two businesses — you'd both be editing the same recipes.</p>
+    </div>
+    <div>
+      <p><b>Two people editing at once.</b> If you both change the same drink within a few seconds, the
+      last change wins. At shop scale that isn't a problem.</p>
+      <p><b>Back it up.</b> <span class="btn">Data ▾</span> → <span class="btn">Export backup</span>
+      saves a file of everything. Do it once you've finished setting up, and now and then after.
+      <span class="btn">Import</span> restores it on any device.</p>
+    </div>
+  </div>
+  <div class="callout">
+    <h3>It speaks Portuguese too</h3>
+    <p style="margin-bottom:0">Portafile follows your <b>browser's</b> language, so an English browser
+    opens in English and you don't need to do anything. Next to the <span class="btn">?</span> in the
+    top right there's a picker with <span class="btn">EN</span> and <span class="btn">PT</span>. While
+    the shop is still the untouched demo, the <b>menu changes with the language</b> — press PT and you
+    get a Lisbon café's drinks in euros. Press EN to come straight back. <b>Once the shop is yours</b> —
+    the moment you rename it, edit a drink or log a dial-in — switching language only ever translates
+    the buttons and menus, and <b>never your recipes</b>. Those are your words.</p>
+  </div>
+  <p><b>Paper beats screens during a rush.</b> Print the station sheet and the recipe cards. The app is
+  for keeping them true, not for reading at the bar with milk in your hand.</p>
+</section>
+
+<section>
+  <h2><span class="n">5</span> What this costs, and your data</h2>
+  <p><b>This costs you nothing.</b> There's no payment, no card, no trial clock and no account to
+  cancel. There is no billing system connected to this app at all.</p>
+  <p><b>About the prices on the marketing page.</b> The tiers you'll see there — Local $0, Shop $29/mo,
+  Roaster Partner $149/mo — are <b>placeholders</b>: a sketch of what pricing might be one day. They're
+  not something you're on, not something that starts after a trial, and not something that can bill
+  you. If that ever changes you'll hear it from me first, in plain language.</p>
+  <p><b>Your data.</b> It lives in your browser, plus a cloud copy once sync is on. Your costs and
+  margins are yours — I don't look at them, and there's no analytics inside the app. The only thing I
+  keep is the signup form, your email and shop name, so I can reach you. Ask me and I'll delete it.</p>
+</section>
+
+<section>
+  <h2><span class="n">6</span> If something goes wrong</h2>
+  <p><b>Export a backup first</b> (<span class="btn">Data ▾</span> →
+  <span class="btn">Export backup</span>) before touching anything else. Then text or email me: what
+  you tapped, what you expected, and what happened instead — a screenshot is perfect. If the data
+  itself looks wrong, send me that backup file too.</p>
+  <p>This is early software, built for a handful of shops before anyone else. If something's clumsy or
+  missing, say so — that's the reason you're getting it first.</p>
+</section>
+
+<footer>
+  <span><b>Portafile</b> — a guide for your shop · English</span>
+  <span>portafile.vercel.app</span>
+</footer>

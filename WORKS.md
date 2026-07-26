@@ -22,7 +22,7 @@ code is shaped the way it is); this file holds *what must still be true for a us
 | the admin-key transport (`x-portafile-admin` header) | all four admin routes at once. The dashboard's three fetches and `api/lead.js`/`api/metrics.js`/`api/state.js` must agree, AND the two lead/metrics functions must advertise the header in `Access-Control-Allow-Headers` — a mismatch means the browser never sends the request at all |
 | page copy in `site/` | `health_check.py` matches marker strings and emails a false alarm if they move |
 | tab ids in `product/index.html` (`recipes`/`prices`/`dialin`/`training`/`print`) | every verify suite's selectors |
-| a **button label** in `product/i18n.js` | the Portuguese guide (`guide/guia-pt.html`) names buttons the owner must click, so a renamed button rots the PDF silently. `node guide/render-pdf.js` checks all 12 labels against the dictionary and exits non-zero — re-render the PDF after any label change. `guide/` is deliberately NOT in `.vercelignore`'s allowlist: it is an internal document Ethan sends by hand, not a deployed page |
+| a **button label** in `product/i18n.js` | **both** onboarding guides (`guide/guia-pt.html`, `guide/guide-en.html`) name buttons the owner must click, so a renamed button rots the PDFs silently. `node guide/render-pdf.js` checks every label and exits non-zero — re-render after any label change. The check must match **both sides** of the dictionary: the English string IS the key, so the PT guide's labels are values and the EN guide's are keys; matching values alone rejects every correct English label. `guide/` is deliberately NOT in `.vercelignore`'s allowlist — internal documents, not deployed pages |
 
 ## Features
 

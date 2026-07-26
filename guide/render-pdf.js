@@ -13,22 +13,29 @@ const PW = '/Users/ethanyap/.npm/_npx/e41f203b7505f1fb/node_modules/playwright';
 const { chromium } = require(PW);
 
 const DIR = __dirname;
-const OUT = { 'guia-pt.html': 'Portafile-Guia-PT.pdf' };
+const OUT = { 'guia-pt.html': 'Portafile-Guia-PT.pdf', 'guide-en.html': 'Portafile-Guide-EN.pdf' };
 
 /* Every <span class="btn"> in the guide names a real button in the app. If someone renames a
    button in product/i18n.js, the guide silently starts lying — the same silent-drift failure the
    i18n dictionary already has. So check the labels here, on every render.
-   Literals that are not dictionary values (the language picker, the "?" button, tab names read
-   out of a real pt-PT browser) are listed explicitly. */
-const LITERALS = new Set(['?', 'EN', 'PT', 'Receitas', 'Preços', 'Dial-in', 'Formação', 'Imprimir']);
+   BOTH SIDES of the dictionary count. The English string IS the key (see CLAUDE.md), so the
+   Portuguese guide's labels are dictionary VALUES while the English guide's labels are KEYS —
+   checking values alone would reject every correct English label. A `|context` suffix is
+   stripped, since that is what the app renders for English.
+   Literals that are in neither side (the language picker, the "?" button) are listed here. */
+const LITERALS = new Set(['?', 'EN', 'PT', 'Dial-in']);
 function checkLabels(html, file) {
   const dict = fs.readFileSync(path.join(DIR, '..', 'product', 'i18n.js'), 'utf8');
-  const known = new Set([...dict.matchAll(/:\s*'((?:\\.|[^'])*)'/g)].map(m => m[1].replace(/\\'/g, "'")));
+  const unq = s => s.replace(/\\'/g, "'");
+  const known = new Set([
+    ...[...dict.matchAll(/:\s*'((?:\\.|[^'])*)'/g)].map(m => unq(m[1])),              // pt values
+    ...[...dict.matchAll(/^\s*'((?:\\.|[^'])*)'\s*:/gm)].map(m => unq(m[1]).split('|')[0]), // en keys
+  ]);
   const used = [...new Set([...html.matchAll(/<span class="btn">([^<]+)<\/span>/g)].map(m => m[1].trim()))];
   const missing = used.filter(l => !LITERALS.has(l) && !known.has(l));
   console.log(`  ${used.length} button labels referenced, ${used.length - missing.length} confirmed against product/i18n.js`);
   if (missing.length) {
-    console.error(`  ✗ ${file}: NOT FOUND in the app's Portuguese dictionary: ${missing.map(m => `"${m}"`).join(', ')}`);
+    console.error(`  ✗ ${file}: NOT FOUND in the app's dictionary (either side): ${missing.map(m => `"${m}"`).join(', ')}`);
     process.exitCode = 1;
   }
 }
