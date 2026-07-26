@@ -1,6 +1,8 @@
 {
   "rewrites": [
     { "source": "/", "destination": "/site/index.html" },
+    { "source": "/pt", "destination": "/site/pt/index.html" },
+    { "source": "/pt/", "destination": "/site/pt/index.html" },
     { "source": "/assets/:file", "destination": "/site/assets/:file" },
     { "source": "/.well-known/security.txt", "destination": "/site/.well-known/security.txt" }
   ],

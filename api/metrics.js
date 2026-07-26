@@ -16,8 +16,18 @@ import { randomUUID, timingSafeEqual } from 'node:crypto';
 
 const HEX40 = /^[a-f0-9]{40}$/;
 const DAY = 864e5;
-// the demo seed a fresh browser starts on — a shop still matching it hasn't been made anyone's own
-const DEMO = { name: 'Demo Espresso Bar', recipes: 15, ingredients: 13, dialins: 3, baristas: 1 };
+/* The demo seeds a fresh browser can start on — ONE PER LANGUAGE. A shop still matching any of
+   them has not been made anyone's own. These are hand-copied from seedEN()/seedPT() in
+   product/app.js; adding a language without adding its seed here makes every shop in that
+   language count as "customised" the instant it opens, silently inflating adoption to 100%.
+   Counts must match the seed exactly (see the blast-radius map in WORKS.md). */
+const DEMOS = [
+  { name: 'Demo Espresso Bar',     recipes: 15, ingredients: 13, dialins: 3, baristas: 1 },
+  { name: 'Café da Esquina (demo)', recipes: 19, ingredients: 14, dialins: 3, baristas: 1 },
+];
+// Thresholds take the max across seeds, so no starting shop can false-positive in any language.
+const DEMO_BARISTAS = Math.max(...DEMOS.map(d => d.baristas));
+const DEMO_DIALINS = Math.max(...DEMOS.map(d => d.dialins));
 
 const safeEqual = (a, b) => {
   const x = Buffer.from(String(a ?? '')), y = Buffer.from(String(b ?? ''));
@@ -40,10 +50,13 @@ const clientIp = req => String(req.headers['x-real-ip'] || req.headers['x-forwar
 
 const arr = v => (Array.isArray(v) ? v : []);
 // ponytail: three coarse booleans, not a usage log. Enough to rank what to build next.
-export const isCustomised = s => s.shop?.name !== DEMO.name || arr(s.recipes).length !== DEMO.recipes || arr(s.ingredients).length !== DEMO.ingredients;
-export const usesTraining = s => arr(s.baristas).length > DEMO.baristas
+// Untouched = still identical to one of the shipped seeds in name AND recipe/ingredient counts.
+export const matchesADemoSeed = s => DEMOS.some(d => s.shop?.name === d.name
+  && arr(s.recipes).length === d.recipes && arr(s.ingredients).length === d.ingredients);
+export const isCustomised = s => !matchesADemoSeed(s);
+export const usesTraining = s => arr(s.baristas).length > DEMO_BARISTAS
   || Object.values(s.signoffs || {}).some(o => o && Object.keys(o).length > 0);
-export const usesDialin = s => arr(s.dialins).length > DEMO.dialins;
+export const usesDialin = s => arr(s.dialins).length > DEMO_DIALINS;
 
 const pct = (n, d) => (d ? Math.round((n / d) * 100) : 0);
 

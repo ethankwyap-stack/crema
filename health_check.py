@@ -24,8 +24,19 @@ RETRY_AFTER = 20  # seconds — a single blip is not an outage (learned on reg-d
 CHECKS = [
     ("Landing page",        "/",                        200, "Portafile"),
     ("Privacy page",        "/site/privacy.html",       200, "Privacy"),
+    # The landing pages' CSS lives in one shared file now. If it 404s the page still returns 200
+    # with all its text, so only a direct check catches it — an unstyled site looks broken to a
+    # visitor but passes a body-text assertion.
+    ("Landing stylesheet",  "/site/site.css",           200, "--espresso"),
+    # Portuguese landing page, reached through a rewrite like "/" is. Guards both the rewrite and
+    # .vercelignore: a new directory under site/ that fails to publish would 404 silently.
+    ("Portuguese landing",  "/pt",                      200, "afinado"),
+    ("Portuguese privacy",  "/site/pt/privacy.html",    200, "Privacidade"),
     ("App shell",           "/product/",                200, 'src="app.js"'),
     ("App code",            "/product/app.js",          200, "portafile.v1"),
+    # app.js calls t() during its first render, so a missing i18n.js is not a degraded
+    # translation — it is a blank app. The shell check above would still pass.
+    ("App translations",    "/product/i18n.js",         200, "Receitas"),
     # An unknown key must 404 with unknown-key. Proves the serverless function runs AND
     # can read the private Blob store — a dead store throws and turns this into a 500.
     ("Sync API + Blob",     "/api/state?k=" + "0" * 40, 404, "unknown-key"),

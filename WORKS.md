@@ -1,5 +1,5 @@
 # WORKS.md — what Portafile must do
-Updated 2026-07-25 (4th run) · Run: `/still-works` (add `live` after a deploy)
+Updated 2026-07-26 (5th run) · Run: `/still-works` (add `live` after a deploy)
 
 The feature checklist and the blast-radius map. `CLAUDE.md` holds the *gotchas* (why the
 code is shaped the way it is); this file holds *what must still be true for a user*.
@@ -9,11 +9,14 @@ code is shaped the way it is); this file holds *what must still be true for a us
 | If this changes | These break |
 |---|---|
 | `product/app.js` | the entire app — it's one file, there is no module boundary |
+| `product/i18n.js` | **every rendered string and every price.** It defines the globals `t`, `money`, `num`, `dec`, `setLang`, `currencySymbol`, `localeTag`; `app.js` calls `t()` during its first render, so if this file fails to load the app is not "in English", it is blank. It must stay listed before `app.js` in `product/index.html` |
+| an English string used as a `t()` key | that one string reverts to English silently — there is no error for a missing translation, by design. `node verify-i18n.mjs` is the only thing that catches it |
 | `brand/brand.css` | every page's palette and type: site, product, admin |
+| `site/site.css` | **both** landing pages at once (`/` and `/pt`) — it was extracted from `site/index.html` so branding is edited once. A 404 here leaves fully-worded but completely unstyled pages, which a body-text health check would pass |
 | localStorage prefix `portafile.v1*` | all saved shop data. A renamed key silently wipes every existing user, and the revocation/delete wipes are written against this exact prefix (`lead*` is deliberately excluded on revoke, included on delete) |
 | `api/state.js` | sync, staff links, revocation, founder delete, usage-date stamping |
-| **the demo seed** (15 recipes / 13 ingredients / 3 dial-ins / 1 barista / "Demo Espresso Bar") | the `DEMO` constant in `api/metrics.js` is a hard-coded copy of it. Change the seed and every adoption percentage silently lies — no error, just wrong numbers |
-| `vercel.json` | CSP (inline `<script>` dies on deployed pages), the CORS pin (the localhost:4322 dashboard's fetches), and the `/` → `/site/index.html` rewrite |
+| **either demo seed** — EN (15 recipes / 13 ingredients / 3 dial-ins / 1 barista / "Demo Espresso Bar") or PT (19 / 14 / 3 / 1 / "Café da Esquina (demo)") | the `DEMOS` array in `api/metrics.js` is a hard-coded copy of **both**. Change a seed, or add a language without adding its seed there, and every adoption percentage silently lies — no error, just wrong numbers. A new language whose seed is missing makes every shop in that language read as "customised" on first open, i.e. 100% adoption. `node verify-metrics.mjs` covers both seeds |
+| `vercel.json` | CSP (inline `<script>` dies on deployed pages), the CORS pin (the localhost:4322 dashboard's fetches), and the `/` → `/site/index.html` and `/pt` → `/site/pt/index.html` rewrites |
 | `.vercelignore` | what gets published at all — a new top-level directory silently doesn't deploy |
 | `esc()` in `admin/dashboard.html` | XSS safety of every dashboard table; feedback and lead text reach HTML through it |
 | the admin-key transport (`x-portafile-admin` header) | all four admin routes at once. The dashboard's three fetches and `api/lead.js`/`api/metrics.js`/`api/state.js` must agree, AND the two lead/metrics functions must advertise the header in `Access-Control-Allow-Headers` — a mismatch means the browser never sends the request at all |
@@ -77,11 +80,37 @@ Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *m
 - [ ] ? → Send feedback sends, validates "pick 👍 or 👎 first", and survives a server error
       prove: drive the modal with the network stubbed to fail
 
+### App — language and currency (European Portuguese)
+- [ ] A browser asking for Portuguese gets the app in pt-PT with **no action taken**: euro prices
+      with a decimal comma, metric units, and the Lisbon demo shop (19 drinks, "Café da Esquina")
+      prove: open `/product/` with locale pt-PT · auto: the PT block of `product/verify.js`'s
+      selftest (27 checks) — and `?selftest=1` asserts both seeds resolve every recipe item
+- [ ] An en-US browser is **completely unaffected** — 15 drinks, "Demo Espresso Bar", dollars
+      prove: side-by-side contexts; this is the regression that matters most
+- [ ] The EN/PT picker retranslates the whole chrome live, with no reload, and the choice
+      persists and syncs (it lives in `S.shop.lang`, so staff devices follow the owner)
+- [ ] Switching language does **not** retranslate the shop's own recipes — those are the
+      owner's words. "Reset to demo" reseeds in the current language
+- [ ] Currency follows language (en→USD, pt→EUR). Deliberate: one setting, not two
+- [ ] Ingredient cost inputs accept per-ml prices (`step="0.0001"`, e.g. €0.0009/ml milk) —
+      at `step="0.001"` a metric milk price is `:invalid` and the spinner jumps
+- [ ] Nothing is left in English on any PT screen, including the print packs and the
+      new-hire pack cover · auto: 53 checks, `scratchpad/verify-pt.js` pattern
+- [ ] `node verify-i18n.mjs` — no duplicate keys, no untranslated `t()` call site, no
+      orphaned translation, `%s` count preserved in every string
+
 ### Site
 - [ ] Landing page loads at `/` with scroll-reveal animations actually running
       prove: load `/`, scroll, watch sections appear (see the headless traps below)
+- [ ] **Both** landing pages are styled — the CSS is one shared file now, so check `/` AND `/pt`
+      prove: computed `background-color` of body is `rgb(250,244,234)` on both
+- [ ] `/pt` serves the Portuguese landing page (a rewrite, like `/`), with euro figures in the
+      mock card matching the PT seed, and the EN↔PT switch reachable **on a phone**
+      (it sits outside `.navlinks`, which is `display:none` under 600px)
 - [ ] Privacy and Terms load and say what the product actually does
       prove: `/site/privacy.html` mentions aggregate counting AND usage dates
+- [ ] `/site/pt/privacy.html` and `/site/pt/terms.html` load, and each says the English
+      version prevails — they are translations of documents governed by California law
 
 ### Founder dashboard (local only, http://127.0.0.1:4322/admin/dashboard.html)
 - [ ] Load metrics fills the tiles, the per-cafe table and feedback from live production
@@ -96,7 +125,7 @@ Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *m
 - [ ] Hostile text in any live-loaded field renders as literal text, never HTML
 - [ ] Ledger, email list, signups and labels survive a reload (localStorage `portafile-admin-v1`)
 
-### Production invariants (`live` mode — `python3 health_check.py` covers all 8)
+### Production invariants (`live` mode — `python3 health_check.py` covers all 12)
 - [ ] `/api/metrics` with no key → 401 · `/api/state?k=0×40` → 404 `unknown-key`
 - [ ] **`/admin/dashboard.html` → 404.** The dashboard has no auth; it must never deploy.
 
@@ -118,6 +147,23 @@ Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *m
   `esc()` — the board, the history table, AND the new-hire print pack. The 2026-07-25 audit
   named only the board; the other two were the same live bug.
 - Relative asset URLs on the landing page 404 at `/` (root is a rewrite) — use `/site/...`.
+  This was **live** until 2026-07-26: the FAQ's "privacy policy" link was `privacy.html`, fine at
+  `/site/index.html` and a 404 at the canonical `/`. The other relative links only worked because
+  `/site/index.html` and `/` happen to sit at the same depth — coincidence, not design. Every URL
+  on both landing pages is absolute now, and `/pt` adds a second rewrite with the same hazard.
+- **One English word can need two Portuguese translations.** With English strings as dictionary
+  keys, "Roaster" (the company, on the bean form) and "Roaster" (a person, in the signup role
+  list) collide on one key, and a duplicate JS object key silently keeps only the last value —
+  so one of the two renders wrong with no error. Disambiguate with `t('Roaster|role')`; the
+  `|context` suffix is stripped from the English fallback. `verify-i18n.mjs` fails on duplicates.
+- **A translated app is not a translated *product*.** Adding a language touches things that are
+  not strings: the demo seed (units, prices, the actual menu), the `DEMOS` copy in
+  `api/metrics.js`, number formatting (`24,5%` not `24.5%`), `<input step>` for per-ml costs, the
+  landing page, the legal pages, and text baked into CSS `content:` (the mock card's
+  "4×6 · PRINTS CLEAN"). Translating only the visible UI strings leaves all of those wrong.
+- Signup `<option value>`s must stay English while their labels translate — the value is POSTed
+  to `/api/lead` and counted by the founder metrics, so translating it splits "Owner" and
+  "Proprietário" into two buckets.
 - Inline `<script>` is killed by CSP on any deployed page.
 - Old headless Chrome clamps width to ~500px (fake mobile overflow — test narrow in an
   iframe) and freezes CSS transitions (blank reveals — use `--headless=new`).
@@ -143,6 +189,12 @@ Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *m
 - The 30s poll freezes in a background tab; the app re-pulls on `visibilitychange`→visible
   and `online`. That focus-pull is guarded by `!syncPushT` so it can't overwrite an edit
   still inside its 800ms save debounce (`smoke.js` observes both sides).
+- **Never pattern-match over `JSON.stringify(seed())`.** The seed is full of random `uid()`s, and
+  a base-36 id ending in a digit + "oz" (`yykz6oz`, `33o68oz`) matches an imperial-units regex
+  against the closing quote. Measured at a **0.99% false failure per selftest run** on 2026-07-26 —
+  frequent enough to appear once in a full sweep and vanish on re-run, which is the worst possible
+  frequency: it teaches you the suite is flaky instead of that the code is wrong. Assert against
+  the human-authored fields (names, units, sizes, steps, notes), never the serialised object.
 - **Test traps that fake a failure** (all three cost a re-run on 2026-07-22):
   - Printed cards/station/pack DO contain `$` — those are *menu prices*, which are supposed
     to print. Only ingredient cost / margin / COGS must be absent. Assert against the

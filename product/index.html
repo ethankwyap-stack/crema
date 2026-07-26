@@ -25,6 +25,10 @@
       <button data-tab="print" role="tab" aria-selected="false" class="tab">Print</button>
     </nav>
     <div class="top-actions">
+      <select id="langSel" class="ghost" aria-label="Language" title="Language">
+        <option value="en">EN</option>
+        <option value="pt">PT</option>
+      </select>
       <button id="btnHelp" class="ghost" title="Help">?</button>
       <button id="btnData" class="ghost" title="Backup, restore, reset">Data ▾</button>
     </div>
@@ -39,6 +43,7 @@
 
 <div id="modal" class="modal hidden" role="dialog" aria-modal="true"></div>
 <div id="printRoot" class="print-root"></div>
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

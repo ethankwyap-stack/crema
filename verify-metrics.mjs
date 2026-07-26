@@ -8,9 +8,21 @@ const ok = (name, cond, extra = '') => { if (!cond) bad++; console.log(`${cond ?
 const H = 3600e3;
 const SHOP_A = 'a'.repeat(40), SHOP_B = 'b'.repeat(40);
 const demo = () => ({ shop: { name: 'Demo Espresso Bar' }, recipes: Array(15).fill(0), ingredients: Array(13).fill(0), dialins: Array(3).fill(0), baristas: [{}], signoffs: {} });
+// The Portuguese seed (seedPT in product/app.js) — a different shop name and different counts.
+const demoPT = () => ({ shop: { name: 'Café da Esquina (demo)' }, recipes: Array(19).fill(0), ingredients: Array(14).fill(0), dialins: Array(3).fill(0), baristas: [{}], signoffs: {} });
 
 /* ---- adoption predicates ---- */
 ok('untouched demo counts as nothing adopted', !isCustomised(demo()) && !usesTraining(demo()) && !usesDialin(demo()));
+/* A Portuguese shop starts from a different seed. If DEMOS in api/metrics.js does not know it,
+   every Lisbon café counts as adopted the moment it opens and adoption silently reads 100%. */
+ok('untouched PORTUGUESE demo counts as nothing adopted',
+  !isCustomised(demoPT()) && !usesTraining(demoPT()) && !usesDialin(demoPT()));
+ok('customised Portuguese shop still counts as customised',
+  isCustomised({ ...demoPT(), shop: { name: 'Café da Baixa' } })
+  && isCustomised({ ...demoPT(), recipes: Array(20).fill(0) }));
+// A cross-language mismatch must not accidentally look untouched (pt name, en counts).
+ok('seed name and counts must match the SAME seed',
+  isCustomised({ ...demoPT(), recipes: Array(15).fill(0), ingredients: Array(13).fill(0) }));
 ok('renamed shop counts as customised', isCustomised({ ...demo(), shop: { name: 'Northside Espresso' } }));
 ok('added recipe counts as customised', isCustomised({ ...demo(), recipes: Array(16).fill(0) }));
 ok('deleted recipe counts as customised', isCustomised({ ...demo(), recipes: Array(14).fill(0) }));
