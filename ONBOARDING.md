@@ -119,6 +119,17 @@ costs and margins are yours; I don't look at them and there's no analytics on th
 only thing I keep is the signup form — your email and shop name — so I can reach you.
 Ask me any time and I'll delete it.
 
+**It speaks Portuguese too.** Portafile follows your *browser's* language, not your country,
+so an English browser opens in English and you don't have to do anything. Next to the **?**
+in the top right there's a picker with **EN** and **PT**. Two things are worth knowing about
+it. While your shop is still the untouched demo, the *menu* changes with the language —
+press PT and you get a Lisbon café's drinks priced in euros, in millilitres and °C; press EN
+and you're straight back to the fifteen American ones. But **once the shop is yours** — the
+moment you rename it, edit a drink, change a price or log a dial-in — switching language only
+ever translates the buttons and menus, and **never your recipes**. Those are your words, and
+nothing rewrites them. Language is part of the shop rather than the device, so if you turn on
+sync, your staff's phones follow whichever you picked.
+
 **Printing beats screens during a rush.** Print the station sheet and the recipe cards. The
 app is for keeping them true, not for reading at the bar with milk in your hand.
 
