@@ -1,0 +1,234 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Portafile — Guia do café</title>
+<!--
+  Portuguese (pt-PT) onboarding guide, printed to PDF for the Lisbon test cafés.
+  Source of truth for the English version's content: ONBOARDING.md.
+  Every button name here was read out of product/i18n.js and confirmed in a real
+  pt-PT browser — if you rename a button in the app, rename it here too.
+  Render:  node guide/render-pdf.js
+-->
+<style>
+  :root {
+    --espresso: #2A1A12; --roast: #4A3527; --ink-soft: #6B5544;
+    --paper: #FAF4EA; --card: #FFFDF8; --crema: #D9A05B;
+    --terra: #C4502F; --spruce: #5B7065; --line: #E7DACA;
+    --font-display: "Iowan Old Style", Palatino, Georgia, serif;
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  @page { size: A4; margin: 14mm 13mm 12mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: var(--font-ui); color: var(--espresso);
+    background: var(--paper); font-size: 9.1pt; line-height: 1.36;
+  }
+  h1 { font-family: var(--font-display); font-size: 19pt; margin: 0 0 2pt; letter-spacing: -.2pt; }
+  .sub { color: var(--roast); font-size: 9.4pt; margin: 0 0 2.5pt; }
+  .url { font-size: 8.6pt; color: var(--terra); font-weight: 600; margin: 0; }
+  header { border-bottom: 2.5px solid var(--espresso); padding-bottom: 5pt; margin-bottom: 8pt; }
+
+  section { break-inside: avoid; margin-bottom: 7pt; }
+  h2 {
+    font-family: var(--font-display); font-size: 11.6pt; margin: 0 0 4pt;
+    padding-bottom: 2pt; border-bottom: 1px solid var(--line);
+    display: flex; align-items: baseline; gap: 7pt;
+  }
+  h2 .n {
+    font-family: var(--font-ui); font-size: 8pt; font-weight: 700; color: var(--card);
+    background: var(--terra); border-radius: 50%; width: 15pt; height: 15pt;
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+  }
+  h2 .when { margin-left: auto; font-family: var(--font-ui); font-size: 8pt; font-weight: 400; color: var(--ink-soft); }
+
+  p { margin: 0 0 3.2pt; }
+  ol, ul { margin: 0 0 3.2pt; padding-left: 14pt; }
+  li { margin-bottom: 1.8pt; }
+  b, strong { color: var(--roast); }
+  .btn {
+    font-family: var(--font-ui); font-size: 8.4pt; font-weight: 600; white-space: nowrap;
+    background: var(--card); border: 1px solid var(--crema); border-radius: 4pt;
+    padding: 0.5pt 3.5pt; color: var(--roast);
+  }
+  .muted { color: var(--ink-soft); }
+
+  .callout {
+    background: var(--card); border: 1px solid var(--crema);
+    border-left: 3.5px solid var(--terra); border-radius: 5pt;
+    padding: 6pt 8.5pt; margin: 0 0 4pt;
+  }
+  .callout h3 {
+    margin: 0 0 3pt; font-size: 9pt; font-family: var(--font-ui);
+    color: var(--terra); text-transform: uppercase; letter-spacing: .4pt;
+  }
+  .warn { border-left-color: var(--spruce); }
+  .warn h3 { color: var(--spruce); }
+
+  .tabs { display: grid; grid-template-columns: 62pt 1fr; gap: 3pt 9pt; margin-bottom: 4pt; }
+  .tabs dt { font-weight: 700; color: var(--terra); }
+  .tabs dd { margin: 0; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16pt; }
+  footer {
+    margin-top: 8pt; padding-top: 5pt; border-top: 1px solid var(--line);
+    font-size: 8.2pt; color: var(--ink-soft); display: flex; justify-content: space-between; gap: 10pt;
+  }
+</style>
+
+<header>
+  <h1>Portafile</h1>
+  <p class="sub">Fichas técnicas, custos reais, dial-ins e formação — no seu telemóvel e no da sua equipa.</p>
+  <p class="url">portafile.vercel.app/pt</p>
+</header>
+
+<section>
+  <h2><span class="n">1</span> Idioma: como mudar de inglês para português</h2>
+  <p>O Portafile segue o idioma do <b>navegador</b>, não o do país. Num telemóvel ou computador
+  configurado em português, abre já em português e não precisa de fazer nada.</p>
+  <p><b>Se abrir em inglês:</b> no canto superior direito, ao lado do <span class="btn">?</span>,
+  está um seletor com <span class="btn">EN</span> e <span class="btn">PT</span>. Escolha <b>PT</b>.
+  Os separadores, os botões e os menus passam imediatamente a português, e os preços passam de
+  dólares para <b>euros</b>.</p>
+  <p>Enquanto a loja ainda for a de demonstração, o <b>menu muda com o idioma</b>: ao escolher PT
+  fica com 19 bebidas portuguesas — café, abatanado, pingado, garoto, meia de leite, galão — com
+  preços de Lisboa, em ml e °C.</p>
+  <div class="callout">
+    <h3>Depois de a loja ser sua, as receitas são suas</h3>
+    <p style="margin-bottom:0">A partir do momento em que muda o nome do café, edita uma bebida ou
+    regista um dial-in, mudar o idioma passa a traduzir <b>apenas</b> os botões e os menus, e nunca
+    as suas receitas — as palavras são suas e ninguém as reescreve. Se algum dia quiser voltar de
+    propósito ao menu de demonstração no idioma atual:
+    <b><span class="btn">Dados ▾</span> → <span class="btn">Voltar à demonstração</span></b>.
+    <span class="muted">Isso substitui tudo o que tiver na app.</span></p>
+  </div>
+  <p class="muted">O idioma faz parte da loja, não do aparelho: os telemóveis da equipa seguem a sua
+  escolha na sincronização seguinte, sem terem de mexer em nada.</p>
+</section>
+
+<section>
+  <h2><span class="n">2</span> Preparar a sua loja <span class="when">cerca de 10 minutos</span></h2>
+  <p>Faça isto no telemóvel ou computador que vai mesmo manter — ver <b>dispositivo de proprietário</b> na secção 5.</p>
+  <ol>
+    <li>Abra <b>portafile.vercel.app/product/</b>.</li>
+    <li><b>Preencha o formulário curto.</b> Email e nome do café são obrigatórios; função, cidade e
+    telefone são opcionais. É uma vez por dispositivo, sem palavra-passe e sem email de confirmação.
+    Serve para eu saber que cafés estão a usar isto e poder ajudar quando algo falhar.</li>
+    <li><b>Vai entrar numa loja de demonstração</b> já com bebidas lá dentro. É um ponto de partida,
+    não o seu menu. Toque no nome no topo e escreva o do seu café.</li>
+    <li><b>Introduza o que paga mesmo, no separador <span class="btn">Preços</span></b> — por grama
+    de café, por ml de leite, por chávena ou copo, por dose de xarope. É este passo que torna tudo o
+    resto verdadeiro.</li>
+    <li><b>Acerte as bebidas no separador <span class="btn">Receitas</span></b> — apague o que não
+    serve, acrescente o que serve e ponha os seus preços de menu.</li>
+    <li><b>Ligue a sincronização</b> quando quiser partilhar com a equipa (secção 4).</li>
+  </ol>
+  <p class="muted"><b>Os custos que vêm de origem são estimativas</b> de preços grossistas de Lisboa,
+  não faturas nem cotações reais. Servem para a app abrir com números plausíveis — substitua-os pelos seus.</p>
+</section>
+
+<section>
+  <h2><span class="n">3</span> Os cinco separadores</h2>
+  <dl class="tabs">
+    <dt>Receitas</dt>
+    <dd>Cada bebida numa ficha: quanto lhe custa fazer, quanto lhe fica, e a percentagem de custo.
+    No topo vê a sua média, quantas bebidas estão acima do objetivo e a sua margem mais fraca.
+    Mude o preço de <i>um</i> ingrediente e todas as fichas recalculam na hora.</dd>
+
+    <dt>Preços</dt>
+    <dd>A sua lista de ingredientes: nome, unidade, quanto paga por unidade e que bebidas o usam.
+    É a casa das máquinas. No telemóvel, deslize a tabela para o lado para chegar às últimas colunas.</dd>
+
+    <dt>Dial-in</dt>
+    <dd>Um quadro por lote de café: moagem, dose, rendimento, tempo e uma nota. Registe em cinco
+    segundos. O registo mais recente aparece em todas as fichas que usam esse café, e o histórico
+    fica guardado para quando esse lote voltar.</dd>
+
+    <dt>Formação</dt>
+    <dd>Um percurso dia a dia com as suas bebidas mais as competências que quiser acrescentar
+    («checklist de fecho», «vaporizar leite»), com validações e barra de progresso por barista.</dd>
+
+    <dt>Imprimir</dt>
+    <dd>Quatro documentos feitos para imprimir e afixar onde se trabalha: <b>Fichas técnicas</b>,
+    <b>Folha de posto</b>, <b>Manual de acolhimento</b> e <b>Relatório de margens</b>.</dd>
+  </dl>
+  <div class="callout warn">
+    <h3>Só o relatório de margens mostra dinheiro seu</h3>
+    <p style="margin-bottom:0">As fichas técnicas, a folha de posto e o manual de acolhimento
+    <b>nunca mostram custos nem margens</b> — pode entregá-los a qualquer pessoa sem entregar as suas
+    contas. O <b>Relatório de margens</b> é a única página que os mostra: é para si.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">4</span> Partilhar com a equipa</h2>
+  <p>Tudo vive apenas no seu navegador até decidir o contrário. Para pôr nos telemóveis da equipa:</p>
+  <ol>
+    <li><b><span class="btn">Dados ▾</span> → <span class="btn">Ligar sincronização</span>.</b>
+    O seu café recebe um link secreto.</li>
+    <li><b><span class="btn">Copiar link</span></b> e envie-o aos seus baristas.</li>
+    <li>Eles abrem-no. Sem conta, sem palavra-passe, sem instalar nada. Veem os mesmos dados em
+    direto, e as alterações aparecem em cerca de <b>30 segundos</b>.</li>
+  </ol>
+  <p><b>Quando alguém sai da equipa, reinicie o link:</b>
+  <span class="btn">Dados ▾</span> → <span class="btn">Reiniciar link da equipa</span>. O link antigo
+  deixa de funcionar, os aparelhos que ainda o usavam ficam sem os dados do café e passam a mostrar
+  um aviso de link desativado, e recebe um link novo para enviar a quem ficou. Pode demorar até
+  cerca de 90 segundos a fazer efeito. <b>Não é reversível</b> e links antigos nunca voltam a funcionar.</p>
+  <p class="muted"><b>Dois limites honestos.</b> Alguém com jeito para computadores pode limpar o
+  armazenamento do navegador e voltar a uma app vazia — fica sem nenhum dado seu, mas o bloqueio não
+  é um cofre. E um telemóvel desligado ou sem rede só descobre que foi cortado quando voltar a ligar-se.
+  Quem tiver exportado uma cópia de segurança antes continua a ter esse ficheiro.</p>
+</section>
+
+<section>
+  <h2><span class="n">5</span> A ter em conta</h2>
+  <div class="cols">
+    <div>
+      <p><b>Dispositivo de proprietário.</b> O telemóvel ou computador onde ligou a sincronização
+      passa a ser o dispositivo de proprietário. É o único que pode reiniciar o link da equipa. Os
+      seus dados estão seguros de qualquer forma, mas se apagar esse navegador perde a capacidade de
+      revogar links. Escolha um aparelho que vá manter.</p>
+      <p><b>Um café por link.</b> Um link são os dados de um café específico. Não partilhe o mesmo
+      link entre dois negócios — estariam a editar as mesmas receitas.</p>
+    </div>
+    <div>
+      <p><b>Duas pessoas a editar ao mesmo tempo.</b> Se alterarem a mesma bebida com segundos de
+      diferença, fica a última alteração. À escala de um café não é problema.</p>
+      <p><b>Faça cópias de segurança.</b> <span class="btn">Dados ▾</span> →
+      <span class="btn">Exportar cópia</span> guarda um ficheiro com tudo. Faça-o quando acabar a
+      configuração inicial e de vez em quando. <span class="btn">Importar</span> restaura-o em
+      qualquer aparelho.</p>
+    </div>
+  </div>
+  <p><b>O papel ganha ao ecrã durante o rush.</b> Imprima a folha de posto e as fichas técnicas. A app
+  serve para as manter verdadeiras, não para se ler ao balcão com leite na mão.</p>
+</section>
+
+<section>
+  <h2><span class="n">6</span> Custos e dados</h2>
+  <p><b>Isto não lhe custa nada.</b> Não há pagamento, cartão, período experimental a contar, nem
+  conta para cancelar. Não existe qualquer sistema de faturação ligado a esta aplicação.</p>
+  <p><b>Sobre os preços na página de apresentação.</b> Os planos que lá aparecem — Local, Shop e
+  Roaster Partner — estão <b>em dólares e são valores indicativos</b>: um esboço do que a subscrição
+  poderá vir a ser um dia, ainda sem preço definido em euros. Não é um plano em que esteja inscrito,
+  não começa depois de um período experimental e não lhe pode cobrar nada. Se isso mudar, saberá por
+  mim primeiro e em linguagem clara.</p>
+  <p><b>Os seus dados.</b> Vivem no seu navegador e, depois de ligar a sincronização, também numa
+  cópia na nuvem. Os seus custos e margens são seus: não os consulto e não há analítica dentro da app.
+  A única coisa que guardo é o formulário de inscrição — o seu email e o nome do café — para o poder
+  contactar. Peça-me e apago.</p>
+</section>
+
+<section>
+  <h2><span class="n">7</span> Se alguma coisa correr mal</h2>
+  <p><b>Exporte primeiro uma cópia de segurança</b> (<span class="btn">Dados ▾</span> →
+  <span class="btn">Exportar cópia</span>), antes de mexer em mais alguma coisa. Depois envie-me
+  mensagem ou email a dizer o que tocou, o que esperava que acontecesse e o que aconteceu em vez
+  disso — um screenshot é perfeito. Se os dados parecerem errados, mande-me também esse ficheiro.</p>
+  <p>Isto é software recente, feito primeiro para dois cafés antes de mais alguém. Se houver alguma
+  coisa desajeitada ou em falta, diga — é essa a razão de o estar a receber primeiro.</p>
+</section>
+
+<footer>
+  <span><b>Portafile</b> — guia do café · português (Portugal)</span>
+  <span>portafile.vercel.app/pt</span>
+</footer>

@@ -22,6 +22,7 @@ code is shaped the way it is); this file holds *what must still be true for a us
 | the admin-key transport (`x-portafile-admin` header) | all four admin routes at once. The dashboard's three fetches and `api/lead.js`/`api/metrics.js`/`api/state.js` must agree, AND the two lead/metrics functions must advertise the header in `Access-Control-Allow-Headers` — a mismatch means the browser never sends the request at all |
 | page copy in `site/` | `health_check.py` matches marker strings and emails a false alarm if they move |
 | tab ids in `product/index.html` (`recipes`/`prices`/`dialin`/`training`/`print`) | every verify suite's selectors |
+| a **button label** in `product/i18n.js` | the Portuguese guide (`guide/guia-pt.html`) names buttons the owner must click, so a renamed button rots the PDF silently. `node guide/render-pdf.js` checks all 12 labels against the dictionary and exits non-zero — re-render the PDF after any label change. `guide/` is deliberately NOT in `.vercelignore`'s allowlist: it is an internal document Ethan sends by hand, not a deployed page |
 
 ## Features
 
@@ -91,6 +92,13 @@ Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *m
       persists and syncs (it lives in `S.shop.lang`, so staff devices follow the owner)
 - [ ] Switching language does **not** retranslate the shop's own recipes — those are the
       owner's words. "Reset to demo" reseeds in the current language
+- [ ] **The one exception: an untouched demo swaps menus with the language.** An American menu
+      priced in euros behind a Portuguese interface reads as a half-broken translation, and there
+      is nothing of the owner's to protect yet. ANY of the owner's own work vetoes it — a renamed
+      shop, an edited price, one logged dial-in, a renamed barista, a sign-off, or a swapped
+      ingredient. A synced shop pushes the swapped seed so staff devices follow
+      prove: pt demo → pick EN → 15 cards, "Demo Espresso Bar"; add one dial-in, switch → still 19
+      auto: `node verify-pt.js` (61 checks, the 7b block)
 - [ ] Currency follows language (en→USD, pt→EUR). Deliberate: one setting, not two
 - [ ] Ingredient cost inputs accept per-ml prices (`step="0.0001"`, e.g. €0.0009/ml milk) —
       at `step="0.001"` a metric milk price is `:invalid` and the spinner jumps
@@ -130,6 +138,19 @@ Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *m
 - [ ] **`/admin/dashboard.html` → 404.** The dashboard has no auth; it must never deploy.
 
 ## Known traps — bugs that already escaped once
+- **A "has the user touched this?" fingerprint must resolve ids to names, or it goes blind
+  exactly where the data lives.** `demoSig` (`app.js`) hashed recipe items as `x.qty` alone,
+  because `item.ing` is a random `uid()` that can never match a fresh `seed()`. So swapping a
+  latte's whole milk for oat milk *at the same quantity* left the signature identical, and the
+  language switch silently destroyed that edit — the one thing the veto exists to prevent.
+  Fixed by mapping `id → ingredient name` first. Caught pre-deploy on 2026-07-26 by re-reading
+  the fingerprint field by field and asking what each *omission* costs. Whenever a check strips
+  ids to make a comparison work, list what else got stripped with them.
+- **A guard that decides whether to REPLACE data needs a stricter test than one that decides
+  what to display.** `matchesADemoSeed` in `api/metrics.js` compares only shop name and
+  recipe/ingredient counts — fine for classifying a shop on the dashboard, where being wrong
+  skews a number. Reusing it for the language swap would have thrown away a café's week of real
+  dial-ins. Same question, different consequence, different threshold — never share the helper.
 - **A custom request header turns a dashboard fetch into a *preflighted* one.** Moving the
   admin key from `?admin=` to `x-portafile-admin` (2026-07-25) meant the browser sent an
   `OPTIONS` first — and against not-yet-deployed production that preflight failed, so the

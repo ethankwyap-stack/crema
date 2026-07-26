@@ -1017,9 +1017,42 @@ $('#btnData').onclick = dataMenu;
 $('#btnHelp').onclick = helpModal;
 /* Language is part of the shop, not the device: it syncs, so the owner sets it once and the
    staff phones follow. Switching does NOT retranslate existing recipes — those are the shop's
-   own words. "Reset to demo" reseeds in the new language for anyone who wants that. */
+   own words. "Reset to demo" reseeds in the new language for anyone who wants that.
+
+   The ONE exception is a shop still sitting on the untouched demo seed: leaving an American menu
+   priced in euros behind a Portuguese interface reads as broken, and there is nothing of the
+   owner's to protect yet. `demoSig` is a content fingerprint with ids and timestamps left out
+   (they are random per seed() call, so a plain stringify never matches — see the uid() trap in
+   CLAUDE.md). Deliberately STRICTER than matchesADemoSeed in api/metrics.js: that one only
+   classifies a shop for the founder dashboard, where being wrong skews a number. This one
+   REPLACES data, so a single logged dial-in, renamed barista or edited price must veto the swap. */
+const demoSig = (s) => {
+  // item.ing is a random uid, so it can never match a fresh seed(): fingerprint the ingredient's
+  // NAME instead. Without this, swapping a latte's whole milk for oat milk at the same qty left
+  // the signature identical and a language switch silently threw that edit away.
+  const N = {}; (s.ingredients || []).forEach(i => { N[i.id] = i.name; });
+  return JSON.stringify([
+  s.shop && s.shop.name, s.shop && s.shop.cogsTarget,
+  (s.ingredients || []).map(i => [i.name, i.unit, i.unitCost]),
+  (s.recipes || []).map(r => [r.name, r.cat, r.size, r.price, r.steps, (r.items || []).map(x => [N[x.ing], x.qty])]),
+  (s.beans || []).map(b => [b.name, b.roaster]),
+  (s.dialins || []).map(d => [d.grind, d.dose, d.yield, d.time, d.note]),
+  (s.baristas || []).map(b => b.name),
+  (s.path || []).map(p => [p.type, p.label, p.day]),
+  Object.keys(s.signoffs || {}).length,
+  ]);
+};
+const pristineDemo = (lang) => demoSig(S) === demoSig(seed(lang));
+
 const langSel = $('#langSel');
-if (langSel) langSel.onchange = () => { S.shop.lang = langSel.value === 'pt' ? 'pt' : 'en'; save(); render(); };
+if (langSel) langSel.onchange = () => {
+  const from = getLang(), to = langSel.value === 'pt' ? 'pt' : 'en';
+  if (to === from) return;
+  const swap = pristineDemo(from); // decide BEFORE anything is mutated
+  S.shop.lang = to;
+  if (swap) { const tab = S.tab; S = seed(to); S.tab = tab; } // keep them on the tab they were reading
+  save(); render();
+};
 
 /* ---------------- self-test (?selftest=1) ---------------- */
 function selftest() {

@@ -111,9 +111,52 @@ const ok = (name, cond, got) => { n++; const s = cond ? 'PASS' : 'FAIL'; if (!co
   ok('switch to EN flips html lang', await p.getAttribute('html', 'lang') === 'en');
   const enBoard = await p.textContent('#view');
   ok('switch to EN flips currency to $', enBoard.includes('$') && !enBoard.includes('€'));
-  ok('switch keeps the shop data (still Portuguese recipes)', (await p.$$('.rcard')).length === 19);
+  /* An UNTOUCHED demo swaps menus with the language. Before this, switching left an American menu
+     priced in euros on screen, which reads as a half-broken translation (it is what sent Ethan
+     looking for missing strings on 2026-07-26). Nothing of the owner's exists yet to protect. */
+  ok('untouched demo swaps to the English menu', (await p.$$('.rcard')).length === 15, (await p.$$('.rcard')).length);
+  ok('...and it is really the English seed', await p.inputValue('#shopName') === 'Demo Espresso Bar', await p.inputValue('#shopName'));
   await p.selectOption('#langSel', 'pt');
   ok('switch back to PT', (await p.textContent('[data-tab="recipes"]')) === 'Receitas');
+  ok('switch back to PT restores the Lisbon menu', (await p.$$('.rcard')).length === 19, (await p.$$('.rcard')).length);
+
+  // ---- 7b. ANY of the owner's own work vetoes that swap ----------------------------------------
+  await p.evaluate(() => { S = seed('pt'); S.shop.name = 'Café do Bairro'; save(); render(); });
+  await p.selectOption('#langSel', 'en');
+  ok('a renamed shop is never swapped', await p.inputValue('#shopName') === 'Café do Bairro', await p.inputValue('#shopName'));
+  ok('a renamed shop keeps its 19 Portuguese drinks', (await p.$$('.rcard')).length === 19, (await p.$$('.rcard')).length);
+
+  /* The subtle one, and the reason this rule is stricter than matchesADemoSeed in api/metrics.js:
+     that test ignores dial-ins entirely, so a café that logged a week of real shots on an otherwise
+     untouched demo would have had them silently thrown away by a language switch. */
+  await p.evaluate(() => {
+    S = seed('pt');
+    S.dialins.push({ id: 'test-dialin', beanId: S.beans[0].id, ts: Date.now(), grind: 11, dose: 18, yield: 36, time: 27, note: 'meu registo' });
+    save(); render();
+  });
+  await p.selectOption('#langSel', 'en');
+  ok('one logged dial-in vetoes the swap', (await p.$$('.rcard')).length === 19, (await p.$$('.rcard')).length);
+  ok('...and that dial-in survives', await p.evaluate(() => S.dialins.some(d => d.note === 'meu registo')));
+
+  /* Swapping ONE ingredient at the same quantity: the case a qty-only fingerprint cannot see,
+     because item.ing is a random uid that never matches a fresh seed(). Revert the N[x.ing]
+     lookup in demoSig and this is the check that fails. */
+  await p.evaluate(() => {
+    S = seed('pt');
+    const oat = S.ingredients.find(i => i.name === 'Bebida de aveia');
+    const milky = S.recipes.find(r => r.items.some(it => it.ing !== oat.id && S.ingredients.find(i => i.id === it.ing).unit === 'ml'));
+    milky.items.find(it => S.ingredients.find(i => i.id === it.ing).unit === 'ml').ing = oat.id;
+    window.__swapped = milky.name; save(); render();
+  });
+  await p.selectOption('#langSel', 'en');
+  ok('an ingredient swapped at the same qty vetoes it', (await p.$$('.rcard')).length === 19, (await p.$$('.rcard')).length);
+  ok('...and the swapped ingredient survives', await p.evaluate(() => {
+    const oat = S.ingredients.find(i => i.name === 'Bebida de aveia');
+    return S.recipes.find(r => r.name === window.__swapped).items.some(it => it.ing === oat.id);
+  }));
+
+  // Back to a clean Portuguese demo for the reload check and the screenshot below.
+  await p.evaluate(() => { S = seed('pt'); save(); render(); });
   await p.reload();
   ok('language choice survives reload', await p.inputValue('#langSel') === 'pt', await p.inputValue('#langSel'));
   await p.screenshot({ path: SHOTS + '/pt-app.png', fullPage: false });
