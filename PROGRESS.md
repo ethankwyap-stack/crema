@@ -211,8 +211,23 @@ Verified live after deploying, not just locally: created a throwaway shop straig
 
 ---
 
+## 2026-07-26 — My launch film is telling people something that isn't true anymore
+
+Watched my own launch video today and didn't like the voice. It sounds like a robot because it **is** a robot — I built the narration with the `say` command that ships with every Mac, using its lowest-quality voice at a flat speaking rate. That was the right call at the time (it cost nothing and needed no accounts), but it's the first thing a café owner hears about Portafile, and a synthetic voice undercuts the whole pitch that this was made by a person who actually understands their problem.
+
+**The obvious free fix doesn't exist anymore.** Apple gives away much better neural voices, so the plan was to download one and regenerate — a one-word change. Except my Mac has none installed, and macOS 26 removed the screen you download them from entirely. The dropdown does offer a Siri voice, but Siri isn't reachable from the command line that makes the audio. **And the command lies about it.** Ask `say` for a voice it doesn't have and it doesn't complain — it quietly hands you the default. I only caught it by asking for a deliberately made-up voice name and getting a file byte-for-byte identical to the old one. That's a nasty class of bug: a command that appears to succeed while doing nothing you asked for. So the real fix is the one I should have wanted anyway — record it in my own voice, which for this product is a feature, not a compromise.
+
+**Then the actual find, which has nothing to do with the voice.** The film closes with "No account. No server. No catch." I shipped opt-in cloud sync on July 17, **two days after cutting that video.** So there is a server now, and my launch film has been telling every visitor there isn't one. My website copy was updated honestly at the time ("sync to staff phones only if you choose") — the video was never revisited. That's a false claim sitting on my marketing page for nine days, and it's the reason to re-cut this regardless of how the voice sounds. Worth generalizing: **when a claim changes, it changes in every asset that makes it, not just the one I happened to be editing that day.** Same lesson as the dial-in escaping bug last week, in a completely different medium.
+
+**I also nearly lost the ability to fix any of this.** All the raw material for the film — the screen recordings, the title cards, the original narration script — was sitting in a scratch folder that gets cleaned up without warning. One cleanup and the only options would have been "keep the robot voice" or "rebuild the entire film from zero." Copied into the repo, in a folder that deliberately doesn't publish to the live site. Free, four megabytes, and it means the film is now editable instead of frozen.
+
+Rewrote the narration for a human read while I was in there: ten beats instead of eight, because the money moment was fifteen seconds of unbroken speech, and cut the tics that made the script read as machine-written even before a machine read it aloud — every scene ending on a slogan, lists of three everywhere. Nothing is deployed. The recording is the part I have to do myself and I'm doing it later; there's a handoff written so I don't have to re-derive any of this.
+
+---
+
 ## Open threads
 
+- **The launch film says "No server" and that's false.** Sync shipped 2026-07-17, the film was cut 07-15. Fixing it needs me to record the new narration in my own voice — script and instructions are in `video-src/script-v2.md`, full context in `video-src/HANDOFF.md`. Until then a false claim is live on the site. Also: `video-src/` isn't committed yet, and it's the only non-temporary copy of the film's source material.
 - **The store is empty.** I deleted both founding shops while testing this. Those shopIds are dead forever — re-syncing makes a brand-new shop. Note the rule changed as of 2026-07-24: a delete now wipes the owner's device too, so anyone I delete from here on loses their local recipes unless they exported a backup first. Worth a message to whoever was on the second one.
 - Neither founding shop had a signup record, so onboarding time and cafe names stayed blank. Either walk the next owner through the signup form on their own device, or accept the metric only covers shops that arrive on their own. As of 2026-07-24 the `leads/` store is empty too, so **the next lead record that appears is either a real signup or my own testing — and I should assume it's real until the fixtures say otherwise.**
 - Post-launch validation with kill criteria (from `BUILD-LOG.md`) hasn't run yet.
