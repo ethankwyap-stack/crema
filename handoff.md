@@ -1,87 +1,80 @@
-# HANDOFF — Portafile speaks European Portuguese and prices in euros
+# HANDOFF — Portafile is live in European Portuguese; sync verified on production
 
-> ## ✅ RESOLVED 2026-07-26 — committed as `0c32daa` and deployed to production.
-> All three §4 questions were answered by Ethan: **deploy** (done, verified live — `/pt`, `site.css`,
-> `i18n.js` and the PT legal pages all 200, 12/12 health checks, privacy-link 404 gone); **paid tiers
-> stay in USD** with the explanatory line; **GDPR noted, not solved** — deferred deliberately while
-> nobody is paying, and kept in `PROGRESS.md`'s open threads. **Do not rebuild any of this.** The
-> gotchas in §5, the machine warnings in §9 and the "how to work with Ethan" notes in §8 are still
-> true and worth reading; §1's "nothing is deployed" and §10's next task are now historical.
+**Written 2026-07-26, ~19:40 UTC.** Project: `/Users/ethanyap/portafile`. Owner: Ethan (college
+student, learning developer). You are picking this up cold. Every fact below was re-checked by a
+command immediately before this file was written, unless explicitly labelled otherwise.
 
-**Written 2026-07-26.** Project: `/Users/ethanyap/portafile`. Owner: Ethan (learning developer).
-You are picking this up cold. Every fact below was checked by a command in the session that wrote
-this file, unless labelled otherwise.
-
-> **This file replaces the 2026-07-23 handoff** about the founder's "delete cloud data" bug. That
-> work is **finished, deployed and live** — do not rebuild it. Its still-true warnings are carried
-> forward here in §5, §8 and §9; nothing hard-won was thrown away.
+> **This file replaces the earlier 2026-07-26 handoff** ("Portafile speaks European Portuguese"),
+> whose three open questions have all been answered and acted on. Nothing hard-won was discarded —
+> its gotchas, machine warnings and working-style notes are carried forward here in §5, §8 and §9.
 >
-> **Do not confuse this with `.handoff`** (the dotfile in this same directory). That is a *third*,
-> also-resolved handoff from 2026-07-25 about four security fixes, marked ✅ RESOLVED at the top.
-> Leave it alone. `handoff.md` — this file — is the live one.
+> **Do not confuse this with `.handoff`** (the dotfile in this same directory). That is a separate,
+> already-resolved handoff from 2026-07-25 about four security fixes, marked ✅ RESOLVED at its top.
+> **Leave it alone.** `handoff.md` — this file — is the live one.
 
 ---
 
 ## 1. TL;DR
 
-Portafile's app and marketing site now work in European Portuguese (pt-PT) with euro pricing,
-because Ethan's first two test clients are cafés in Lisbon.
+**The Portuguese launch is finished, deployed, and verified working on the live site.** So is
+sharing/sync. There is no pending code work.
 
-- **The work is finished and verified.** 267 automated checks pass, 0 failures. Do not rebuild any
-  of it and do not re-run the whole sweep "to be sure" unless something changed.
-- **Nothing is committed. Nothing is deployed.** The working tree is dirty on `main`. Production
-  still serves the old English-only site — confirmed by HTTP probe, not remembered.
-- **Ethan opened the new chat to answer three open questions and possibly deploy.** They are in §4.
-  **Ask him. Do not decide any of them yourself.**
-- The English app is deliberately, verifiably unchanged: same 15 drinks, same "Demo Espresso Bar",
-  same dollars, same °F. That was the main regression risk and it is covered by tests.
+- **Deployed to production and confirmed by HTTP probe**, not remembered. `/pt`, the shared
+  stylesheet, the translation file and both Portuguese legal pages all return 200.
+- **Everything is committed.** Working tree is clean apart from the untracked `.handoff` dotfile,
+  which is intentional. Three commits this session: `0c32daa`, `dc3a21c`, `0e0f6a8`.
+- **Live sync was tested end-to-end on production with two real browsers** and works. Do not retest
+  it casually — see the §5 warning, because that test writes real data into Ethan's cloud store.
+- **Do not rebuild, re-verify or "tidy" any of this.** It is done and it is green.
+- **One cleanup is outstanding and it is Ethan's call, not yours** — his own test shop is still in
+  the store and is being counted as a customer. See §4.
+- **He is about to send the app to two real café owners in Lisbon.** Anything you break now is
+  breaking a live customer demo.
 
 ---
 
 ## 2. What was accomplished
 
-**The ask.** Ethan said: *"the first two test clients are from portugal… in order for the two
-testers to work i need it in euros and in lisbon portugese."* From an explicit menu he chose:
-everything translated (app + landing + privacy + terms), a real EN/PT switch (not Portuguese-only),
-metric units, and a Portuguese demo shop.
+**Where this session started.** A previous session had built full European-Portuguese support (app,
+landing page, privacy, terms) with euro pricing, because Ethan's first two test clients are cafés in
+Lisbon. It was verified locally but **nothing was committed and nothing was deployed**, and it left
+three decisions explicitly for Ethan. This session's job was to put those to him, then act.
 
-**The reframing that is invisible in the diff.** An early estimate said there were "91 hardcoded
-`$`". That was wrong and was corrected mid-session — most were the jQuery-style `$()` selector
-shorthand, not currency. Currency lived in exactly **one** function, so euros were nearly free. The
-real work was everything that is *not* a string:
+**His three answers, which are now settled — do not reopen them:**
 
-- **The demo seed had to become a different product, not a translation.** A Lisbon café menu is
-  café, café duplo, abatanado, pingado, garoto, meia de leite, galão — not Latte and Cold Brew.
-  19 Portuguese drinks, 14 ingredients, Lisbon prices, millilitres and °C.
-- **A domain error that looked exactly like an arithmetic bug.** The first pass priced a €1.00
-  espresso with a paper cup in it → 54% cost → every traditional drink red, i.e. a demo that looks
-  like a café losing money on coffee. In Portugal a café is drunk at the counter in **porcelain**;
-  there is no cup to buy. Traditional drinks now carry a €0.02 `Louça (lavagem)` (dishwashing) line
-  and only takeaway/iced drinks carry packaging. Espresso now reads 18%, while Mocha, Cold Brew,
-  Chai and hot chocolate are genuinely over the 30% target — which is the product doing its job.
-- **Founder metrics would have silently lied.** `api/metrics.js` infers adoption by diffing a shop
-  against the demo seed. A second seed meant every Portuguese shop read as "customised" the instant
-  it opened → 100% adoption, no error, a dashboard confidently wrong about the only two customers
-  Ethan has. Fixed by turning the `DEMO` constant into a `DEMOS` array holding both seeds.
+1. **Deploy and commit** → done, both.
+2. **Paid tiers stay in US dollars on the `/pt` page**, with the existing line of Portuguese copy
+   explaining the euro price is not yet set. Reasoning he accepted: inventing a euro price he has
+   never decided is worse than admitting he has not decided it, and both Lisbon testers are on the
+   free tier anyway, so nothing is blocked.
+3. **GDPR is noted, not solved** — consciously deferred. Nobody is paying yet; the Portuguese legal
+   pages are marked as translations with the English governing, which is standard practice and buys
+   time but **is not compliance**. It stays on the open-threads list in `PROGRESS.md`.
 
-**Two pre-existing problems fixed on the way past:**
+**What was then done and verified:**
 
-1. **A live 404.** `site/index.html`'s FAQ linked the privacy policy as `privacy.html` (relative).
-   That resolves at `/site/index.html` and **404s at `/`**, the canonical URL everyone actually
-   uses. Verified against production. Every URL on both landing pages is absolute now.
-2. **A 1%-flaky test this session introduced and then caught** — see §5, first bullet.
+- Committed the whole Portuguese body of work (`0c32daa`), deployed with `vercel deploy --prod
+  --yes`, aliased to `portafile.vercel.app`.
+- Verified against the **live** site: 12/12 health checks pass; a `pt-PT` browser loads "Café da
+  Esquina (demo)" with 19 drinks in euros at 24,5% average cost, while an `en-US` browser still
+  loads "Demo Espresso Bar" with 15 drinks in dollars — the English app is untouched, which was the
+  main regression risk.
+- Confirmed **every** link on both landing pages is absolute and returns 200. The privacy-policy
+  404 that had been live for weeks at `/` is genuinely gone.
+- **Looked at the signup gate as a real visitor for the first time.** Every automated suite runs
+  with `navigator.webdriver === true`, which *skips the gate*, so nobody had ever seen the first
+  screen a real Portuguese customer gets. It is correct and fully translated ("Antes de começar… O
+  Portafile é gratuito"). This mattered: it is the literal first impression of the product.
+- **Tested sharing/sync live on production with two independent browsers** (§3 table).
+- Journalled all of it in `PROGRESS.md` and marked the previous handoff resolved.
 
 **Road not taken — do not redo these explorations:**
 
-- *A single landing page with JS-swapped text* was rejected in favour of a separate
-  `site/pt/index.html`. Reason: ~120 `data-i18n` attributes plus a dictionary is a bigger, riskier
-  diff than a copy; it flashes English before swapping; it gives the wrong `<html lang>` until JS
-  runs; and it would have meant touching the `reveal.js` scroll-animation CSS that `CLAUDE.md`
-  explicitly warns about.
-- *Duplicating the CSS* into the PT page was also rejected — the 150-line `<style>` block was
-  extracted to `site/site.css` and both pages link it, so branding is edited once, not twice.
-- *An i18n library or a build step* was never on the table; this repo has no build step by design.
-- *Inventing euro prices for the paid tiers* was deliberately NOT done — that is open question B.
+- The previous session's rejected options stand: a single landing page with JS-swapped text (in
+  favour of a separate `site/pt/`), duplicating the CSS (in favour of the shared `site/site.css`),
+  and any i18n library or build step (this repo has no build step by design).
+- Converting the paid tiers to euros — deliberately not done, see above.
+- Drafting GDPR legal text — deliberately not done, and **do not draft legal text unprompted**.
 
 ---
 
@@ -92,87 +85,96 @@ Re-checked by command immediately before this file was written.
 | Fact | Value | How known |
 |---|---|---|
 | Repo | `/Users/ethanyap/portafile` | — |
-| Branch / last commit | `main` / `552bde3` ("Rescue the launch film's source assets…") | `git log` |
-| Working tree | **Dirty. Nothing committed this session.** 13 modified, 7 untracked (one of those, `.handoff`, is pre-existing and not from this session) | `git status` |
-| Production | `https://portafile.vercel.app/` → **200** | HTTP probe |
-| `/pt` in production | **404 — not deployed** | HTTP probe |
-| `/site/site.css` in production | **404 — not deployed** | HTTP probe |
-| `/product/i18n.js` in production | **404 — not deployed** | HTTP probe |
-| `/site/pt/privacy.html` in production | **404 — not deployed** | HTTP probe |
-| `/privacy.html` in production | 404 — the **pre-existing live bug**, fixed locally, not yet deployed | HTTP probe |
-| Deploy command | `vercel deploy --prod --yes` from repo root. **`git push` does NOT deploy**, despite `vercel git connect` | `CLAUDE.md` |
-| Founder dashboard | `http://localhost:4322/admin/dashboard.html` → **200**, served by a LaunchAgent. Intentionally never deployed; `health_check.py` asserts it 404s in production | HTTP probe |
-| Admin key | `.admin-key` present locally, gitignored. **Never echo its contents** | file exists |
-| Blob token | `.env.local` present locally, gitignored | file exists |
+| Branch / last commit | `main` / `0e0f6a8` | `git log` |
+| Working tree | **Clean.** Only `.handoff` is untracked, deliberately | `git status` |
+| This session's commits | `0c32daa` (PT work), `dc3a21c` (journal + old handoff resolved), `0e0f6a8` (sync verification) | `git log` |
+| Pushed to a remote? | **No.** Commits are local only. `git push` does NOT deploy this project | `git status` |
+| `https://portafile.vercel.app/` | **200** | HTTP probe |
+| `/pt` | **200 — live** | HTTP probe |
+| `/product/` | **200** | HTTP probe |
+| `/site/site.css` | **200 — live** | HTTP probe |
+| `/product/i18n.js` | **200 — live** | HTTP probe |
+| `/site/pt/privacy.html`, `/site/pt/terms.html` | **200 — live** | HTTP probe |
+| `/admin/dashboard.html` | **404 — correct**, the no-auth dashboard must never deploy | HTTP probe |
+| Health check | **12/12 ok** (`python3 health_check.py`). It then raises on the *email* step — `GMAIL_ADDRESS`/`GMAIL_APP_PASSWORD` live in GitHub secrets, not on his Mac. **That traceback is expected locally and is not a failure** | run this session |
+| Deploy command | `vercel deploy --prod --yes` from repo root. **`git push` does not deploy**, despite `vercel git connect` | `CLAUDE.md`, used successfully this session |
+| Founder dashboard | `http://localhost:4322/admin/dashboard.html` — Python listener confirmed on 127.0.0.1:4322 (LaunchAgent) | `lsof` |
+| Admin key | `.admin-key`, present, gitignored. **Never echo its contents** | file exists |
+| Blob token | `.env.local`, present, gitignored | file exists |
 | Pinned Playwright | present at `~/.npm/_npx/e41f203b7505f1fb/node_modules/playwright` | dir exists |
-| Local test server | none running; port 8899 free | `lsof` |
-| Disk | 24 GB free of 228 GB (getting tight — see §9.1 for the right way to check) | `df -h /` |
-| **Cost of everything added** | **$0.** Static files on the existing free Vercel tier. No new service, no new account, no new dependency, no new external request. Ethan treats "probably free" as a bug — this is certain | by construction |
-| Blob store contents | Reported **empty** (`shops/` 0, `leads/` 0, `feedback/` 0) as of 2026-07-24. **Not re-verified this session** — checking costs an authenticated production call, which wasn't needed for this work | carried forward, unverified |
+| Local test server | **none running**; port 8899 free | `lsof` |
+| Disk | **24 GB free of 228 GB** | `df -h /` |
+| Cost of everything | **$0.** Static files + existing free Vercel tier. No new service, account, dependency or external request. Ethan treats "probably free" as a bug — this is certain | by construction |
+| **Blob store contents** | **1 shop, 1 lead — and it is Ethan's own test data.** See §4 | `GET /api/metrics` with admin key, this session |
 
-### Test suites — 267 checks, 0 failures
+### Live sync test — passed, on production, two separate browsers
 
-Run from the repo root. Counts are what they printed on the final sweep.
+| Behaviour | Result |
+|---|---|
+| Owner turns on sync (`#btnData` → `#dSyncOn`), gets `?k=` staff link | ✅ |
+| A second, independent browser opens that link | ✅ loads the same shop |
+| Signup gate blocks the staff link | ✅ **correctly does NOT** — never gate a share link |
+| Ingredient costs / margins hidden on the staff device | ✅ menu prices visible, costs hidden |
+| Owner edits the shop → staff device sees it | ✅ propagated |
+
+### Test suites — 267 checks, 0 failures (as of the previous session's final sweep)
+
+The three no-browser suites were re-run this session and pass. The six Playwright suites were **not**
+re-run this session — nothing they cover was edited. Run from the repo root.
 
 | Command | Checks | Needs |
 |---|---|---|
-| `node verify-i18n.mjs` | 15 | nothing |
-| `node verify-metrics.mjs` | 33 | nothing |
-| `node verify-api.mjs` | 27 | nothing |
-| `node product/verify.js` | 11 (+ an in-page selftest of 27) | Playwright |
+| `node verify-i18n.mjs` | 15 | nothing — **re-run this session, PASS** |
+| `node verify-metrics.mjs` | 33 | nothing — **re-run this session, PASS** |
+| `node verify-api.mjs` | 27 | nothing — **re-run this session, PASS** |
+| `node product/verify.js` | 11 (+ in-page selftest of 27) | Playwright |
 | `node product/verify-killpass.js` | 16 | Playwright |
 | `node product/verify-gate.js` | 11 | Playwright |
 | `node product/verify-sync.js` | 64 | Playwright |
 | `node verify-pt.js` | 53 | Playwright |
 | `node verify-site.js` | 37 | Playwright **and** `python3 -m http.server 8899` running in the repo root first |
 
-`verify-sync.js` takes over a minute — don't kill it early and read that as a failure. Several
-suites print lines containing the words "failed" or "failure" as part of **passing** negative tests
-(`lead admin auth failed`, `A: offline badge on API failure`); grep for `^FAIL`, not for "fail".
-
-### Files
-
-**New (8):** `product/i18n.js` (pt-PT dictionary, 217 translations) · `site/site.css` (shared
-landing stylesheet) · `site/pt/index.html`, `site/pt/privacy.html`, `site/pt/terms.html` ·
-`verify-i18n.mjs` · `verify-pt.js` · `verify-site.js`. The three root-level `verify-*` files are
-kept off the deployment by `.vercelignore`'s leading `/*`.
-
-**Modified (13):** `product/app.js` (two seeds, `t()` throughout, language picker, extended
-selftest) · `product/index.html` (loads `i18n.js` **before** `app.js`; adds `#langSel`) ·
-`site/index.html` (CSS extracted out, all URLs absolute, PT link) · `site/privacy.html`,
-`site/terms.html` (PT links) · `vercel.json` (`/pt` and `/pt/` rewrites) · `api/metrics.js`
-(`DEMOS`) · `verify-metrics.mjs` · `health_check.py` (4 new probes, now 12 checks) ·
-`CLAUDE.md`, `WORKS.md`, `PROGRESS.md`, and this `handoff.md`.
-
-`.handoff` (untracked) is **not** from this session — see the note at the top of this file.
+`verify-sync.js` takes over a minute — do not kill it early and read that as a failure. Several
+suites print lines containing "failed"/"failure" as part of **passing** negative tests
+(`lead admin auth failed`). **Grep for `^FAIL`, never for "fail".**
 
 ---
 
-## 4. The decisions that are Ethan's, not yours
+## 4. The decision still open — ask him, do not act alone
 
-He opened the new chat specifically to answer these. Present them, take his answers, then act.
-**Do not pick for him.**
+**Ethan's own test data is sitting in the production store and is being counted as a customer.**
 
-**A. Deploy, and commit?** Everything is built and verified locally; nothing is live. Note that
-**he runs deploys and pushes himself**, typing the command with a `!` prefix in the session — a
-previous session recorded that the agent's own deploy/push commands were blocked. So offer him the
-exact command rather than running it. Commit and deploy are *separate* approvals: "yes deploy" is
-not "yes commit". The repo's standing rule in `CLAUDE.md` is to run `/still-works` before any
-deploy — see the honesty note at the end of §5 about what was and wasn't run this session.
+Currently in the Blob store: **one shop**, `ed5bc09a9ae71722332ea48111ac3b883dd0ffc1`, signup name
+`"Tester"`, email `ethankw.yap@gmail.com`, created 2026-07-26 13:56 UTC, last active 14:27 UTC —
+plus its lead record (`onboarding.signups: 1`). That is his own testing from earlier that day, not
+a customer.
 
-**B. Currency on the paid tiers of the `/pt` page.** The Local tier shows `0 €`. The Shop and
-Roaster tiers still show `$29/mo`, `$199/yr`, `$149/mo` and the `$99` founding price, with a line
-in the Portuguese copy saying the paid tiers are in US dollars and the euro price will be set
-before those plans launch. Deliberate: converting would invent a price he has never set, and that
-is a pricing decision, not a translation one. **Ask what the euro prices should be, or whether to
-leave it.**
+Why it matters: he is about to send the app to two real Lisbon cafés. Until this is cleared, his
+founder dashboard mixes his own testing in with his first real signups, and the standing rule in his
+auto-memory — *"the next lead record that appears is either a real signup or my own testing"* —
+stops being usable.
 
-**C. GDPR.** His first two customers are in the EU. The privacy policy and terms are governed by
-California law and do not address GDPR obligations (lawful basis, data-subject access and erasure
-requests, an EU representative). The Portuguese legal pages are labelled as translations with the
-English version prevailing — standard practice, and it buys time, but it **is not compliance**.
-This was flagged, not solved, and it matters more once money changes hands. **Ask how he wants to
-handle it; do not draft legal text unprompted.**
+**He was offered the cleanup and had not answered when this file was written. Ask him; do not delete
+his data on your own initiative.** If he says yes, the shop deletion is:
+
+```
+curl -s -X DELETE -H "x-portafile-admin: $(tr -d '\n' < .admin-key)" \
+  -H "x-portafile-shop: ed5bc09a9ae71722332ea48111ac3b883dd0ffc1" \
+  "https://portafile.vercel.app/api/state"
+```
+
+Expect `{"ok":true}`. **The lead record is separate and is NOT removed by that call** — it needs
+`DELETE /api/lead?ts=<ts>`, and the `ts` must be looked up first (the dashboard's "Fetch signups"
+button, or a GET to `/api/lead` with the admin header). The `created` timestamp shown in
+`/api/metrics` is `owners.created`, **not** the lead `ts` — do not pass it and assume it worked.
+Confirm deletions with several reads; the blob index lags.
+
+**Note: Ethan's own delete commands may be needed.** A `DELETE` curl from the agent was blocked
+mid-session by a permission classifier, twice. If that happens, hand him the exact one-line command
+to run himself with a `!` prefix rather than trying to route around it.
+
+**Three things are settled and must NOT be re-litigated** (see §2): paid tiers stay in USD, GDPR
+stays deferred, and the Portuguese work stays as shipped.
 
 ---
 
@@ -180,117 +182,118 @@ handle it; do not draft legal text unprompted.**
 
 **The one that actually bit this session, first:**
 
-- **Never pattern-match over `JSON.stringify(seed())`.** A new selftest asserted the Portuguese seed
-  contains no imperial units by regexing the serialised shop. That includes the randomly generated
-  `uid()`s, and a base-36 id ending in a digit + `oz` (`yykz6oz`, `33o68oz`) matches `\d\s*oz\b`
-  against the closing quote. **Measured false-failure rate: 0.99% per selftest run** — it appeared
-  once in a full sweep and vanished on re-run, the worst possible frequency, because it teaches you
-  the suite is flaky rather than that the code is wrong. It now scans only human-authored fields;
-  200 consecutive runs, 0 failures. **If any suite ever fails once and passes on retry, measure the
-  rate before dismissing it.**
+- **A live sync test is NOT read-only, and it leaves data behind even when it crashes.** Testing
+  sync means clicking "Turn on sync", which immediately writes a real shop into the production Blob
+  store. The first attempt this session **crashed partway through** — but it had *already* created
+  the shop before dying, leaving a nameless orphan that only turned up by reading `/api/metrics`
+  afterwards. **Never assume cleanup from a green run; check the dashboard.** Both test shops were
+  deleted and that was confirmed by re-reading the metrics.
+- **`#dSyncOn` navigates.** It sets three localStorage secrets then does `location.search = '?k='+k`,
+  which **reloads the page and closes the modal**. A script that clicks it and then waits for
+  `#dSyncLink` times out — the dialog no longer exists. Re-open `#btnData` after the reload.
+- **The verify suites cannot see the signup gate.** `gate()` skips `navigator.webdriver` browsers,
+  so every automated suite bypasses the first screen a real customer sees. To inspect it, override
+  webdriver in an init script — but **never submit that form**, because a real (non-webdriver)
+  submit writes a genuine lead blob into the founder's store.
+- **A "carried forward, unverified" fact in a handoff is the one most likely to be wrong.** The
+  previous handoff said the Blob store was empty. It was not. It cost nothing this time; assume it
+  will cost something next time.
 
-New from this session:
+**Portuguese / i18n (still true):**
 
 - **The English string IS the dictionary key** (`product/i18n.js`, gettext-style). A missing
-  translation silently renders readable English — that is the design, and it is also why mistakes
-  are invisible. Two consequences: (1) editing an English string in `app.js` orphans its translation
+  translation silently renders readable English — that is the design, and it is why mistakes are
+  invisible. Two consequences: (1) editing an English string in `app.js` orphans its translation
   with no error; (2) one English word needing two Portuguese words collides on one key, and a
-  duplicate key in a JS object literal **silently keeps only the last value**. That really happened
-  with "Roaster" (the company on the bean form vs. a person in the signup role list). Disambiguate
-  as `t('Roaster|role')` — the `|context` suffix is stripped from the English fallback only.
-  **`node verify-i18n.mjs` is the only thing that catches any of this.**
-- **`product/i18n.js` must load before `app.js`** in `product/index.html` (it does, lines 46–47).
-  `app.js` calls `t()` during its first render, so a missing `i18n.js` is not a degraded translation
-  — it is a **blank app**. `health_check.py` now probes that file directly, because the existing
-  "App shell" probe would still pass.
+  duplicate key in a JS object literal **silently keeps only the last value** (this really happened
+  with "Roaster"). Disambiguate as `t('Roaster|role')` — the `|context` suffix is stripped from the
+  English fallback only. **`node verify-i18n.mjs` is the only thing that catches any of this.**
+- **`product/i18n.js` must load before `app.js`** in `product/index.html`. `app.js` calls `t()`
+  during its first render, so a missing `i18n.js` is not a degraded translation — it is a **blank
+  app**. `health_check.py` probes that file directly.
 - **Adding a language means editing `api/metrics.js`.** Its `DEMOS` array is a hand-copied list of
   every seed's shop name and recipe/ingredient counts. A seed missing from it makes every shop in
-  that language read as adopted on first open. `verify-metrics.mjs` covers both seeds.
-- **Language lives in `S.shop.lang`, so it SYNCS** to staff devices — the owner sets it once and the
-  baristas' phones follow on the next poll. The default is browser detection, which is why every
-  pre-existing Playwright suite (en-US) still passes untouched.
+  that language read as fully adopted the instant it opens — silent, no error.
+- **Language lives in `S.shop.lang`, so it SYNCS** to staff devices. Default is browser detection,
+  which is why the pre-existing en-US Playwright suites still pass untouched.
 - **Signup role `<option value>`s stay English while the labels translate.** The value is POSTed to
-  `/api/lead` and counted in founder metrics; translating it would split "Owner" and "Proprietário".
+  `/api/lead` and counted in metrics; translating it would split "Owner" and "Proprietário".
 - **`site/site.css` is shared by `/` and `/pt`.** If it 404s, both pages return 200 with all their
   text and render completely unstyled — which a body-text health check would pass, hence the direct
-  probe. The only English baked into it is the mock card's `content:"4×6 · PRINTS CLEAN"`,
-  overridden by `html[lang="pt-PT"] .mockcard::after`.
+  probe.
+- **Never pattern-match over `JSON.stringify(seed())`.** A selftest that regexed the serialised shop
+  for imperial units matched the random base-36 `uid()`s (`yykz6oz` reads as "6 oz"): a **measured
+  0.99% false-failure rate**, the worst possible frequency, because it teaches you the suite is
+  flaky rather than that the code is wrong. **If any suite fails once and passes on retry, measure
+  the rate before dismissing it.**
 
-Carried forward and still true:
+**Carried forward and still true:**
 
 - **`CLAUDE.md` in this repo is the real gotcha list — read it fully before editing `api/state.js`.**
   The eventual-consistency rules ("never build an authorization check on a read", "revocation is a
   value comparison, never a missing blob", "a 404 never means revoked") were expensive to learn and
-  are not negotiable. Corollary added later: don't build the *client's* identity check on a
-  server-side value that a flaky read can erase either.
+  are not negotiable.
 - **Vercel Blob is eventually consistent.** `list()` lags writes and deletes by seconds — fine for
   counting, never for resolving a known path or deciding authorization.
-- **Relative URLs on the landing pages 404 at `/`** because root is a rewrite — and `/pt` is now a
-  **second** rewrite with exactly the same hazard. Everything is absolute now; don't reintroduce one.
+- **Relative URLs on the landing pages 404 at `/`** because root is a rewrite — and `/pt` is a
+  second rewrite with exactly the same hazard. Everything is absolute now; do not reintroduce one.
 - **CSP blocks all inline `<script>` on deployed pages.** `admin/dashboard.html` uses inline script
   and `onclick=` and is safe only because it never deploys. Never move that pattern into `site/` or
   `product/`.
 - **`.vercelignore` publishes only `site/`, `product/`, `video/`, `api/`, `vercel.json`,
   `package.json`.** A new top-level directory silently does not deploy.
 - **`vercel.json` pins CORS to the prod origin except under `/api/`** — the localhost:4322 dashboard
-  depends on that exception.
-- **Dial-in values are not guaranteed to be numbers** (only `parseFloat`'d when typed locally; a
-  synced or imported shop can hold any string). They render through `dec()`, which formats only
-  genuinely finite values and passes everything else through untouched. Always `esc(dec(x))`, never
-  `dec(esc(x))`. `verify-killpass.js` covers the hostile case — re-run it after touching any
-  dial-in render site.
+  depends on that exception, and the admin key is a **header** (`x-portafile-admin`), never a query
+  string, which makes those fetches preflighted.
+- **Dial-in values are not guaranteed to be numbers.** Always `esc(dec(x))`, never `dec(esc(x))`.
+  `verify-killpass.js` covers the hostile case — re-run it after touching any dial-in render site.
 - **Never run bare `npx playwright ...`.** The suites `require()` Playwright from a pinned npx cache
   path; any bare `npx playwright` command silently upgrades that cache and breaks every suite with
   "Executable doesn't exist", which looks like broken tests rather than a broken toolchain. Fix:
-  `npx playwright install chromium`.
+  `npx playwright install chromium`. To drive a browser ad hoc, launch with `{ channel: 'chrome' }`.
 - **Playwright `addInitScript` re-runs on every navigation**, restoring a seed the test just wiped;
   `verify-sync.js` guards this with `pf-test-stopseed`.
+- **`verify-sync.js` does not test the real `api/state.js`** — it routes to a JS mirror inside the
+  test file. `verify-api.mjs` is the one that executes the real handlers.
 - **Headless Chromium reports every tab as `visible`**, and `page.bringToFront()` doesn't change it.
 - **`#shopName` saves on `change`, not `input`.** A test that fires `input` quietly "passes".
 - **The feedback modal opens from `#btnHelp` → `#hFeedback`**, not a top-level button.
 - **`health_check.py` runs daily at 15:00 UTC** and emails him **every run, pass or fail** — so a
   missing email is itself the alarm. If you change page copy, update its expected marker strings or
   he gets a false alarm.
+- **Do not load-test the GET rate limiter from his machine** — it makes `health_check.py` report a
+  false outage for up to 10 minutes.
 
-**Honesty note on verification.** The `/still-works` skill was **not** invoked as a skill this
-session. What was done instead: all 9 suites run to green, two purpose-written browser suites
-(`verify-pt.js`, `verify-site.js`), a 200-run flake hunt, and visual screenshot review of the PT app
-and both landing pages. `WORKS.md` was updated by hand with the new feature checks and
-blast-radius entries. If Ethan wants the skill's own process run before deploying, that has not
-happened.
-
-**Not verified, and cannot be locally:** the `/pt` and `/pt/` rewrites in `vercel.json` only take
-effect in production; locally the pages were tested at `/site/pt/index.html`. **After any deploy,
-the first thing to check is that `https://portafile.vercel.app/pt` returns 200**, along with
-`/site/site.css`, `/product/i18n.js` and `/site/pt/privacy.html`. `python3 health_check.py` covers
-all four.
+**Honesty note on verification.** The `/still-works` skill has **not** been invoked as a skill for
+this body of work, in this session or the previous one. What exists instead: all nine suites green
+(three re-run this session), a live two-browser sync test, live HTTP probes, and visual review. If
+Ethan wants the skill's own process run, that has not happened and he should be told so plainly.
 
 ---
 
 ## 6. Reboot / persistence
 
-Nothing here depends on a running process. All work is files on disk in
-`/Users/ethanyap/portafile`; a reboot loses nothing. Test screenshots go to a system temp directory
-and are disposable.
+Nothing here depends on a running process. All work is committed to git in
+`/Users/ethanyap/portafile` and deployed to Vercel; a reboot loses nothing. Test scripts written
+this session live in a session scratchpad and are disposable.
 
-**The weak link is that nothing is committed.** 12 modified and 5 new files exist only in the
-working tree.
+**The weak link:** the three commits are **local only and not pushed to any remote**. A disk failure
+loses them. The deployed site is independent of that and would survive.
 
 ---
 
 ## 7. Don't redo
 
-- The translation, the Portuguese seed, the PT landing and legal pages — done and tested.
+- The Portuguese translation, seed, landing page and legal pages — done, deployed, verified.
+- The deploy itself, and the live verification of it. It passed.
+- The live sync test. It passed, and **re-running it writes real data into his store** (§5).
 - The Lisbon pricing model (porcelain vs. paper cup). Written up in `PROGRESS.md` and `CLAUDE.md`.
-- The whole verification sweep, unless something changed. It was green.
 - Don't "fix" the English demo shop — it is intentionally unchanged (15 drinks, dollars, °F).
-- Don't convert the paid tiers to euros on your own initiative — open question B.
+- Don't convert the paid tiers to euros, and don't draft GDPR text. Both were decided (§2).
 - Don't touch `.handoff` (the resolved 2026-07-25 security handoff).
 - `BUILD-LOG.md` is frozen — never edit it.
-- **Don't add a phone-home** to reach browsers that never synced. A browser that never turned on
-  sync, or already went local-only after an earlier delete, cannot be reached by anything the
-  founder presses. That is a property of a no-accounts product, not a bug. Ethan has repeatedly
-  chosen dropping a metric over tracking a user.
+- **Don't add a phone-home** to reach browsers that never synced. That is a property of a
+  no-accounts product, not a bug. Ethan has repeatedly chosen dropping a metric over tracking a user.
 
 ---
 
@@ -303,31 +306,32 @@ teach while doing. Typos are common; infer intent and proceed rather than asking
   and whether it can ever bill him.
 - **Terminal steps: numbered, ONE command per step**, say what he should see, then wait for his
   confirmation or screenshot before the next.
-- **He runs deploys and pushes himself**, typing the command with a `!` prefix in the session.
+- **He runs deploys, pushes and destructive curls himself**, typing the command with a `!` prefix.
 - **Verify before saying done** — exercise the real feature, not just the tests. He asks for this
-  explicitly and notices when it is skipped.
+  explicitly ("test it out before you tell me it's done") and notices when it is skipped.
 - **Lead with the outcome.** Short replies ("yes", "proceed", "yes push") mean: do exactly the
   pending step, nothing more.
 - **Deploys, deletes and anything outward-facing: confirm first.** Approval is scoped to that one
   action, not to future ones.
-- **Ponytail mode is on**: smallest solution that works, deliberate shortcuts marked with a
+- **Ponytail mode is on**: smallest solution that works; deliberate shortcuts marked with a
   `ponytail:` comment naming the ceiling and the upgrade path.
 - **`PROGRESS.md` is required.** At the end of any session that changed something real, append or
   extend that day's entry, unprompted, written for a founder (what shipped, why it mattered to the
   business, what broke and what it taught). One `##` per date, newest at the bottom, "Open threads"
-  kept current. Today's 2026-07-26 entry is already written — **extend it, don't add a second
-  heading for the same date.**
+  kept current. **The 2026-07-26 entry already exists and is current — extend it, don't add a
+  second heading for the same date.**
 - **After a milestone**, also update the repo `CLAUDE.md` gotchas and the auto-memory at
-  `~/.claude/projects/-Users-ethanyap-portafile/memory/` (both already updated for this session).
+  `~/.claude/projects/-Users-ethanyap-portafile/memory/` (both updated for this session).
 
 ---
 
 ## 9. Machine-level warnings (these outlive this task — do not drop them)
 
 1. **Never trust System Settings → Storage for free space** — it counts iCloud-purgeable files and
-   has been wrong by ~50 GB. Use `df -h /`. Currently 24 GB free of 228 GB.
-2. **Do not touch the `flowise-main` or `open-webui` Docker containers.** Verified running right
-   now, and `http://localhost:3010` answers 200 — that is a **separate live project** of his.
+   has been wrong by ~50 GB. Use `df -h /`. Currently **24 GB free of 228 GB**.
+2. **Do not touch the `flowise-main` or `open-webui` Docker containers.** Both verified running right
+   now (`flowise-main` up 3 weeks, `open-webui` up 5 days, healthy) and `http://localhost:3010`
+   answers 200 — that is a **separate live project** of his.
 3. `Docker.raw` is ~13 GB and does not shrink on prune.
 4. **Do not touch `~/Library/Application Support/Claude/vm_bundles`** (~6.8 GB) — Claude Desktop's VM.
 5. **Never suggest "Keep Messages: 1 Year"** — it permanently deletes messages across all his devices.
@@ -342,26 +346,29 @@ teach while doing. Typos are common; infer intent and proceed rather than asking
 
 ## 10. The next task
 
-**Ethan stated it explicitly:** *"I will answer these questions and perhaps deploy in new chat."*
+**He is sending Portafile to his two Lisbon test cafés.** The product is ready; the code work is
+done. What remains is around it:
 
-Present the three open questions in §4 (deploy+commit / paid-tier currency / GDPR), take his
-answers, and act on them. If he greenlights a deploy:
+1. **Ask about the leftover test data (§4)** — his own "Tester" shop and lead are still counted as a
+   customer. This should be cleared *before* the real signups arrive, otherwise he can't tell them
+   apart. **Ask; don't delete on your own.**
+2. **The link to send is `https://portafile.vercel.app/pt`** — their language, and the app is one
+   click away. He was advised to include one line for them: *"se abrir em inglês, carregue em PT no
+   canto superior direito"*, because the app follows the **browser's** language, not the country.
+3. **Advise him not to send the launch film.** `video/portafile-launch.mp4` is English-only and
+   still says **"No server"** out loud, which stopped being true when sync shipped 2026-07-17.
+   Neither landing page makes that claim in text — verified this session, zero hits on both. The
+   false claim exists only inside the video, which `/pt` links labelled "(em inglês)". Re-cutting
+   needs a Portuguese narration voice (`say -v Joana`) and **`say` silently falls back to the
+   default on an unknown voice name** — md5 the output against a fake name before believing it.
+   Full context in `video-src/HANDOFF.md`.
 
-1. Ask whether to commit first, and with what message.
-2. Give him `vercel deploy --prod --yes` to run from the repo root with a `!` prefix — **only on
-   his explicit go-ahead**, and remember `git push` does not deploy this project.
-3. Immediately after: `python3 health_check.py`, and confirm `https://portafile.vercel.app/pt`,
-   `/site/site.css`, `/product/i18n.js` and `/site/pt/privacy.html` all return 200, and that the
-   landing page's FAQ privacy link now resolves instead of 404ing.
-4. Then extend today's `PROGRESS.md` entry with what actually shipped.
+**Beyond that, UNSPECIFIED — ask him.** Do not invent the next feature.
 
-Two things worth raising with him unprompted if they come up:
+Two things worth raising unprompted if they come up:
 
 - The Portuguese cost figures in the demo seed are **estimates of Lisbon wholesale prices**, not
-  quoted numbers. They are a starting point a real owner overwrites — don't quote them back to
-  anyone as market data.
-- The launch film is English-only and still claims "No server", which has been false since sync
-  shipped 2026-07-17. The `/pt` page labels the film "(em inglês)", which is honest but not a fix.
-  That remains an open thread in `PROGRESS.md`.
-
-**Do not pick answers for him.**
+  quoted numbers. A starting point a real owner overwrites — never quote them to anyone as market
+  data.
+- Once a Lisbon café stops being a tester and starts paying, **GDPR and the euro pricing both stop
+  being deferrable** (§2). Both are in `PROGRESS.md`'s open threads.
