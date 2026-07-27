@@ -1,96 +1,61 @@
-# HANDOFF — training-step descriptions are built; four follow-ups are queued and approved
+# HANDOFF — the four queued Training tasks are built, verified and LIVE
 
-**Written 2026-07-27.** Project: `/Users/ethanyap/portafile`. Owner: Ethan (college student, learning
-developer). You are picking this up cold. Every fact below was re-checked by a command immediately
-before this file was written, unless explicitly labelled otherwise.
+**Updated 2026-07-27 (second session that day).** Project: `/Users/ethanyap/portafile`. Owner: Ethan
+(college student, learning developer). You are picking this up cold.
 
-> **This file replaces the 2026-07-26 handoff** ("language switch now reseeds the demo; Portuguese
-> guide PDF exists"). That work is finished, committed and pushed — its gotchas, machine warnings and
-> working-style notes are carried forward here in §6, §9 and §10. Nothing hard-won was discarded.
+> **All four approved follow-ups (old §5.1–5.4) are DONE, committed as `8b465f1` and deployed to
+> production.** Verified locally and again against `https://portafile.vercel.app/product/` after the
+> deploy. Do not rebuild them. §6 (gotchas), §9 (how to work with Ethan) and §10 (machine warnings)
+> below are unchanged and still load-bearing.
 >
-> **Do not confuse this with `.handoff`** (the dotfile in this same directory). That is a separate,
-> already-resolved handoff from 2026-07-25 about four security fixes, marked ✅ RESOLVED at its top.
-> **Leave it alone.** `handoff.md` — this file — is the live one.
+> **Do not confuse this with `.handoff`** (the dotfile beside it) — a separate, already-resolved
+> 2026-07-25 security handoff marked ✅ RESOLVED. Leave it alone.
 
 ---
 
 ## 1. TL;DR
 
-**One feature was built this session and it is finished and verified locally: every step in the
-Training path can now carry an optional description.** Nothing is committed and nothing is deployed.
+**Shipped and live:** the training-step description now also renders in the Sign-offs column
+(read-only), a step's day is editable after it was added, the on-screen path is sorted by day so it
+matches the printed pack, and staff (`?k=`) devices get the path read-only.
 
-**Ethan has explicitly approved four follow-up tasks for the next session — do all four (§5).** He
-said "complete all 3 items in new chat" (the three I offered him) and added a fourth in his own
-words. Do not re-ask whether to do them; the decisions inside them still need him (§4).
-
-- Working tree is dirty on purpose: `product/app.js`, `product/styles.css`, `product/i18n.js`,
-  `CLAUDE.md`, `PROGRESS.md`, `WORKS.md` modified.
-- **`guide/Portafile-Guide-EN.pdf` is DELETED in the working tree and this session did not delete
-  it** — it was already gone when the session started. It is still in git. See §4c before committing:
-  a blind `git commit -a` would delete a shipped file from the repo.
-- `PROGRESS.md` **is** already updated for this session (a new `## 2026-07-27` entry). Do not add a
-  second heading for that date — extend the existing one.
-- **Production has one shop and two lead records, and they look like Ethan's own testing from this
-  morning** (§4b). Ask before deleting anything.
-- Cost this session: **$0.** No new service, account, dependency or external request.
+- Commit `8b465f1` on `main`. **Not pushed to origin** — `git push` is Ethan's to run, and it does
+  NOT deploy this project (`vercel deploy --prod --yes` does, and it has already run).
+- `guide/Portafile-Guide-EN.pdf` was missing from the working tree at session start; restored with
+  `git checkout --` (byte-identical, `guide-en.html` had not changed since it was built). **Ethan has
+  not yet said whether he deleted it on purpose — ask him.**
+- **Production still holds one shop and two lead records** — `Tester Shop`, his own email, created
+  2026-07-27 10:34 UTC, from his own hand-testing that morning. He has NOT answered whether to clear
+  it. Do not delete it on your own. Commands are in §4b.
+- Cost: **$0.** No new service, account, dependency or external request.
 
 ---
 
-## 2. What was accomplished
-
-**He started with a question, not a work order:** "in the training tab, what does D1 D2 mean? I am
-confused." The answer, for the record: `D1`/`D2`/`D3` is **Day 1 / Day 2 / Day 3** of the new hire's
-first week. It comes from the `day` number typed into the small numeric box next to "+ custom skill"
-when a step is added. `product/app.js:652` renders `d${p.day}` and `product/styles.css:106`
-uppercases it via `text-transform:uppercase`. The printed new-hire pack spells it out as "Day 1" —
-only the on-screen badge is abbreviated.
-
-**Then he asked for the feature:** every step in the training path should be able to carry a
-description. Built and verified:
+## 2. What was built and how it was proved
 
 | Where | What changed |
 |---|---|
-| `product/app.js:656` | Each `.pathlist li` renders an `<input class="note">` holding `p.note` |
-| `product/app.js:990` | Saves on `change` (blur), mutates `S.path[i].note`, calls `save()` **without `render()`** — a re-render would steal focus mid-sentence, and nothing else on that view reads the field |
-| `product/app.js:738` | The new-hire print pack renders the note as `<div class="cknote">` under the step |
-| `product/app.js:1048` | **`demoSig()` now fingerprints `p.note`** — the load-bearing part, see below |
-| `product/styles.css:107-109` | The field is a quiet full-width second row: borderless, dashed top rule, only looks like a form field once focused |
-| `product/styles.css:181` | `.pchecklist .cknote` — 9pt grey, print-only |
-| `product/i18n.js:138` | `'Add a description — prints in the pack'` → `'Adicione uma descrição — sai no dossiê'` |
+| `product/app.js` `pathOrder()` | new: returns `S.path` INDICES sorted by day, then array position. Mutates nothing, so synced and legacy shops need no migration |
+| `viewTraining()` | both columns iterate `order`; day badge is an `<input type=number>` for owners and a `<span>` for staff; `↑↓×`, the add-step row and the editable fields are owner-only |
+| Sign-offs checklist | renders `p.note` as `.cknote` under the label, read-only |
+| the `input.note` handler | now hand-patches the Sign-offs cell (`textContent`) instead of leaving it stale |
+| the `.day input` handler | clamps 1–9, then `save(); render()` — the re-sort IS the point |
+| `product/styles.css` | `.pathlist .day input` (spinner-less, reads as part of the badge), `.checklist .cknote` |
+| `product/i18n.js` | one new string + its European-Portuguese translation |
 
-**The bug that was caught before it existed.** A deliberate language switch reseeds the demo menu,
-but only while the shop is still the untouched demo, and "untouched" is decided by `demoSig()` — a
-content fingerprint. It listed each path step's `type`, `label` and `day` but nothing else. A shop
-whose *only* work was a page of carefully written step descriptions would therefore have read as
-pristine, and pressing PT would have thrown all of it away. Same shape as the oat-milk bug from
-2026-07-26. The general rule was added to `CLAUDE.md`: **any new user-editable field must be added to
-`demoSig()` in the same commit.**
+**The bug found and fixed mid-session** (it is now a `CLAUDE.md` gotcha and a `WORKS.md` trap): the
+description saves on blur *without* `render()` on purpose — a re-render drops focus when the owner
+tabs down the list. That was harmless while the field had one view. Adding a second view made it
+stale until an unrelated click refreshed the page. Caught by a test timing out on a node that never
+appeared, not by reading the diff.
 
-**Verified by driving the real app in headless Chromium, not by reading the diff.** Eleven checks,
-all PASS, no JS errors:
-
-- the field exists on every step and carries the description placeholder;
-- typing then blurring writes to `localStorage`, and survives a reload;
-- pressing `↓` moves the note with its step;
-- `<img src=x onerror=alert(1)>` round-trips as **literal text** in both the editor and the printed
-  pack, and injects no element;
-- the new-hire pack prints the notes (confirmed in the DOM **and** in a `media:'print'` screenshot);
-- a note-only edit **vetoes** the language swap;
-- an untouched demo **still** reseeds to the Lisbon menu.
-
-**Existing suites re-run this session and green:** `node product/verify.js` (0 FAIL),
-`node verify-pt.js` (61), `node verify-i18n.mjs` (15 checks / 218 translations),
-`node verify-metrics.mjs`. **Not re-run this session:** `verify-sync.js`, `verify-gate.js`,
-`verify-killpass.js`, `verify-api.mjs`, `verify-site.js` — they were green on 2026-07-26 and nothing
-this session touched their subjects, but that is an inference, not a measurement.
-
-**Also updated:** `PROGRESS.md` (new `## 2026-07-27` entry), `WORKS.md` (a new checklist line under
-"App — dial-in, training, print"), `CLAUDE.md` (the `demoSig()` corollary).
-
-**Road not taken — do not redo:** the scratch verification script lives at
-`/private/tmp/claude-501/-Users-ethanyap-portafile/c8417b7d-a44b-41c9-b7a3-500e51b9ee0b/scratchpad/check-note.js`.
-It is disposable, and its useful checks should be folded into a repo suite as part of task 5.1 below
-rather than resurrected from a temp directory that a reboot will clear.
+**Suites, all green this session:** `product/verify.js` (20, includes the new 4b block),
+`verify-gate.js` (16, includes the staff-lock checks), `verify-sync.js` (64), `verify-pt.js` (65,
+includes note-veto and day-veto), `verify-killpass.js`, `verify-api.mjs`, `verify-metrics.mjs`,
+`verify-i18n.mjs` (15 checks / 219 translations), `verify-site.js` (37). Plus a 20-check edge pass
+(empty path, single step, day 0 / 99 / empty, a step with no `day` at all, clearing a description)
+and a 6-check pass against live production after the deploy. **The `demoSig` veto test was proven to
+bite** by temporarily removing `p.note` from the fingerprint and watching it fail.
 
 ---
 
@@ -100,54 +65,27 @@ Re-checked by command immediately before this file was written.
 
 | Fact | Value | How known |
 |---|---|---|
-| Repo | `/Users/ethanyap/portafile` | — |
-| Branch / last commit | `main` / `047418e` | `git rev-parse`, `git log` |
-| Unpushed commits | **0** — everything committed is on `origin/main` | `git log origin/main..HEAD` |
-| Working tree | **Dirty, deliberately:** `CLAUDE.md`, `PROGRESS.md`, `WORKS.md`, `product/app.js`, `product/i18n.js`, `product/styles.css` modified; `guide/Portafile-Guide-EN.pdf` **deleted (not by this session)**; `.handoff` untracked | `git status` |
-| Deployed this session? | **No.** Live site is the previous deploy and does not have step descriptions | no deploy command was run |
-| Deploy command | `vercel deploy --prod --yes` from repo root. **`git push` does NOT deploy this project** | `CLAUDE.md` |
-| `https://portafile.vercel.app/` | **200** | HTTP probe |
-| `/pt` · `/product/` · `/site/site.css` · `/product/i18n.js` | **200** each | HTTP probes |
-| `/admin/dashboard.html` | **404 — correct.** The no-auth dashboard must never deploy | HTTP probe |
-| Founder dashboard | `http://localhost:4322/admin/dashboard.html` — port 4322 listening (LaunchAgent, Python) | `lsof` |
-| Local test server | **none running**; port 8899 free | `lsof` |
-| Admin key | `.admin-key` in repo root, present, gitignored. **Never echo its contents** | read via `tr -d '\n'` only |
-| Pinned Playwright | present at `~/.npm/_npx/e41f203b7505f1fb/node_modules/playwright` | directory exists |
-| Disk | **23 GB free of 228 GB** | `df -h /` |
-| Docker | `flowise-main` up 3 weeks, `open-webui` up 6 days (healthy) — **a different project, do not touch** | `docker ps` |
-| Production Blob store | **1 shop, 2 lead records** — see §4b | `GET /api/metrics` and `GET /api/lead` with the admin header, this session |
-| Cost of everything | **$0.** Static files on the existing free Vercel tier | by construction |
+| Repo / branch | `/Users/ethanyap/portafile` / `main` | — |
+| Last commit | `8b465f1` | `git log` |
+| Unpushed | **1 commit** (`8b465f1`) — Ethan pushes | `git log origin/main..HEAD` |
+| Deployed this session? | **Yes** — `vercel deploy --prod --yes`, ready | deploy output |
+| `https://portafile.vercel.app/product/` | serves the new `pathOrder`/`cknote` code | `curl` + a driven browser |
+| `/admin/dashboard.html` | **404 — correct**, the no-auth dashboard must never deploy | HTTP probe |
+| Production Blob store | **1 shop, 2 lead records**, unchanged before and after the deploy | `GET /api/metrics` with the admin header |
+| Admin key | `.admin-key` in repo root, gitignored. **Never echo its contents** | read via `tr -d '\n'` only |
+| Cost of everything | **$0** | by construction |
 
 ---
 
 ## 4. Decisions still open — ask him, do not act alone
 
-### 4a. Deploy?
+### 4a. The test data in production
 
-The step-description feature is finished and green but **uncommitted and undeployed**. Task 5.2 below
-is his approval to deploy — but the repo rule is that **`/still-works` runs before the commit, not
-after**, and it has not been invoked as a skill for three sessions. Run it, report what it says, then
-deploy. If it surfaces a real regression, stop and tell him rather than deploying past it.
+`Tester Shop` / `43a9a8e8099d2c9d119b0ce389a56975e90327c2` / `ethankw.yap@gmail.com`, created
+2026-07-27 10:34:35 UTC, lead `ts` values `1785148459345` and `1785148471418`. It reads as his own
+hand-testing, not a customer — but **he has not confirmed, so do not delete it.**
 
-### 4b. There is test data in production again — ask before deleting
-
-`GET /api/metrics` right now reports **1 shop, 1 signup (2 lead records, deduped by email)**:
-
-| Field | Value |
-|---|---|
-| Shop id | `43a9a8e8099d2c9d119b0ce389a56975e90327c2` |
-| Shop name | `Tester Shop` |
-| Email | `ethankw.yap@gmail.com` |
-| Created | `1785148475385` = **2026-07-27 10:34:35 UTC** |
-| Last active | 2026-07-27 10:43:16 UTC |
-| Lead `ts` values | `1785148459345` and `1785148471418` (the second is the automatic shopId-linking re-POST, ~12s later) |
-
-It reads as Ethan's own hand-testing from this morning — the name is a fixture, the email is his, and
-it predates this session's work. It is **not** proof of a customer. He cleared the store on
-2026-07-26 immediately before emailing the Lisbon cafés (commit `a7f1084`), so anything in there now
-arrived after that. **Ask him whether to clear it. Do not delete his data on your own.**
-
-Shop deletion (this also removes the shop's usage-activity blob):
+Shop (also removes the usage-activity blob):
 
 ```
 curl -s -X DELETE -H "x-portafile-admin: $(tr -d '\n' < .admin-key)" \
@@ -155,109 +93,39 @@ curl -s -X DELETE -H "x-portafile-admin: $(tr -d '\n' < .admin-key)" \
   "https://portafile.vercel.app/api/state"
 ```
 
-Lead records are **separate** and are not removed by that call — one DELETE per record, by `ts`:
+Leads are separate — one DELETE per record, by `ts`:
 
 ```
 curl -s -X DELETE -H "x-portafile-admin: $(tr -d '\n' < .admin-key)" \
   "https://portafile.vercel.app/api/lead?ts=1785148459345"
 ```
 
-Confirm deletions with several reads — the blob index lags deletes and a single read is not proof.
-**The `created` timestamp from `/api/metrics` is `owners.created`, NOT the lead `ts`** — do not pass
-it and assume it worked. If a `DELETE` curl gets blocked by a permission classifier (it has been,
-twice), hand Ethan the exact one-line command to run himself with a `!` prefix rather than routing
-around it.
+Confirm with several reads (the blob index lags deletes). **`created` from `/api/metrics` is
+`owners.created`, NOT the lead `ts`.** If a DELETE curl gets blocked by a permission classifier, hand
+Ethan the exact one-line command to run himself with a `!` prefix rather than routing around it.
 
-### 4c. `guide/Portafile-Guide-EN.pdf` is missing from disk
+### 4b. `guide/Portafile-Guide-EN.pdf`
 
-It is committed in git (`3c6caca`) but **absent from the working tree**, and this session did not
-delete it. `guide/` currently holds `guia-pt.html`, `guide-en.html`, `render-pdf.js` and
-`Portafile-Guia-PT.pdf` only.
+It had vanished from the working tree without any session deleting it; restored from git this
+session. **Tell him it was missing** — he may have deleted it deliberately. `node guide/render-pdf.js`
+re-renders every `guide/*.html` and re-checks 12 button labels if it ever needs rebuilding.
 
-Two clean fixes — **do not just commit the deletion**:
-1. `git checkout -- guide/Portafile-Guide-EN.pdf` (restores the committed byte-for-byte copy), or
-2. `node guide/render-pdf.js` (re-renders every `guide/*.html`, including the English one, and
-   re-checks 12 button labels against `product/i18n.js`).
+### 4c. Push
 
-Prefer (2) if `guide-en.html` has changed since the PDF was built; prefer (1) otherwise. Either way,
-**tell him it was missing** — he may have deleted it deliberately.
-
-### 4d. The design question inside task 5.4 (see §5)
-
-Answer it with a recommendation, then build. Don't stall on it.
+`8b465f1` is committed but not on `origin/main`. He runs pushes himself.
 
 **Three things are settled and must NOT be reopened:** paid tiers stay in US dollars on `/pt`, GDPR
 stays consciously deferred, and the Portuguese work stays as shipped.
 
 ---
 
-## 5. The next task — all four are approved, do all four
+## 5. The next task
 
-Ethan's words: *"complete all 3 items in new chat. add this to the tasks: i want the ability to
-reorder the days assigned to each task and same with the custom tasks because not every owner will
-want the same order."*
+**UNSPECIFIED — ask him. Do not invent the next feature.** He likes being offered 2–3 concrete
+options rather than an open-ended "what do you think?"
 
-All four live in the **Training** tab (`viewTraining()` at `product/app.js:636`, wiring at
-`product/app.js:973-1002`).
-
-### 5.1 Show the step description in the Sign-offs column too
-
-Right now the description only appears in the left-hand "The path" editor and in the printed pack.
-The right-hand "Sign-offs" checklist (`product/app.js:677-681`) shows the step title only, so the
-trainer ticking the box cannot see what they are signing off on. Render `p.note` there as secondary
-text under the label — **read-only there**, editing stays in the path column. Keep it visually
-lighter than the label so a ten-step checklist does not become a wall of text.
-
-**Leave one runnable check behind.** The eleven checks written this session live only in a scratch
-file in a temp directory; fold the durable ones (persistence, reorder, the hostile-string case, the
-print pack, and both language-switch cases) into `product/verify.js` so they survive.
-
-### 5.2 Commit and deploy
-
-`/still-works` **first** (§4a), then `vercel deploy --prod --yes` from the repo root, then confirm on
-the real site — open `https://portafile.vercel.app/product/`, Training tab, type a description,
-reload, print the pack. Watch out for `guide/Portafile-Guide-EN.pdf` (§4c) when staging the commit.
-`guide/` deliberately does not deploy; `.vercelignore` is an allowlist.
-
-### 5.3 Lock path editing to owners
-
-Staff devices (those on a `?k=` link) can currently reorder and delete training-path steps, and as of
-this session can edit descriptions too. That was already true before today — it is not a regression,
-it is a gap. The staff-view predicate is `staffView()` (already used in `viewPrint()` at
-`product/app.js:696` to hide the Margin Report). Apply the same treatment to the path editor: staff
-see the path and its descriptions, owners get the `↑ ↓ ×` buttons, the add-step row and the
-description inputs.
-
-**Verify the right thing:** this is a UI-visibility change, not a security boundary — a staff device
-holds the whole shop in `localStorage` either way, exactly like the price table. Say that plainly to
-Ethan rather than calling it "locked down". Re-run `node product/verify-gate.js` and
-`node product/verify-sync.js` afterwards, since both drive staff-link sessions.
-
-### 5.4 Let owners change which day a step belongs to (his fourth item)
-
-**The gap:** a step's `day` is set once, in the numeric box at `product/app.js:662`, at the moment it
-is added. After that there is no way to change it. The `↑ ↓` buttons move a step's position in the
-flat `S.path` array; they do not touch `p.day`. So an owner who decides milk steaming belongs on Day
-1 instead of Day 2 has to delete the step and re-add it — and for a custom skill that means retyping
-the whole label. He is right that this blocks a real need: not every café runs the same week.
-
-**Smallest thing that works:** make the `D1` badge itself an editable day field per row — a small
-`<input type="number" min="1" max="9">` in place of the static `<span class="day">`, saving on
-`change` and re-rendering. That covers drinks and custom skills identically, since both are just
-entries in `S.path`.
-
-**The design question to answer first (§4d):** the on-screen path list is in manual array order,
-while the printed pack **groups by day** and sorts days ascending
-(`product/app.js:733-739`). Today those agree only because the seed happens to be in day order. The
-moment someone sets step 1 to Day 3, the screen and the paper disagree. Recommendation: **sort the
-on-screen list by day, then by array position within a day**, so the screen matches the paper — and
-make `↑ ↓` reorder within a day. State that as a recommendation to Ethan and proceed unless he says
-otherwise; do not silently ship a screen that disagrees with the print-out.
-
-**Do not forget:** `p.day` is already inside `demoSig()` (`product/app.js:1048`), so a day change
-correctly vetoes the language reseed. If you add any *new* field while doing this, add it there too.
-
-**Beyond these four: UNSPECIFIED — ask him. Do not invent the next feature.**
+Known open threads live at the end of `PROGRESS.md`; the loudest is that the launch film still says
+**"No server"**, false since sync shipped 2026-07-17.
 
 ---
 
@@ -267,15 +135,29 @@ correctly vetoes the language reseed. If you add any *new* field while doing thi
 
 - **`demoSig()` decides whether a language switch may destroy the shop's data.** Any new
   user-editable field must be added to it in the same commit, or a shop whose only work lives in that
-  field reads as pristine and gets erased. `product/app.js:1036-1051`. This is now written into
-  `CLAUDE.md` as a corollary to the oat-milk bug.
-- **`class="note"` is used twice in the app** — the training-path description (`app.js:656`) and the
-  dial-in log's note field (`app.js:625`). Both the CSS and the event wiring are scoped with
-  `.pathlist .note` on purpose. Do not widen either selector to a bare `.note`.
-- **An inline field that saves on `change` must not call `render()`.** Re-rendering the view on blur
-  is harmless here only because nothing else on screen reads `p.note`; re-rendering on `input` would
-  destroy focus mid-sentence. The prices grid gets away with `save(); render()` because it is a
-  full-row commit.
+  field reads as pristine and gets erased. `product/app.js`. This is written into `CLAUDE.md` as a
+  corollary to the oat-milk bug, and `verify-pt.js` now proves both `p.note` and `p.day` veto the
+  swap — remove either from the fingerprint and those checks fail.
+- **The training path renders in `pathOrder()` order, not array order** — day ascending, then array
+  position within the day, so the screen matches the print pack (which groups by day). It returns
+  INDICES and mutates nothing. `↑↓` swap the DISPLAY neighbour and only inside one day; a step moved
+  to another day joins that day at its HEAD (the tiebreak is array position). **Both the path column
+  and the Sign-offs checklist must iterate `order`, never `S.path`**, or the two columns disagree.
+- **CORRECTED (this replaces the previous session's version of this note).** The previous handoff
+  said an inline field saving on `change` "must not call `render()`, and that is harmless because
+  nothing else on screen reads `p.note`." The second half stopped being true the moment the
+  description also appeared in the Sign-offs column — and it shipped stale for one session because of
+  it. The rule now: `input.note` still skips `render()` (a re-render drops focus when the owner tabs
+  down the list), so **the handler hand-patches the Sign-offs cell itself** with `textContent`, never
+  `innerHTML`. The `.day input` handler is the opposite case and DOES `render()`, because the re-sort
+  is the point. **Adding a second view of a field means revisiting every handler that writes it.**
+- **`class="note"` is used twice in the app** — the training-path description and the dial-in log's
+  note field. Both the CSS and the event wiring are scoped with `.pathlist` on purpose, and the
+  wiring is `.pathlist input.note` specifically, because staff render the description as a `<div>`.
+  Do not widen either selector to a bare `.note`.
+- **Staff (`?k=`) get the training path read-only** — same `staffView()` predicate as the Margin
+  Report. Say plainly what it is: **visibility, not a security boundary.** A staff device holds the
+  whole shop in `localStorage` either way, exactly like the price table.
 - **A print-pack change cannot be screenshotted from the normal screen.** The pack lives in a
   print-only stylesheet, so a plain screenshot shows the app underneath and looks like nothing
   happened. Use `page.emulateMedia({ media: 'print' })` before the screenshot, or assert on the DOM.

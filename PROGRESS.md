@@ -273,6 +273,20 @@ Verified against the live site, not the tests: 12/12 health checks pass, `/pt` a
 
 **Verified by driving the real app, not by reading the diff**: eleven checks in a headless browser covering persistence, reload, reordering (the note follows its step), a hostile `<img onerror>` string round-tripping as literal text in both the editor and the printed pack, and the two language-switch cases. Existing suites re-run green — the full app suite, the 61-check Portuguese suite, dictionary hygiene with the new Portuguese string in place, and the metrics checks. Not deployed yet. Cost: $0.
 
+### Later the same day — the training week is now the owner's to arrange, and it's live
+
+**Four things shipped together, and one of them was a bug I'd written that morning.** The step description only existed in the left-hand editor and on paper. The trainer standing at the machine with the Sign-offs checklist — the person the description is *for* — couldn't see it. It now appears under each step there too, read-only, because there should be exactly one place a thing is edited.
+
+**That's where the bug was.** The description field saves on blur without re-rendering the screen, deliberately: re-rendering would yank the cursor away when an owner tabs from one description to the next. That was harmless while the description had one view. The moment it had two, typing a note left the checklist two inches away showing nothing until some unrelated click refreshed the page. **A test caught it by timing out looking for a node that never appeared — reading the diff would never have shown me that**, because every line of it was correct in isolation. The fix updates that one cell directly. The lesson is bigger than the bug: adding a second view of a field means revisiting every handler that writes it.
+
+**The owner's own request: a step's day can be changed after the fact.** Before this, deciding that milk steaming belongs on Day 1 instead of Day 2 meant deleting the step and retyping the whole label. His words were "not every owner will want the same order," which is the correct instinct — the demo week is my guess at how a café trains, not a rule.
+
+**That exposed a disagreement nobody had noticed yet.** The printed pack has always grouped steps by day; the screen showed them in raw manual order. They agreed only because the demo seed happens to be written in day order — the first time anyone moved a step to another day, the paper and the screen would have told the new hire two different things. The screen is now sorted by day to match the paper, and the arrows reorder within a day instead of across the whole list.
+
+**And the training path is now the owner's document.** Staff devices read it and read the descriptions; they don't get the arrows, the delete buttons, the add-step row or the editable fields. Being honest about what that is: it's visibility, not security. A barista's phone holds the whole shop in local storage either way, exactly like the price table. It stops a well-meaning barista from reshuffling the owner's training plan; it is not a lock.
+
+**Verified before and after the deploy.** Every suite green — the app suite (now 20 checks, with this morning's throwaway script folded in so a reboot can't eat it), the gate suite with the new staff-lock checks, sync (64), Portuguese (65, including two new cases proving a description or a day change vetoes the language reseed), kill-pass, the real API handlers, metrics, dictionary hygiene, and both landing pages. Then a 20-check pass over edges: an empty path, a single step, day 0 and day 99 and an empty day, a step with no day at all, and clearing a description. **Then the same flows driven against portafile.vercel.app after deploying** — description, day change, re-sort, reload, print pack, no console errors, no failed requests. The founder's store was read before and after and is unchanged. Cost: $0.
+
 ---
 
 ## Open threads
