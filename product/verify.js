@@ -80,6 +80,58 @@ const fs = require('fs'); fs.mkdirSync(SHOTS, { recursive: true });
   check('sign-off shows date stamp', dated === 1);
   await page.screenshot({ path: SHOTS + '/04-training.png' });
 
+  // 4b. training path: step descriptions, editable day, day ordering.
+  // These started life as a throwaway script in a temp dir; they live here so a reboot can't eat them.
+  const li = i => page.locator('.pathlist li').nth(i);
+  const ids = () => page.$$eval('.pathlist li', ls => ls.map(l => l.dataset.id));
+  const stepOf = id => page.evaluate(x => JSON.parse(localStorage.getItem('portafile.v1')).path.find(p => p.id === x), id);
+  const setNote = async (i, v) => { await li(i).locator('input.note').fill(v); await li(i).locator('input.note').dispatchEvent('change'); await page.waitForTimeout(60); };
+  const id0 = (await ids())[0];
+
+  await setNote(0, 'Grind, tamp, 27 seconds. Ask before you dump a shot.');
+  check('step description saves on blur', (await stepOf(id0)).note.startsWith('Grind, tamp'));
+  check('description also shows in the Sign-offs column',
+    await page.locator('.checklist .cknote').count() === 1 &&
+    (await page.locator('.checklist .cknote').first().textContent()).startsWith('Grind, tamp'));
+
+  // a description is user text and is interpolated as HTML in three places — it must stay text in all of them
+  const XSS = '<img src=x onerror=alert(1)>';
+  await setNote(0, XSS);
+  check('hostile description stays literal text in the sign-offs list',
+    await page.locator('.checklist .cknote').first().textContent() === XSS &&
+    await page.locator('.checklist img').count() === 0);
+  await page.click('.tab[data-tab=print]');
+  await page.evaluate(() => { window.print = () => {}; });
+  await page.click('[data-pack=hire]');
+  check('hostile description stays literal text in the printed pack',
+    await page.locator('#printRoot .cknote').first().textContent() === XSS &&
+    await page.locator('#printRoot img').count() === 0);
+  await page.click('.tab[data-tab=training]');
+  await setNote(0, 'Grind, tamp, 27 seconds.');
+
+  // the day badge is editable after the fact — before this, changing a step's day meant deleting it
+  const dayIn = li(0).locator('.day input');
+  await dayIn.fill('3'); await dayIn.dispatchEvent('change');
+  await page.waitForTimeout(60);
+  check('a step can be moved to another day after it was added', (await stepOf(id0)).day === 3);
+  const shown = await page.evaluate(() => {
+    const st = JSON.parse(localStorage.getItem('portafile.v1'));
+    return [...document.querySelectorAll('.pathlist li')].map(l => st.path.find(p => p.id === l.dataset.id).day);
+  });
+  const pos = (await ids()).indexOf(id0); // it joins day 3 at the head — within a day the order is still manual
+  check('the on-screen path is in day order, so it agrees with the printed pack',
+    shown.every((d, i) => i === 0 || shown[i - 1] <= d) && pos > 0 && shown[pos] === 3);
+  check('the description travels with the step', await li(pos).locator('input.note').inputValue() === 'Grind, tamp, 27 seconds.');
+
+  // ↑↓ reorder inside a day; the day field is what moves a step between days
+  const bnd = shown.findIndex((d, i) => i > 0 && shown[i - 1] !== d);
+  check('↑ is disabled at a day boundary', await li(bnd).locator('[data-act=up]').isDisabled());
+  const idA = (await ids())[0];
+  await li(0).locator('[data-act=down]').click();
+  await page.waitForTimeout(60);
+  check('↓ reorders within a day', (await ids())[1] === idA);
+  await page.evaluate(i => { S.path.find(x => x.id === i).day = 1; save(); render(); }, id0);
+
   // 5. print packs build (stub window.print)
   await page.click('.tab[data-tab=print]');
   await page.evaluate(() => { window.print = () => {}; });

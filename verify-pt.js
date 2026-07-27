@@ -155,6 +155,23 @@ const ok = (name, cond, got) => { n++; const s = cond ? 'PASS' : 'FAIL'; if (!co
     return S.recipes.find(r => r.name === window.__swapped).items.some(it => it.ing === oat.id);
   }));
 
+  /* The training path's two newest editable fields. A shop whose ONLY work is a page of carefully
+     written step descriptions, or a week re-planned onto different days, must veto the swap exactly
+     like a renamed shop does — both are in demoSig() for that reason. */
+  await p.evaluate(() => {
+    S = seed('pt');
+    S.path[0].note = 'Mostrar o mapa do frigorífico antes de abrir.';
+    save(); render();
+  });
+  await p.selectOption('#langSel', 'en');
+  ok('a step description vetoes the swap', (await p.$$('.rcard')).length === 19, (await p.$$('.rcard')).length);
+  ok('...and that description survives', await p.evaluate(() => S.path.some(x => x.note && x.note.startsWith('Mostrar o mapa'))));
+
+  await p.evaluate(() => { S = seed('pt'); S.path[0].day = 3; save(); render(); });
+  await p.selectOption('#langSel', 'en');
+  ok('a step moved to another day vetoes the swap', (await p.$$('.rcard')).length === 19, (await p.$$('.rcard')).length);
+  ok('...and that day change survives', await p.evaluate(() => S.path.filter(x => x.day === 3).length === 4));
+
   // Back to a clean Portuguese demo for the reload check and the screenshot below.
   await p.evaluate(() => { S = seed('pt'); save(); render(); });
   await p.reload();

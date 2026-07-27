@@ -1,12 +1,12 @@
-# HANDOFF — language switch now reseeds the demo; Portuguese guide PDF exists
+# HANDOFF — training-step descriptions are built; four follow-ups are queued and approved
 
-**Written 2026-07-26, ~19:50 UTC.** Project: `/Users/ethanyap/portafile`. Owner: Ethan (college
-student, learning developer). You are picking this up cold. Every fact below was re-checked by a
-command immediately before this file was written, unless explicitly labelled otherwise.
+**Written 2026-07-27.** Project: `/Users/ethanyap/portafile`. Owner: Ethan (college student, learning
+developer). You are picking this up cold. Every fact below was re-checked by a command immediately
+before this file was written, unless explicitly labelled otherwise.
 
-> **This file replaces the earlier 2026-07-26 handoff** ("Portafile is live in European Portuguese").
-> Everything hard-won in it — gotchas, machine warnings, working-style notes — is carried forward
-> here in §5, §8 and §9. Nothing was discarded.
+> **This file replaces the 2026-07-26 handoff** ("language switch now reseeds the demo; Portuguese
+> guide PDF exists"). That work is finished, committed and pushed — its gotchas, machine warnings and
+> working-style notes are carried forward here in §6, §9 and §10. Nothing hard-won was discarded.
 >
 > **Do not confuse this with `.handoff`** (the dotfile in this same directory). That is a separate,
 > already-resolved handoff from 2026-07-25 about four security fixes, marked ✅ RESOLVED at its top.
@@ -16,99 +16,81 @@ command immediately before this file was written, unless explicitly labelled oth
 
 ## 1. TL;DR
 
-Two things were built this session and both are **finished and verified locally. Nothing is
-committed and nothing is deployed.**
+**One feature was built this session and it is finished and verified locally: every step in the
+Training path can now carry an optional description.** Nothing is committed and nothing is deployed.
 
-1. **Auto-reseed on language switch** (`product/app.js`). Switching the language picker now also
-   swaps the demo *menu* — but only while the shop is still the untouched demo. Any of the owner's
-   own work vetoes it.
-2. **A Portuguese guide PDF** for the Lisbon cafés — new `guide/` directory holding the HTML source,
-   a render script and the output PDF. The old English `Portafile-Guide.pdf` had **no source in the
-   repo at all**; it was generated outside it.
+**Ethan has explicitly approved four follow-up tasks for the next session — do all four (§5).** He
+said "complete all 3 items in new chat" (the three I offered him) and added a fourth in his own
+words. Do not re-ask whether to do them; the decisions inside them still need him (§4).
 
-- **All nine verify suites pass** — run this session, not remembered. `verify-pt.js` went 53 → 59.
-- **Working tree is dirty on purpose**: `product/app.js`, `verify-pt.js` modified; `guide/` untracked.
-- **Nothing was deployed and nothing touched production data deliberately** — but see the warning
-  immediately below, because production data *did* change.
-- **`PROGRESS.md` has NOT been updated for this session's work yet.** It still ends at the Portuguese
-  launch entry. Extend the existing `## 2026-07-26` heading; do not add a second one for the date.
-- **Two decisions are open and are Ethan's** — see §4. Do not act on either alone.
-
-> ⚠️ **Ethan's own hand-testing wrote two real signup records into production today.** Nobody did
-> anything wrong; this is the documented hazard in §5. It changes the cleanup in §4 from one lead to
-> four. Details in §4 — read it before touching the founder dashboard or drawing any conclusion from
-> the signup count.
+- Working tree is dirty on purpose: `product/app.js`, `product/styles.css`, `product/i18n.js`,
+  `CLAUDE.md`, `PROGRESS.md`, `WORKS.md` modified.
+- **`guide/Portafile-Guide-EN.pdf` is DELETED in the working tree and this session did not delete
+  it** — it was already gone when the session started. It is still in git. See §4c before committing:
+  a blind `git commit -a` would delete a shipped file from the repo.
+- `PROGRESS.md` **is** already updated for this session (a new `## 2026-07-27` entry). Do not add a
+  second heading for that date — extend the existing one.
+- **Production has one shop and two lead records, and they look like Ethan's own testing from this
+  morning** (§4b). Ask before deleting anything.
+- Cost this session: **$0.** No new service, account, dependency or external request.
 
 ---
 
 ## 2. What was accomplished
 
-**Where this session started.** Ethan opened the app, switched the language picker from English to
-Portuguese, saw English ingredient names, recipe instructions and training steps, and reported it as
-missing translations. He asked whether the fix was to *ship fewer demo drinks* so there'd be less to
-translate.
+**He started with a question, not a work order:** "in the training tab, what does D1 D2 mean? I am
+confused." The answer, for the record: `D1`/`D2`/`D3` is **Day 1 / Day 2 / Day 3** of the new hire's
+first week. It comes from the `day` number typed into the small numeric box next to "+ custom skill"
+when a step is added. `product/app.js:652` renders `d${p.day}` and `product/styles.css:106`
+uppercases it via `text-transform:uppercase`. The printed new-hire pack spells it out as "Day 1" —
+only the on-screen badge is abbreviated.
 
-**The premise was wrong, and finding that out was most of the value.** The investigation, in order:
+**Then he asked for the feature:** every step in the training path should be able to carry a
+description. Built and verified:
 
-- `node verify-i18n.mjs` → 15/15, 217 translations. `node verify-pt.js` → 53/53 at the time,
-  including "a pt-PT browser gets the Lisbon seed."
-- Read the Portuguese seed (`product/app.js:107-200`) directly: all 19 drinks, every ingredient,
-  every recipe step, the dial-in notes and the whole training path were **already fully Portuguese.**
-- Scanned `app.js` for English UI text never wrapped in `t()` — the one class of bug `verify-i18n.mjs`
-  structurally cannot catch. Found nothing real; the sync-badge strings that looked bare are passed
-  through `t()` via a variable at `app.js:295`.
-- **Reproduced it in a real browser**, which settled it: an `en-US` browser seeds the *English* demo;
-  flipping the picker to PT translates the chrome and flips prices to euros but leaves the shop's own
-  recipes in English. That is deliberate and documented at `app.js:1018-1020` — a real café's typed-in
-  drinks must never be rewritten by a language switch.
-
-So: **not a translation gap, and cutting demo drinks would have fixed nothing** while making the
-Lisbon pitch weaker. He was told that, given options, and chose to build the fix below.
-
-**Built 1 — auto-reseed (`product/app.js`, the `#langSel` handler).** On a deliberate language
-switch, if the shop is still the pristine demo, the whole seed is replaced with the other language's
-demo, preserving the tab the user was on. A `demoSig()` content fingerprint decides "pristine": shop
-name, COGS target, ingredient names/units/costs, recipe names/categories/sizes/prices/steps/quantities,
-beans, dial-ins, baristas, the training path, and whether any sign-offs exist. Ids and timestamps are
-excluded because `seed()` generates fresh random ones every call.
-
-**This is deliberately stricter than `matchesADemoSeed` in `api/metrics.js:54`,** and the reason is
-worth keeping: that function only compares shop name plus recipe and ingredient counts, and it
-ignores dial-ins, baristas and sign-offs entirely. That is fine for its job — classifying shops on
-the founder dashboard, where being wrong just skews a number. Here the consequence is data
-replacement. Under the looser rule, a café that left the demo menu alone but logged a week of real
-dial-ins would have had them silently destroyed by a language switch. `verify-pt.js` now covers that
-exact case.
-
-**Built 2 — the Portuguese guide.** New `guide/` directory:
-
-| File | Role |
+| Where | What changed |
 |---|---|
-| `guide/guia-pt.html` | The source. European Portuguese, A4 print CSS, brand tokens inlined |
-| `guide/render-pdf.js` | `node guide/render-pdf.js` → renders every `guide/*.html` to PDF |
-| `guide/Portafile-Guia-PT.pdf` | The output Ethan sends. **2 pages**, 276 KB |
+| `product/app.js:656` | Each `.pathlist li` renders an `<input class="note">` holding `p.note` |
+| `product/app.js:990` | Saves on `change` (blur), mutates `S.path[i].note`, calls `save()` **without `render()`** — a re-render would steal focus mid-sentence, and nothing else on that view reads the field |
+| `product/app.js:738` | The new-hire print pack renders the note as `<div class="cknote">` under the step |
+| `product/app.js:1048` | **`demoSig()` now fingerprints `p.note`** — the load-bearing part, see below |
+| `product/styles.css:107-109` | The field is a quiet full-width second row: borderless, dashed top rule, only looks like a form field once focused |
+| `product/styles.css:181` | `.pchecklist .cknote` — 9pt grey, print-only |
+| `product/i18n.js:138` | `'Add a description — prints in the pack'` → `'Adicione uma descrição — sai no dossiê'` |
 
-Content is adapted from `ONBOARDING.md`, not translated from it: 19 Portuguese drinks instead of 15
-American ones, costs per gram and per ml, and an explicit line that the starting costs are Lisbon
-wholesale **estimates** rather than real invoices. Section 1 is the language switch, deliberately
-first — if the app opens in English, nothing else in the guide is followable. The pricing section
-says plainly that the tiers are placeholder figures still in US dollars, matching the settled
-decision in §4.
+**The bug that was caught before it existed.** A deliberate language switch reseeds the demo menu,
+but only while the shop is still the untouched demo, and "untouched" is decided by `demoSig()` — a
+content fingerprint. It listed each path step's `type`, `label` and `day` but nothing else. A shop
+whose *only* work was a page of carefully written step descriptions would therefore have read as
+pristine, and pressing PT would have thrown all of it away. Same shape as the oat-milk bug from
+2026-07-26. The general rule was added to `CLAUDE.md`: **any new user-editable field must be added to
+`demoSig()` in the same commit.**
 
-`render-pdf.js` also **verifies every button name the guide mentions against `product/i18n.js`** on
-each render (12 labels, all confirmed) and exits non-zero if one is missing. This was tested by
-deliberately inserting a fake button name and watching it fail — it is not a check that only ever
-passes.
+**Verified by driving the real app in headless Chromium, not by reading the diff.** Eleven checks,
+all PASS, no JS errors:
 
-**Road not taken — do not redo these:**
+- the field exists on every step and carries the description placeholder;
+- typing then blurring writes to `localStorage`, and survives a reload;
+- pressing `↓` moves the note with its step;
+- `<img src=x onerror=alert(1)>` round-trips as **literal text** in both the editor and the printed
+  pack, and injects no element;
+- the new-hire pack prints the notes (confirmed in the DOM **and** in a `media:'print'` screenshot);
+- a note-only edit **vetoes** the language swap;
+- an untouched demo **still** reseeds to the Lisbon menu.
 
-- Shipping fewer demo drinks. Rejected with evidence: the Portuguese seed was already complete.
-- Putting ingredient and recipe text into the i18n dictionary (200+ keys). It breaks the moment a
-  real café types its own drink names, which is the entire reason shop data is not translated.
-- Translating or modifying the English `ONBOARDING.md` or the English `Portafile-Guide.pdf`. Both are
-  untouched. Whether the English guide should gain the same language note is **open** (§4).
-- Reading the original English PDF's exact text. It uses subset CID fonts and no local tool can
-  extract it cleanly; `ONBOARDING.md` is the authoritative source for that content anyway.
+**Existing suites re-run this session and green:** `node product/verify.js` (0 FAIL),
+`node verify-pt.js` (61), `node verify-i18n.mjs` (15 checks / 218 translations),
+`node verify-metrics.mjs`. **Not re-run this session:** `verify-sync.js`, `verify-gate.js`,
+`verify-killpass.js`, `verify-api.mjs`, `verify-site.js` — they were green on 2026-07-26 and nothing
+this session touched their subjects, but that is an inference, not a measurement.
+
+**Also updated:** `PROGRESS.md` (new `## 2026-07-27` entry), `WORKS.md` (a new checklist line under
+"App — dial-in, training, print"), `CLAUDE.md` (the `demoSig()` corollary).
+
+**Road not taken — do not redo:** the scratch verification script lives at
+`/private/tmp/claude-501/-Users-ethanyap-portafile/c8417b7d-a44b-41c9-b7a3-500e51b9ee0b/scratchpad/check-note.js`.
+It is disposable, and its useful checks should be folded into a repo suite as part of task 5.1 below
+rather than resurrected from a temp directory that a reboot will clear.
 
 ---
 
@@ -119,92 +101,57 @@ Re-checked by command immediately before this file was written.
 | Fact | Value | How known |
 |---|---|---|
 | Repo | `/Users/ethanyap/portafile` | — |
-| Branch / last commit | `main` / `8a4e224` | `git log` |
-| Working tree | **Dirty, deliberately:** `product/app.js` and `verify-pt.js` modified; `guide/` and `.handoff` untracked | `git status` |
-| Pushed to a remote? | **No. 5 commits are local only.** `git push` does NOT deploy this project | `git log origin/main..HEAD` |
-| Deployed this session? | **No.** Live site is still the previous deploy | no deploy command was run |
-| Deploy command | `vercel deploy --prod --yes` from repo root | `CLAUDE.md` |
+| Branch / last commit | `main` / `047418e` | `git rev-parse`, `git log` |
+| Unpushed commits | **0** — everything committed is on `origin/main` | `git log origin/main..HEAD` |
+| Working tree | **Dirty, deliberately:** `CLAUDE.md`, `PROGRESS.md`, `WORKS.md`, `product/app.js`, `product/i18n.js`, `product/styles.css` modified; `guide/Portafile-Guide-EN.pdf` **deleted (not by this session)**; `.handoff` untracked | `git status` |
+| Deployed this session? | **No.** Live site is the previous deploy and does not have step descriptions | no deploy command was run |
+| Deploy command | `vercel deploy --prod --yes` from repo root. **`git push` does NOT deploy this project** | `CLAUDE.md` |
 | `https://portafile.vercel.app/` | **200** | HTTP probe |
-| `/pt` | **200** | HTTP probe |
-| `/product/` | **200** | HTTP probe |
-| `/site/site.css`, `/product/i18n.js` | **200** | HTTP probe |
-| `/admin/dashboard.html` | **404 — correct**, the no-auth dashboard must never deploy | HTTP probe |
-| Founder dashboard | `http://localhost:4322/admin/dashboard.html` — port 4322 listening (LaunchAgent) | `lsof` |
+| `/pt` · `/product/` · `/site/site.css` · `/product/i18n.js` | **200** each | HTTP probes |
+| `/admin/dashboard.html` | **404 — correct.** The no-auth dashboard must never deploy | HTTP probe |
+| Founder dashboard | `http://localhost:4322/admin/dashboard.html` — port 4322 listening (LaunchAgent, Python) | `lsof` |
 | Local test server | **none running**; port 8899 free | `lsof` |
-| Admin key | `.admin-key`, present, gitignored. **Never echo its contents** | file read via `tr -d` only |
-| Pinned Playwright | present at `~/.npm/_npx/e41f203b7505f1fb/node_modules/playwright` | dir exists |
+| Admin key | `.admin-key` in repo root, present, gitignored. **Never echo its contents** | read via `tr -d '\n'` only |
+| Pinned Playwright | present at `~/.npm/_npx/e41f203b7505f1fb/node_modules/playwright` | directory exists |
 | Disk | **23 GB free of 228 GB** | `df -h /` |
-| Docker | `flowise-main` up 3 weeks, `open-webui` up 5 days (healthy) — **a different project, do not touch** | `docker ps` |
-| Cost of everything | **$0.** Static files + existing free Vercel tier. No new service, account, dependency or external request was added this session | by construction |
-| **Blob store** | **1 shop, 4 lead records — all Ethan's own.** See §4 | `/api/metrics` + `/api/lead`, this session |
-
-### Test suites — all nine green, all run this session
-
-Run from the repo root. `verify-pt.js` grew from 53 to 59 checks.
-
-| Command | Result | Needs |
-|---|---|---|
-| `node verify-i18n.mjs` | **PASS** (15 checks, 217 translations) | nothing |
-| `node verify-metrics.mjs` | **PASS** (0 FAIL) | nothing |
-| `node verify-api.mjs` | **PASS** (0 FAIL) | nothing |
-| `node product/verify.js` | **PASS** (0 FAIL, in-page selftest 27) | Playwright |
-| `node product/verify-killpass.js` | **PASS** | Playwright |
-| `node product/verify-gate.js` | **PASS** | Playwright |
-| `node product/verify-sync.js` | **PASS** | Playwright |
-| `node verify-pt.js` | **PASS (59)** | Playwright |
-| `node verify-site.js` | **PASS (37)** | Playwright **and** `python3 -m http.server 8899` in the repo root first |
-| `node guide/render-pdf.js` | 12/12 button labels confirmed, 2-page PDF | Playwright |
-
-`verify-sync.js` takes over a minute — do not kill it early and read that as a failure. Several
-suites print lines containing "failed"/"failure" as part of **passing** negative tests.
-**Grep for `^FAIL`, never for "fail".**
-
-**Honesty note.** The `/still-works` skill has **not** been invoked as a skill, this session or the
-previous two. What exists instead is the nine-suite sweep above plus browser reproduction. The repo's
-standing rule is to run it before a deploy; if Ethan deploys, run it first and tell him it had not
-been run before.
+| Docker | `flowise-main` up 3 weeks, `open-webui` up 6 days (healthy) — **a different project, do not touch** | `docker ps` |
+| Production Blob store | **1 shop, 2 lead records** — see §4b | `GET /api/metrics` and `GET /api/lead` with the admin header, this session |
+| Cost of everything | **$0.** Static files on the existing free Vercel tier | by construction |
 
 ---
 
 ## 4. Decisions still open — ask him, do not act alone
 
-### 4a. Commit and deploy?
+### 4a. Deploy?
 
-The auto-reseed and the guide are finished and green but **uncommitted and undeployed**. Ethan runs
-deploys himself. Nothing about the work forces a deploy — the guide is a file he sends by text, and
-the auto-reseed only matters to someone who switches language in the live app.
+The step-description feature is finished and green but **uncommitted and undeployed**. Task 5.2 below
+is his approval to deploy — but the repo rule is that **`/still-works` runs before the commit, not
+after**, and it has not been invoked as a skill for three sessions. Run it, report what it says, then
+deploy. If it surfaces a real regression, stop and tell him rather than deploying past it.
 
-### 4b. His own test data is in the production store, and it grew today
+### 4b. There is test data in production again — ask before deleting
 
-Currently in the Blob store: **one shop** and **four lead records**, all his.
+`GET /api/metrics` right now reports **1 shop, 1 signup (2 lead records, deduped by email)**:
 
-| When (UTC) | Shop name | Email | Note |
-|---|---|---|---|
-| 2026-07-26 13:56:08 | `Tester` | ethankw.yap@gmail.com | earlier testing |
-| 2026-07-26 13:56:10 | `Tester` | ethankw.yap@gmail.com | duplicate 2s later — the shopId-linking re-POST |
-| 2026-07-26 19:43:56 | `Portugal` | ethantech1121@gmail.com | **written this session** |
-| 2026-07-26 19:48:08 | `Portugalll` | ethankw.yap@gmail.com | **written this session** |
+| Field | Value |
+|---|---|
+| Shop id | `43a9a8e8099d2c9d119b0ce389a56975e90327c2` |
+| Shop name | `Tester Shop` |
+| Email | `ethankw.yap@gmail.com` |
+| Created | `1785148475385` = **2026-07-27 10:34:35 UTC** |
+| Last active | 2026-07-27 10:43:16 UTC |
+| Lead `ts` values | `1785148459345` and `1785148471418` (the second is the automatic shopId-linking re-POST, ~12s later) |
 
-Shop: `ed5bc09a9ae71722332ea48111ac3b883dd0ffc1`, name `Tester`, created 13:56 UTC.
+It reads as Ethan's own hand-testing from this morning — the name is a fixture, the email is his, and
+it predates this session's work. It is **not** proof of a customer. He cleared the store on
+2026-07-26 immediately before emailing the Lisbon cafés (commit `a7f1084`), so anything in there now
+arrived after that. **Ask him whether to clear it. Do not delete his data on your own.**
 
-The last two appeared while Ethan was hand-testing the language switch **in a private tab**, which
-means he met the real signup gate and filled it in. This is precisely the hazard in §5: the verify
-suites are `navigator.webdriver` and skip the gate, but a human in a real browser is not, and a
-private window has no prior lead record to suppress the form. No harm done — but it is why the
-signup count moved without a customer existing.
-
-**Why it matters:** he is about to send the app to two real Lisbon cafés. Until this is cleared, the
-founder dashboard mixes his own testing in with his first real signups and he cannot tell them apart.
-Note `ethantech1121@gmail.com` is a *second* address of his, so "is it my email?" is not a reliable
-filter — go by timestamp against `git log`.
-
-**He was offered this cleanup and has not answered. Ask him; do not delete his data on your own.**
-
-Shop deletion (also removes its usage-activity blob):
+Shop deletion (this also removes the shop's usage-activity blob):
 
 ```
 curl -s -X DELETE -H "x-portafile-admin: $(tr -d '\n' < .admin-key)" \
-  -H "x-portafile-shop: ed5bc09a9ae71722332ea48111ac3b883dd0ffc1" \
+  -H "x-portafile-shop: 43a9a8e8099d2c9d119b0ce389a56975e90327c2" \
   "https://portafile.vercel.app/api/state"
 ```
 
@@ -212,78 +159,128 @@ Lead records are **separate** and are not removed by that call — one DELETE pe
 
 ```
 curl -s -X DELETE -H "x-portafile-admin: $(tr -d '\n' < .admin-key)" \
-  "https://portafile.vercel.app/api/lead?ts=1785095288587"
+  "https://portafile.vercel.app/api/lead?ts=1785148459345"
 ```
 
-The four `ts` values are `1785074168073`, `1785074170758`, `1785095036111`, `1785095288587`. Confirm
-deletions with several reads — the blob index lags. **The `created` timestamp shown by `/api/metrics`
-is `owners.created`, NOT the lead `ts`** — do not pass it and assume it worked.
+Confirm deletions with several reads — the blob index lags deletes and a single read is not proof.
+**The `created` timestamp from `/api/metrics` is `owners.created`, NOT the lead `ts`** — do not pass
+it and assume it worked. If a `DELETE` curl gets blocked by a permission classifier (it has been,
+twice), hand Ethan the exact one-line command to run himself with a `!` prefix rather than routing
+around it.
 
-**Ethan may need to run these himself.** A `DELETE` curl from the agent was blocked mid-session by a
-permission classifier twice in an earlier session. If that happens, hand him the exact one-line
-command to run with a `!` prefix rather than routing around it.
+### 4c. `guide/Portafile-Guide-EN.pdf` is missing from disk
 
-### 4c. Should the English guide get the same language note?
+It is committed in git (`3c6caca`) but **absent from the working tree**, and this session did not
+delete it. `guide/` currently holds `guia-pt.html`, `guide-en.html`, `render-pdf.js` and
+`Portafile-Guia-PT.pdf` only.
 
-`ONBOARDING.md` and the English PDF were left untouched. Offered, not answered.
+Two clean fixes — **do not just commit the deletion**:
+1. `git checkout -- guide/Portafile-Guide-EN.pdf` (restores the committed byte-for-byte copy), or
+2. `node guide/render-pdf.js` (re-renders every `guide/*.html`, including the English one, and
+   re-checks 12 button labels against `product/i18n.js`).
+
+Prefer (2) if `guide-en.html` has changed since the PDF was built; prefer (1) otherwise. Either way,
+**tell him it was missing** — he may have deleted it deliberately.
+
+### 4d. The design question inside task 5.4 (see §5)
+
+Answer it with a recommendation, then build. Don't stall on it.
 
 **Three things are settled and must NOT be reopened:** paid tiers stay in US dollars on `/pt`, GDPR
 stays consciously deferred, and the Portuguese work stays as shipped.
 
 ---
 
-## 5. Gotchas
+## 5. The next task — all four are approved, do all four
 
-**The one that actually bit this session, first:**
+Ethan's words: *"complete all 3 items in new chat. add this to the tasks: i want the ability to
+reorder the days assigned to each task and same with the custom tasks because not every owner will
+want the same order."*
 
-- **A screenshot of "English text in a Portuguese app" is not evidence of a missing translation.**
-  It took a browser reproduction to see that the *data* was the English demo seed while the *chrome*
-  was Portuguese. Two suites were already green and the seed was already fully translated. Reproduce
-  before believing a bug report — including Ethan's.
-- **Hand-testing in a real browser writes real records; a private window makes it worse.** `app.js`
-  skips the lead POST when `navigator.webdriver` is true, so the suites never pollute the store. A
-  human in a normal window meets the gate; a human in a *private* window has no saved lead record
-  suppressing it, so every private-tab test is a fresh signup. Two landed today. `api/lead.js` stores
-  no IP and no user-agent by design, so attribution is forensic only: fixture-looking strings and the
-  record `ts` against `git log`. Keep test values obviously fake for that reason.
-- **`timeout` does not exist on macOS.** `timeout 300 node verify-pt.js` fails with
-  `command not found` and looks like a broken suite. Use a background run instead.
-- **The Data menu hides its entire sync section on `file://`** (`app.js:774`). A probe of the local
-  file shows only "Exportar cópia" and "Voltar à demonstração" and looks like sync is missing. It is
-  present over http/https. Do not document the Data menu from a `file://` screenshot.
+All four live in the **Training** tab (`viewTraining()` at `product/app.js:636`, wiring at
+`product/app.js:973-1002`).
 
-**New, from the auto-reseed work:**
+### 5.1 Show the step description in the Sign-offs column too
 
-- **`pristineDemo()` compares a content fingerprint, never `JSON.stringify(state)` directly.**
-  `seed()` mints fresh random `uid()`s and `Date.now()`-based dial-in timestamps on every call, so a
-  naive comparison never matches. `demoSig()` strips ids and timestamps deliberately.
-- **`api/metrics.js`'s `matchesADemoSeed` is NOT safe to reuse for anything destructive.** It ignores
-  dial-ins, baristas and sign-offs. Reusing it here would have thrown away real dial-in history on a
-  language switch. Same idea, different consequence, different threshold.
-- **Adding a language now means editing three places, not two:** the `seedXX()` function, the `DEMOS`
-  array in `api/metrics.js`, and the language-switch path (which reseeds through `seed(to)` and so
-  follows automatically — but the `verify-pt.js` counts of 15 and 19 drinks are hard-coded).
-- **`verify-pt.js` used to assert the OPPOSITE of the new behaviour.** Its old check "switch keeps the
-  shop data (still Portuguese recipes)" expected 19 cards after switching to English. That was
-  correct before and is wrong now; it was rewritten, not deleted. If you change this behaviour again,
-  that is the check that must move with it.
+Right now the description only appears in the left-hand "The path" editor and in the printed pack.
+The right-hand "Sign-offs" checklist (`product/app.js:677-681`) shows the step title only, so the
+trainer ticking the box cannot see what they are signing off on. Render `p.note` there as secondary
+text under the label — **read-only there**, editing stays in the path column. Keep it visually
+lighter than the label so a ten-step checklist does not become a wall of text.
 
-**Guide-specific:**
+**Leave one runnable check behind.** The eleven checks written this session live only in a scratch
+file in a temp directory; fold the durable ones (persistence, reorder, the hostile-string case, the
+print pack, and both language-switch cases) into `product/verify.js` so they survive.
 
-- **`guide/` does not deploy, and that is intentional.** `.vercelignore` is an **allowlist**
-  (`/site`, `/product`, `/video`, `/api`, `vercel.json`, `package.json`). A new top-level directory
-  is invisible to Vercel unless added there. Do not add `guide/` — it is an internal document.
-- **The guide names buttons, so it rots silently when the app is renamed.** `render-pdf.js` checks
-  all `<span class="btn">` labels against `product/i18n.js` and fails the render. Tab names and the
-  `EN`/`PT`/`?` literals are allow-listed in `LITERALS` because they are not dictionary values.
-- **The English `Portafile-Guide.pdf` has no source in this repo.** It lives only at
-  `~/Library/Messages/Attachments/ca/10/75FFE127-8A58-4466-A78A-5B8BEA5C54B6/Portafile-Guide.pdf`.
-  Its text cannot be extracted locally (subset CID fonts; no `pdftotext`, `poppler`, `pypdf` or
-  Quartz on this machine, and Spotlight returns null). Treat `ONBOARDING.md` as its content source.
-- **Do not link the launch film from anything Portuguese.** `video/portafile-launch.mp4` is
-  English-only and still says **"No server"** out loud, false since sync shipped 2026-07-17.
+### 5.2 Commit and deploy
 
-**Portuguese / i18n (carried forward, still true):**
+`/still-works` **first** (§4a), then `vercel deploy --prod --yes` from the repo root, then confirm on
+the real site — open `https://portafile.vercel.app/product/`, Training tab, type a description,
+reload, print the pack. Watch out for `guide/Portafile-Guide-EN.pdf` (§4c) when staging the commit.
+`guide/` deliberately does not deploy; `.vercelignore` is an allowlist.
+
+### 5.3 Lock path editing to owners
+
+Staff devices (those on a `?k=` link) can currently reorder and delete training-path steps, and as of
+this session can edit descriptions too. That was already true before today — it is not a regression,
+it is a gap. The staff-view predicate is `staffView()` (already used in `viewPrint()` at
+`product/app.js:696` to hide the Margin Report). Apply the same treatment to the path editor: staff
+see the path and its descriptions, owners get the `↑ ↓ ×` buttons, the add-step row and the
+description inputs.
+
+**Verify the right thing:** this is a UI-visibility change, not a security boundary — a staff device
+holds the whole shop in `localStorage` either way, exactly like the price table. Say that plainly to
+Ethan rather than calling it "locked down". Re-run `node product/verify-gate.js` and
+`node product/verify-sync.js` afterwards, since both drive staff-link sessions.
+
+### 5.4 Let owners change which day a step belongs to (his fourth item)
+
+**The gap:** a step's `day` is set once, in the numeric box at `product/app.js:662`, at the moment it
+is added. After that there is no way to change it. The `↑ ↓` buttons move a step's position in the
+flat `S.path` array; they do not touch `p.day`. So an owner who decides milk steaming belongs on Day
+1 instead of Day 2 has to delete the step and re-add it — and for a custom skill that means retyping
+the whole label. He is right that this blocks a real need: not every café runs the same week.
+
+**Smallest thing that works:** make the `D1` badge itself an editable day field per row — a small
+`<input type="number" min="1" max="9">` in place of the static `<span class="day">`, saving on
+`change` and re-rendering. That covers drinks and custom skills identically, since both are just
+entries in `S.path`.
+
+**The design question to answer first (§4d):** the on-screen path list is in manual array order,
+while the printed pack **groups by day** and sorts days ascending
+(`product/app.js:733-739`). Today those agree only because the seed happens to be in day order. The
+moment someone sets step 1 to Day 3, the screen and the paper disagree. Recommendation: **sort the
+on-screen list by day, then by array position within a day**, so the screen matches the paper — and
+make `↑ ↓` reorder within a day. State that as a recommendation to Ethan and proceed unless he says
+otherwise; do not silently ship a screen that disagrees with the print-out.
+
+**Do not forget:** `p.day` is already inside `demoSig()` (`product/app.js:1048`), so a day change
+correctly vetoes the language reseed. If you add any *new* field while doing this, add it there too.
+
+**Beyond these four: UNSPECIFIED — ask him. Do not invent the next feature.**
+
+---
+
+## 6. Gotchas
+
+**From this session, first:**
+
+- **`demoSig()` decides whether a language switch may destroy the shop's data.** Any new
+  user-editable field must be added to it in the same commit, or a shop whose only work lives in that
+  field reads as pristine and gets erased. `product/app.js:1036-1051`. This is now written into
+  `CLAUDE.md` as a corollary to the oat-milk bug.
+- **`class="note"` is used twice in the app** — the training-path description (`app.js:656`) and the
+  dial-in log's note field (`app.js:625`). Both the CSS and the event wiring are scoped with
+  `.pathlist .note` on purpose. Do not widen either selector to a bare `.note`.
+- **An inline field that saves on `change` must not call `render()`.** Re-rendering the view on blur
+  is harmless here only because nothing else on screen reads `p.note`; re-rendering on `input` would
+  destroy focus mid-sentence. The prices grid gets away with `save(); render()` because it is a
+  full-row commit.
+- **A print-pack change cannot be screenshotted from the normal screen.** The pack lives in a
+  print-only stylesheet, so a plain screenshot shows the app underneath and looks like nothing
+  happened. Use `page.emulateMedia({ media: 'print' })` before the screenshot, or assert on the DOM.
+
+**Carried forward — language, i18n, seeds:**
 
 - **The English string IS the dictionary key** (`product/i18n.js`, gettext-style). A missing
   translation silently renders readable English. Editing an English string in `app.js` orphans its
@@ -293,9 +290,14 @@ stays consciously deferred, and the Portuguese work stays as shipped.
 - **`product/i18n.js` must load before `app.js`.** `app.js` calls `t()` during first render, so a
   missing `i18n.js` is a **blank app**, not a degraded translation. `health_check.py` probes it.
 - **Language lives in `S.shop.lang`, so it SYNCS** to staff devices. Default is browser detection,
-  which is why the en-US Playwright suites still pass untouched.
+  which is why the en-US Playwright suites pass untouched.
 - **Currency follows language** (en→USD, pt→EUR) via one `Intl.NumberFormat`. `Intl` emits a
   NON-BREAKING space in "1,22 €" — match `/\d,\d\d\s*€/`, never a literal space.
+- **`api/metrics.js`'s `matchesADemoSeed` is NOT safe to reuse for anything destructive.** It ignores
+  dial-ins, baristas and sign-offs. Same question as `demoSig()`, different consequence, different
+  threshold.
+- **Adding a language means editing `api/metrics.js`'s `DEMOS` array too**, or every shop in that
+  language reads as "customised" the moment it opens.
 - **Signup role `<option value>`s stay English** while labels translate; the value is POSTed and
   counted, so translating it would split "Owner" and "Proprietário" into two buckets.
 - **Never pattern-match over `JSON.stringify(seed())`.** A selftest that regexed the serialised shop
@@ -306,7 +308,39 @@ stays consciously deferred, and the Portuguese work stays as shipped.
   list — `I[name]` is `undefined`, the drink silently costs nothing, nothing throws. `?selftest=1`
   asserts every item in BOTH seeds resolves.
 
-**Carried forward and still true:**
+**Carried forward — testing and toolchain:**
+
+- **Never run bare `npx playwright ...`.** The suites `require()` Playwright from a pinned npx cache
+  path; any bare `npx playwright` command silently upgrades that cache and breaks every suite with
+  "Executable doesn't exist", which looks like broken tests rather than a broken toolchain. Fix:
+  `npx playwright install chromium`. To drive a browser ad hoc, launch with `{ channel: 'chrome' }`.
+- **Grep for `^FAIL`, never for "fail".** Several suites print "failed"/"failure" as part of
+  **passing** negative tests. `verify-sync.js` takes over a minute — do not kill it early and read
+  that as a failure.
+- **`timeout` does not exist on macOS.** `timeout 300 node verify-pt.js` fails with
+  `command not found` and looks like a broken suite. Use a background run instead.
+- **`verify-sync.js` does not test the real `api/state.js`** — it routes to a JS mirror inside the
+  test file. `verify-api.mjs` is the one that executes the real handlers.
+- **Playwright `addInitScript` re-runs on every navigation**, restoring a seed the test just wiped;
+  `verify-sync.js` guards this with `pf-test-stopseed`.
+- **Headless Chromium reports every tab as `visible`**, and `page.bringToFront()` doesn't change it.
+- **`#shopName` saves on `change`, not `input`.** A test that fires `input` quietly "passes".
+- **`verify-site.js` needs `python3 -m http.server 8899` running in the repo root first** — the pages
+  load `/site/site.css` by absolute path.
+- **Hand-testing in a real browser writes real records; a private window makes it worse.** `app.js`
+  skips the lead POST when `navigator.webdriver` is true, so the suites never pollute the store. A
+  human in a normal window meets the gate; a human in a *private* window has no saved lead record
+  suppressing it, so **every private-tab test is a fresh signup**. `api/lead.js` stores no IP and no
+  user-agent by design, so attribution is forensic only: fixture-looking strings and the record `ts`
+  against `git log`. Keep test values obviously fake. Adding `?k=` to the URL skips the gate and is
+  the safe way to hand-test.
+- **A screenshot of a wrong-looking screen is not a diagnosis.** The 2026-07-26 "missing Portuguese
+  translations" report turned out to be an English demo *shop* under a Portuguese *interface*.
+  Reproduce before believing a bug report — including Ethan's.
+- **The Data menu hides its entire sync section on `file://`** (`app.js:774`). A `file://` probe looks
+  like sync is missing. It is present over http/https.
+
+**Carried forward — the expensive ones, do not renegotiate:**
 
 - **`CLAUDE.md` in this repo is the real gotcha list — read it fully before editing `api/state.js`.**
   The eventual-consistency rules ("never build an authorization check on a read", "revocation is a
@@ -319,64 +353,62 @@ stays consciously deferred, and the Portuguese work stays as shipped.
 - **CSP blocks all inline `<script>` on deployed pages.** `admin/dashboard.html` uses inline script
   and `onclick=` and is safe only because it never deploys. Never move that pattern into `site/` or
   `product/`.
+- **`.vercelignore` is an allowlist** (`/site`, `/product`, `/video`, `/api`, `vercel.json`,
+  `package.json`). A new top-level directory is invisible to Vercel unless added. **Do not add
+  `guide/` or `admin/`** — both are internal on purpose.
 - **`vercel.json` pins CORS to the prod origin except under `/api/`** — the localhost:4322 dashboard
   depends on that exception, and the admin key is a **header** (`x-portafile-admin`), never a query
   string, which makes those fetches preflighted.
-- **Dial-in values are not guaranteed to be numbers.** Always `esc(dec(x))`, never `dec(esc(x))`.
-  `verify-killpass.js` covers the hostile case — re-run it after touching any dial-in render site.
-- **Never run bare `npx playwright ...`.** The suites `require()` Playwright from a pinned npx cache
-  path; any bare `npx playwright` command silently upgrades that cache and breaks every suite with
-  "Executable doesn't exist", which looks like broken tests rather than a broken toolchain. Fix:
-  `npx playwright install chromium`. To drive a browser ad hoc, launch with `{ channel: 'chrome' }`.
-- **Playwright `addInitScript` re-runs on every navigation**, restoring a seed the test just wiped;
-  `verify-sync.js` guards this with `pf-test-stopseed`.
-- **`verify-sync.js` does not test the real `api/state.js`** — it routes to a JS mirror inside the
-  test file. `verify-api.mjs` is the one that executes the real handlers.
-- **Headless Chromium reports every tab as `visible`**, and `page.bringToFront()` doesn't change it.
-- **`#shopName` saves on `change`, not `input`.** A test that fires `input` quietly "passes".
+- **Dial-in values are not guaranteed to be numbers.** Always `esc(dec(x))`, never `dec(esc(x))` —
+  at every render site, not just the one a bug report names. `verify-killpass.js` covers the hostile
+  case; re-run it after touching any dial-in render site.
+- **Never gate a share link.** `gate()` skips `?k=` staff links deliberately; a form on top of a
+  loaded shop is what made baristas report sharing as broken.
 - **`health_check.py` runs daily at 15:00 UTC** and emails **every run, pass or fail** — a missing
   email is itself the alarm. If you change page copy, update its expected marker strings or he gets a
   false alarm. Running it locally raises on the *email* step because `GMAIL_ADDRESS` /
   `GMAIL_APP_PASSWORD` live in GitHub secrets, not on his Mac — **that traceback is expected locally.**
 - **Do not load-test the GET rate limiter from his machine** — it makes `health_check.py` report a
   false outage for up to 10 minutes.
-- **Never gate a share link.** `gate()` skips `?k=` staff links deliberately; a form on top of a
-  loaded shop is what made baristas report sharing as broken.
+- **Do not link the launch film from anything Portuguese**, and do not treat it as current:
+  `video/portafile-launch.mp4` is English-only and still says **"No server"** out loud, false since
+  sync shipped 2026-07-17.
 
 ---
 
-## 6. Reboot / persistence
+## 7. Reboot / persistence
 
-Nothing here depends on a running process. The guide, its source and the code changes are all files
-on disk in `/Users/ethanyap/portafile`; a reboot loses nothing.
+Nothing here depends on a running process; a reboot loses no work that is on disk in
+`/Users/ethanyap/portafile`.
 
-**The weak link is bigger than last session's.** Five commits are local-only and unpushed, **and this
-session's work is not even committed** — `product/app.js`, `verify-pt.js` and the whole `guide/`
-directory exist only as working-tree files. A disk failure loses all of it. The deployed site is
-independent and would survive, but it does not contain any of this session's work.
+**The weak link:** this session's changes are **uncommitted working-tree files**. All commits through
+`047418e` are pushed to `origin/main`, so everything older is safe. The scratch verification script
+lives in `/private/tmp/...` and **will not survive a reboot** — that is why task 5.1 folds its checks
+into `product/verify.js` (the launch film's original ffmpeg command was lost exactly that way).
 
-Scratch scripts used for the investigation live in a session scratchpad and are disposable; the two
-that matter (`guide/render-pdf.js` and the new `verify-pt.js` checks) are in the repo on purpose,
-because the launch film's original ffmpeg command was lost exactly that way.
+The deployed site is independent and would survive anything local, but it does **not** contain this
+session's work.
 
 ---
 
-## 7. Don't redo
+## 8. Don't redo
 
-- The Portuguese translation, seed, landing page and legal pages — done, deployed, verified earlier.
-- The investigation into "missing Portuguese translations." There were none. §2 has the evidence.
-- The auto-reseed and its six new `verify-pt.js` checks. Built and green.
-- The Portuguese guide. Built, rendered, visually reviewed at page level, label-checked.
+- The step-description feature itself. Built, verified in a real browser, documented.
+- The `demoSig()` fix for it. Both directions are proven — a note-only edit vetoes the reseed, an
+  untouched demo still reseeds.
+- `PROGRESS.md` for 2026-07-27 — the entry exists. Extend it; do not add a second heading for the date.
+- The `WORKS.md` line and the `CLAUDE.md` corollary — both written.
+- The Portuguese translation, seed, landing page, legal pages, auto-reseed and the Portuguese guide —
+  all done, committed, pushed and (except the guide) deployed.
 - Don't "fix" the English demo shop — it is intentionally 15 drinks, dollars, °F.
-- Don't convert the paid tiers to euros, and don't draft GDPR text. Both decided.
-- Don't touch `.handoff` (the resolved 2026-07-25 security handoff).
-- `BUILD-LOG.md` is frozen — never edit it.
+- Don't convert the paid tiers to euros, and don't draft GDPR text. Both consciously deferred.
+- Don't touch `.handoff` (the resolved 2026-07-25 security handoff). `BUILD-LOG.md` is frozen.
 - Don't add a phone-home to reach browsers that never synced. That is a property of a no-accounts
   product, not a bug. Ethan has repeatedly chosen dropping a metric over tracking a user.
 
 ---
 
-## 8. How to work with Ethan (durable)
+## 9. How to work with Ethan (durable)
 
 College student, learning developer. Not fluent in git, terminals or deployment, but learning —
 teach while doing. Typos are common; infer intent and proceed rather than asking about an obvious one.
@@ -386,8 +418,8 @@ teach while doing. Typos are common; infer intent and proceed rather than asking
 - **Terminal steps: numbered, ONE command per step**, say what he should see, then wait for his
   confirmation or screenshot before the next.
 - **He runs deploys, pushes and destructive curls himself**, typing the command with a `!` prefix.
-- **A question is not a work order.** When he asks "what are the options?", answer with a
-  recommendation and stop — do not start editing. When he asks for a change, make it without asking
+- **A question is not a work order.** This session opened with "what does D1 D2 mean?" — the
+  deliverable was an explanation, before any code. When he asks for a change, make it without asking
   permission at each step.
 - **Verify before saying done** — exercise the real feature, not just the tests. He asks for this
   explicitly and notices when it is skipped.
@@ -395,26 +427,25 @@ teach while doing. Typos are common; infer intent and proceed rather than asking
   pending step, nothing more.
 - **Deploys, deletes and anything outward-facing: confirm first.** Approval is scoped to that one
   action, not to future ones.
-- **Screenshots are bug reports** — but reproduce what they show before accepting the diagnosis in
-  them. This session is the case study.
+- **He likes concrete follow-up options** at the end of a feature (2–3, specific), not open-ended
+  "what do you think?" — this session's four queued tasks came from exactly that.
 - **Ponytail mode is on**: smallest solution that works; deliberate shortcuts marked with a
   `ponytail:` comment naming the ceiling and the upgrade path.
 - **`PROGRESS.md` is required.** At the end of any session that changed something real, append or
   extend that day's entry, unprompted, written for a founder (what shipped, why it mattered to the
   business, what broke and what it taught). One `##` per date, newest at the bottom, "Open threads"
-  kept current. **The 2026-07-26 entry exists — extend it; do not add a second heading for that date.
-  This session's work is NOT in it yet.**
+  kept current.
 - **After a milestone**, also update the repo `CLAUDE.md` gotchas and the auto-memory at
   `~/.claude/projects/-Users-ethanyap-portafile/memory/`.
 
 ---
 
-## 9. Machine-level warnings (these outlive this task — do not drop them)
+## 10. Machine-level warnings (these outlive this task — do not drop them)
 
 1. **Never trust System Settings → Storage for free space** — it counts iCloud-purgeable files and has
    been wrong by ~50 GB. Use `df -h /`. Currently **23 GB free of 228 GB**.
 2. **Do not touch the `flowise-main` or `open-webui` Docker containers.** Both verified running right
-   now (`flowise-main` up 3 weeks, `open-webui` up 5 days, healthy) — a **separate live project**.
+   now (`flowise-main` up 3 weeks, `open-webui` up 6 days, healthy) — a **separate live project**.
 3. `Docker.raw` is ~13 GB and does not shrink on prune.
 4. **Do not touch `~/Library/Application Support/Claude/vm_bundles`** (~6.8 GB) — Claude Desktop's VM.
 5. **Never suggest "Keep Messages: 1 Year"** — it permanently deletes messages across all his devices.
@@ -426,35 +457,6 @@ teach while doing. Typos are common; infer intent and proceed rather than asking
    read `~/wargame_master.md` and follow it instead of improvising.
 9. **No `pdftotext`, `poppler`, `pypdf`, `PyMuPDF` or PyObjC/Quartz on this machine**, and Spotlight
    returns null for PDF text. Rendering HTML *to* PDF works (headless Chromium via the pinned
-   Playwright); reading an existing PDF's text does not.
-
----
-
-## 10. The next task
-
-**Immediately pending, in order:**
-
-1. **Ask about §4a — commit and deploy?** The work is finished and green but uncommitted. He decides.
-2. **Ask about §4b — the four test lead records and one test shop**, now including two written today.
-   Clear them *before* the real Lisbon signups arrive or he cannot tell them apart. **Ask; don't delete.**
-3. **Update `PROGRESS.md`** — extend the existing `## 2026-07-26` entry with this session's work. It
-   has not been done and the repo requires it.
-4. **Add the new gotchas to `CLAUDE.md`** — the `guide/` directory and its non-deployment, the
-   `pristineDemo` vs `matchesADemoSeed` distinction, and the private-tab signup hazard.
-
-**Then, the actual business step:** he is sending Portafile to his two Lisbon test cafés.
-
-- **The link to send is `https://portafile.vercel.app/pt`** and the guide to attach is
-  `guide/Portafile-Guia-PT.pdf`.
-- With the auto-reseed deployed, the old advice line about pressing PT in the corner is still worth
-  including, but the demo menu now follows the switch, so no reset step is needed.
-- **Do not send the launch film** (English-only, still claims "No server").
-
-**Beyond that, UNSPECIFIED — ask him. Do not invent the next feature.**
-
-Two things worth raising unprompted if they come up:
-
-- The Portuguese cost figures in the demo seed are **estimates of Lisbon wholesale prices**, not
-  quoted numbers. A starting point a real owner overwrites — never quote them as market data.
-- Once a Lisbon café stops being a tester and starts paying, **GDPR and the euro pricing both stop
-  being deferrable.** Both are in `PROGRESS.md`'s open threads.
+   Playwright); reading an existing PDF's text does not — which is why the original
+   `Portafile-Guide.pdf` (a Messages attachment, not in this repo) can never be corrected and
+   `Portafile-Guide-EN.pdf` supersedes it.

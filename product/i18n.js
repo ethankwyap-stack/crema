@@ -135,6 +135,10 @@ const I18N = {
     '(deleted drink)': '(bebida eliminada)',
     '+ drink…': '+ bebida…',
     "+ custom skill, e.g. 'Closing checklist'": "+ competência própria, ex. 'Checklist de fecho'",
+    'Add a description — prints in the pack':
+      'Adicione uma descrição — sai no dossiê',
+    "This path is the owner's. Ask them to change it.":
+      'Este percurso é do proprietário. Fale com ele para o alterar.',
     'Add': 'Adicionar',
     'Sign-offs': 'Validações',
     '+ barista': '+ barista',

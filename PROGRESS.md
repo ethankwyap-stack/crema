@@ -265,6 +265,16 @@ Verified against the live site, not the tests: 12/12 health checks pass, `/pt` a
 
 ---
 
+## 2026-07-27 — Training steps can carry a description now
+
+**The training path was a list of titles, and a title is not training.** "Milk steaming" tells a new hire nothing about what they're being judged on. Every step in the path — drinks and custom skills alike — now takes an optional description, typed straight into the row under the step title, saved on blur, and printed under that step in the new-hire pack. That last part is what makes it worth building: the pack is the thing the owner actually hands a barista on Monday, so a note that never reached paper would be decoration.
+
+**The interesting part was a trap I nearly walked into.** The language switch reseeds an untouched demo menu, and it decides "untouched" by fingerprinting the shop. That fingerprint listed a path step's type, label and day — so a shop whose *only* work was a page of carefully written step descriptions would have looked pristine, and pressing PT would have thrown all of it away. Same shape as the oat-milk bug from yesterday: **any field you add to the data has to be added to the comparison that decides whether the data is disposable.** It's in the fingerprint now, and the check proves both directions — a note-only edit vetoes the swap, an untouched demo still reseeds to the Lisbon menu.
+
+**Verified by driving the real app, not by reading the diff**: eleven checks in a headless browser covering persistence, reload, reordering (the note follows its step), a hostile `<img onerror>` string round-tripping as literal text in both the editor and the printed pack, and the two language-switch cases. Existing suites re-run green — the full app suite, the 61-check Portuguese suite, dictionary hygiene with the new Portuguese string in place, and the metrics checks. Not deployed yet. Cost: $0.
+
+---
+
 ## Open threads
 
 - **The launch film says "No server" and that's false.** Sync shipped 2026-07-17, the film was cut 07-15. Fixing it needs me to record the new narration in my own voice — script and instructions are in `video-src/script-v2.md`, full context in `video-src/HANDOFF.md`. Until then a false claim is live on the site. (`video-src/` is committed as of `552bde3`, so the source material is no longer one `rm` from gone.)

@@ -1,5 +1,5 @@
 # WORKS.md — what Portafile must do
-Updated 2026-07-26 (5th run) · Run: `/still-works` (add `live` after a deploy)
+Updated 2026-07-27 (6th run) · Run: `/still-works` (add `live` after a deploy)
 
 The feature checklist and the blast-radius map. `CLAUDE.md` holds the *gotchas* (why the
 code is shaped the way it is); this file holds *what must still be true for a user*.
@@ -40,6 +40,22 @@ code is shaped the way it is); this file holds *what must still be true for a us
 - [ ] Logging a dial-in updates history and the board · auto: `verify.js`
 - [ ] A sign-off tick registers and date-stamps · auto: `verify.js`
 - [ ] New-hire pack prints cover, checklist, dial-ins and cards · auto: `verify.js`
+- [ ] A step description typed in the path survives reload, follows its step when reordered,
+      and prints under that step in the new-hire pack
+      prove: type a note on step 1 → reload → still there → ↓ → it moved with the step → print pack
+      auto: `verify.js` (the 4b block)
+- [ ] That description also appears under the step in the **Sign-offs** column, so the trainer
+      can see what they are ticking off — read-only there, and it updates the moment the owner
+      blurs the field, without a re-render (the path column is the only place it is edited)
+      prove: type a note → look right, it is there → clear it → it disappears · auto: `verify.js`
+- [ ] A step's day can be changed after it was added, and the on-screen path is sorted by day
+      so it agrees with the printed pack. ↑↓ reorder **within** a day and stop at its boundary
+      prove: set step 1 to Day 3 → it moves down to join Day 3 → print pack shows the same order
+      auto: `verify.js`
+- [ ] Staff devices read the training path but cannot rewrite it: no ↑↓×, no add-step row, no
+      editable day or description. Visibility, not a security boundary — a staff device holds
+      the whole shop in localStorage either way, exactly like the price table
+      auto: `node product/verify-gate.js`
 - [ ] **Printed output never shows costs**, on any device — cards, station sheets, packs
       prove: print each pack, then check none of the margin report's 15 Cost figures appear
       in it. Do NOT just grep for `$`: menu prices legitimately print on all three.
@@ -138,6 +154,15 @@ Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *m
 - [ ] **`/admin/dashboard.html` → 404.** The dashboard has no auth; it must never deploy.
 
 ## Known traps — bugs that already escaped once
+- **An inline field that deliberately skips `render()` leaves every OTHER view of the same
+  value stale.** The training-step description saves on blur without re-rendering, on purpose:
+  a re-render would drop focus when the owner tabs from one description to the next. That was
+  harmless while the description had exactly one view. The moment it also appeared in the
+  Sign-offs column beside it, the owner typed a note and the checklist two inches away did not
+  change — it only caught up after some unrelated action re-rendered. Caught 2026-07-27 by a
+  test that timed out looking for the new node, not by reading the diff. Fix was to patch that
+  one cell (`textContent`, never `innerHTML`). **Adding a second view of a field means revisiting
+  every handler that writes it** — grep for what skips `render()` before assuming it will update.
 - **A "has the user touched this?" fingerprint must resolve ids to names, or it goes blind
   exactly where the data lives.** `demoSig` (`app.js`) hashed recipe items as `x.qty` alone,
   because `item.ing` is a random `uid()` that can never match a fresh `seed()`. So swapping a

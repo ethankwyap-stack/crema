@@ -51,6 +51,17 @@ const results = []; const ok = (n, c) => { results.push([c, n]); console.log((c 
   await pS.waitForTimeout(600);
   ok('staff link (?k=) skips the gate entirely', await pS.locator('.gatewrap').count() === 0);
 
+  /* The training path is the owner's document: a barista reads it, they don't rewrite it.
+     This is visibility, not a security boundary — a staff device holds the whole shop in
+     localStorage either way, exactly like the price table. */
+  await pS.evaluate(() => { S.path[0].note = 'Grind, tamp, 27 seconds.'; save(); render(); });
+  await pS.click('.tab[data-tab=training]');
+  ok('staff still see the path', await pS.locator('.pathlist li').count() === 10);
+  ok('staff still see the step descriptions', (await pS.locator('.pathlist .note').first().textContent()).startsWith('Grind, tamp'));
+  ok('staff get no reorder/delete buttons', await pS.locator('.pathlist [data-act]').count() === 0);
+  ok('staff cannot retype a description or a day', await pS.locator('.pathlist input').count() === 0);
+  ok('staff get no add-step row', await pS.locator('#pAdd').count() === 0);
+
   // automated browsers (the other suites, bots) skip the gate entirely
   const ctx2 = await b.newContext();
   await ctx2.route('**/api/lead', r => r.fulfill({ json: { ok: true } }));

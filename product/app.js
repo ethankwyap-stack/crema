@@ -633,12 +633,21 @@ function viewDialin() {
 }
 
 /* ---------------- training ---------------- */
+/* On-screen order is day ascending, then manual order within the day — because the printed pack
+   groups by day (viewPrint 'hire') and a screen in raw array order would disagree with the paper
+   the moment an owner moves a step to another day. Returns S.path INDICES, never a copy of the
+   steps: ↑↓ still swap real array entries, and only within one day (crossing days is the day
+   field's job). Nothing here mutates S.path — a synced or legacy shop needs no migration. */
+const pathOrder = () => S.path.map((_, i) => i)
+  .sort((a, b) => ((S.path[a].day || 0) - (S.path[b].day || 0)) || a - b);
+
 function viewTraining() {
   const recipeOpts = S.recipes.map(r => `<option value="${esc(r.id)}">${esc(r.name)}</option>`).join('');
   const bar = S.baristas.find(b => b.id === S._trainee) || S.baristas[0];
   if (bar) S._trainee = bar.id;
   const so = (bar && S.signoffs[bar.id]) || {};
   const done = S.path.filter(p => so[p.id]).length;
+  const staff = staffView(), order = pathOrder();
   return `
   <h2>${t('Training path')}</h2>
   <p class="hint">${t('The new-hire pack, alive. Reorder the path, then track sign-offs per barista. Print it from the Print tab before their first shift.')}</p>
@@ -646,22 +655,30 @@ function viewTraining() {
     <div>
       <h3 style="font-family:var(--font-display)">${t('The path')}</h3>
       <ul class="pathlist">
-        ${S.path.map((p, ix) => {
+        ${order.map((ix, k) => {
+          const p = S.path[ix];
           const label = p.type === 'recipe' ? (S.recipes.find(r => r.id === p.ref)?.name || t('(deleted drink)')) : p.label;
+          const firstOfDay = k === 0 || S.path[order[k - 1]].day !== p.day;
+          const lastOfDay = k === order.length - 1 || S.path[order[k + 1]].day !== p.day;
           return `<li data-id="${esc(p.id)}">
-            <span class="day">d${p.day}</span><span class="t">${esc(label)}</span>
-            <button class="mini" data-act="up" ${ix === 0 ? 'disabled' : ''}>↑</button>
-            <button class="mini" data-act="down" ${ix === S.path.length - 1 ? 'disabled' : ''}>↓</button>
-            <button class="mini danger" data-act="rmPath">×</button>
+            ${staff ? `<span class="day">d${esc(p.day)}</span>`
+                    : `<label class="day">d<input type="number" min="1" max="9" value="${esc(p.day)}"></label>`}
+            <span class="t">${esc(label)}</span>
+            ${staff ? '' : `<button class="mini" data-act="up" ${firstOfDay ? 'disabled' : ''}>↑</button>
+            <button class="mini" data-act="down" ${lastOfDay ? 'disabled' : ''}>↓</button>
+            <button class="mini danger" data-act="rmPath">×</button>`}
+            ${staff ? (p.note ? `<div class="note">${esc(p.note)}</div>` : '')
+                    : `<input class="note" value="${esc(p.note || '')}" placeholder="${t('Add a description — prints in the pack')}">`}
           </li>`;
         }).join('')}
       </ul>
+      ${staff ? `<p class="hint">${t("This path is the owner's. Ask them to change it.")}</p>` : `
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
         <select id="pAddRecipe"><option value="">${t('+ drink…')}</option>${recipeOpts}</select>
         <input id="pAddSkill" placeholder="${t("+ custom skill, e.g. 'Closing checklist'")}" style="flex:1;min-width:180px;border:1px solid var(--line);border-radius:8px;padding:6px 9px">
         <input id="pAddDay" type="number" min="1" max="9" value="1" style="width:52px;border:1px solid var(--line);border-radius:8px;padding:6px">
         <button class="btn small" id="pAdd">${t('Add')}</button>
-      </div>
+      </div>`}
     </div>
     <div>
       <h3 style="font-family:var(--font-display)">${t('Sign-offs')}</h3>
@@ -674,10 +691,13 @@ function viewTraining() {
       <div class="progress"><div style="width:${S.path.length ? done / S.path.length * 100 : 0}%"></div></div>
       <div class="hint">${t('%s/%s signed off', done, S.path.length)}</div>
       <ul class="checklist">
-        ${S.path.map(p => {
+        ${order.map(ix => {
+          const p = S.path[ix];
           const label = p.type === 'recipe' ? (S.recipes.find(r => r.id === p.ref)?.name || t('(deleted drink)')) : p.label;
           const d = so[p.id];
-          return `<li><input type="checkbox" data-id="${esc(p.id)}" ${d ? 'checked' : ''}><span>${esc(label)}</span>${d ? `<span class="done-date">${esc(d)}</span>` : ''}</li>`;
+          // read-only here on purpose: the trainer needs to see what they are signing off on,
+          // but the description is edited in one place only — the path column.
+          return `<li><input type="checkbox" data-id="${esc(p.id)}" ${d ? 'checked' : ''}><span>${esc(label)}${p.note ? `<div class="cknote">${esc(p.note)}</div>` : ''}</span>${d ? `<span class="done-date">${esc(d)}</span>` : ''}</li>`;
         }).join('')}
       </ul>` : `<p class="hint">${t('Add a barista to start tracking.')}</p>`}
     </div>
@@ -734,7 +754,7 @@ function buildPrint(kind) {
           <h4>${t('Day %s', day)}</h4>
           ${S.path.filter(p => p.day === day).map(p => {
             const label = p.type === 'recipe' ? (S.recipes.find(r => r.id === p.ref)?.name || '') : p.label;
-            return `<div class="ck"><div class="box"></div><div>${esc(label)}</div></div>`;
+            return `<div class="ck"><div class="box"></div><div>${esc(label)}${p.note ? `<div class="cknote">${esc(p.note)}</div>` : ''}</div></div>`;
           }).join('')}`).join('')}
       </div>
       <div class="pagebreak"></div>
@@ -979,9 +999,38 @@ function wireView() {
   };
   $$('.pathlist [data-act]').forEach(b => b.onclick = () => {
     const id = b.closest('li').dataset.id, ix = S.path.findIndex(p => p.id === id);
-    if (b.dataset.act === 'up' && ix > 0) [S.path[ix - 1], S.path[ix]] = [S.path[ix], S.path[ix - 1]];
-    if (b.dataset.act === 'down' && ix < S.path.length - 1) [S.path[ix + 1], S.path[ix]] = [S.path[ix], S.path[ix + 1]];
+    if (ix < 0) return;
     if (b.dataset.act === 'rmPath') S.path.splice(ix, 1);
+    else {
+      // ↑↓ swap with the neighbour in DISPLAY order, and only inside the same day — the buttons are
+      // already disabled at a day boundary, this re-checks it so a stale DOM cannot reorder blindly.
+      const o = pathOrder(), j = o[o.indexOf(ix) + (b.dataset.act === 'down' ? 1 : -1)];
+      if (j === undefined || S.path[j].day !== S.path[ix].day) return;
+      [S.path[ix], S.path[j]] = [S.path[j], S.path[ix]];
+    }
+    save(); render();
+  });
+  // step descriptions: save on blur only — a re-render here would steal focus mid-sentence,
+  // and nothing else on this view reads p.note (the print pack builds from S on demand).
+  $$('.pathlist input.note').forEach(inp => inp.onchange = () => {
+    const p = S.path.find(x => x.id === inp.closest('li').dataset.id);
+    if (!p) return;
+    p.note = inp.value.trim(); save();
+    /* The Sign-offs column beside this one shows the same text, so it can no longer be left stale —
+       but re-rendering would drop focus when the owner tabs from one description to the next.
+       Patch that single cell instead. textContent, never innerHTML: this is the owner's own typing. */
+    const cell = $(`.checklist input[data-id="${p.id}"]`)?.nextElementSibling;
+    if (!cell) return;
+    let n = cell.querySelector('.cknote');
+    if (!p.note) { if (n) n.remove(); return; }
+    if (!n) { n = document.createElement('div'); n.className = 'cknote'; cell.appendChild(n); }
+    n.textContent = p.note;
+  });
+  // the day badge is editable: changing it re-sorts the list, so this one DOES re-render.
+  $$('.pathlist .day input').forEach(inp => inp.onchange = () => {
+    const p = S.path.find(x => x.id === inp.closest('li').dataset.id);
+    if (!p) return;
+    p.day = Math.min(9, Math.max(1, parseInt(inp.value) || 1));
     save(); render();
   });
   const ts = $('#traineeSel'); if (ts) ts.onchange = () => { S._trainee = ts.value; save(); render(); };
@@ -1038,7 +1087,7 @@ const demoSig = (s) => {
   (s.beans || []).map(b => [b.name, b.roaster]),
   (s.dialins || []).map(d => [d.grind, d.dose, d.yield, d.time, d.note]),
   (s.baristas || []).map(b => b.name),
-  (s.path || []).map(p => [p.type, p.label, p.day]),
+  (s.path || []).map(p => [p.type, p.label, p.day, p.note]),
   Object.keys(s.signoffs || {}).length,
   ]);
 };
