@@ -1,5 +1,6 @@
 /* Crema brand tokens — single source of truth for product + site + collateral.
-   Palette: "Counter" — the espresso machine, not the paper card. Dark, warm, amber. */
+   Palette: "Counter" — the espresso machine, not the paper card. Dark and quiet,
+   accented in ink navy (chosen 2026-07-28 over gold: the gold read as an eye sore). */
 :root {
   /* --- palette (source of truth) --- */
   --bg:       #17130F;   /* page background */
@@ -7,8 +8,16 @@
   --ink:      #F3EBE0;   /* primary text on dark */
   --ink-soft: #A89684;   /* muted text, captions */
   --line:     #3A2E24;   /* hairlines, borders */
-  --crema:    #E8A33D;   /* THE brand color — crema gold. Accent, links, CTA */
-  --crema-dk: #C98A2E;   /* accent hover / deeper gold */
+  /* THE brand accent is TWO shades, not one, and that is load-bearing. Ink navy is
+     dark enough to be a bold button fill and therefore too dark to read as text on
+     the dark page (#22355C on #17130F is ~1.7:1). So: --crema is the readable TINT
+     for ink (links, labels, rules); --crema-fill is the deep shade for button fills,
+     and a navy fill takes a LIGHT label (--on-crema), the opposite of the old gold. */
+  --crema:       #8195BE;  /* accent as INK — links, eyebrows, rules. 6.1:1 on --bg */
+  --crema-dk:    #6C7EA4;  /* the tint, one step deeper — hover */
+  --crema-fill:  #22355C;  /* accent as a FILL — buttons, selected tab */
+  --crema-fill-dk:#182747; /* fill hover / the 2px shadow under a button */
+  --on-crema:    #EFF1F7;  /* the label ON a fill. 10.7:1 — never use --bg here */
   --spruce:   #7FA98C;   /* success, dial-in OK */
   --alert:    #E4674F;   /* margin danger — lifted from #B3261E so it reads on dark */
 
@@ -28,8 +37,12 @@
     --ink:      #1A1208;
     --ink-soft: #5A4A3A;
     --line:     #CFC4B6;
-    --crema:    #8A5A12;   /* darkened: gold on white is unreadable */
-    --crema-dk: #6E470E;
+    /* navy is already dark, so ink and fill collapse to the same value on paper */
+    --crema:       #22355C;
+    --crema-dk:    #182747;
+    --crema-fill:  #22355C;
+    --crema-fill-dk:#182747;
+    --on-crema:    #FFFFFF;
     --spruce:   #34503F;
     --alert:    #9B2418;
   }

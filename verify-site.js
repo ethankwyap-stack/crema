@@ -27,8 +27,14 @@ const ok = (name, cond, got) => { n++; console.log(`${cond ? 'PASS' : 'FAIL'}  $
     ok(`${label}: site.css applied (Counter dark background)`, bg === 'rgb(23, 19, 15)', bg);
     const h1size = await p.evaluate(() => parseFloat(getComputedStyle(document.querySelector('h1')).fontSize));
     ok(`${label}: display type scaled by css`, h1size > 50, h1size);
-    const btnBg = await p.evaluate(() => getComputedStyle(document.querySelector('.btn')).backgroundColor);
-    ok(`${label}: primary button is Crema gold`, btnBg === 'rgb(232, 163, 61)', btnBg);
+    // Ink navy is a FILL shade, so the label flips light. Assert both — a navy fill
+    // that kept the old dark label is a legible-looking rule and an invisible button.
+    const btn = await p.evaluate(() => {
+      const s = getComputedStyle(document.querySelector('.btn'));
+      return { bg: s.backgroundColor, fg: s.color };
+    });
+    ok(`${label}: primary button is Ink navy`, btn.bg === 'rgb(34, 53, 92)', btn.bg);
+    ok(`${label}: primary button label is light`, btn.fg === 'rgb(239, 241, 247)', btn.fg);
 
     // reveal.js ran and un-hid the content
     ok(`${label}: reveal.js added the .js class`, await p.evaluate(() => document.documentElement.classList.contains('js')));

@@ -7,7 +7,7 @@
    @import of it. Deliberate — /brand is not in .vercelignore's allowlist, so an @import
    would 404 in production and both landing pages would render completely unstyled. If
    the two ever need to be one file, add !/brand to .vercelignore in the same commit. */
-:root{--bg:#17130F;--surface:#231C16;--ink:#F3EBE0;--ink-soft:#A89684;--line:#3A2E24;--crema:#E8A33D;--crema-dk:#C98A2E;--spruce:#7FA98C;--alert:#E4674F;
+:root{--bg:#17130F;--surface:#231C16;--ink:#F3EBE0;--ink-soft:#A89684;--line:#3A2E24;--crema:#8195BE;--crema-dk:#6C7EA4;--crema-fill:#22355C;--crema-fill-dk:#182747;--on-crema:#EFF1F7;--spruce:#7FA98C;--alert:#E4674F;
 --fd:"Iowan Old Style",Palatino,Georgia,serif;--fu:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;--fm:ui-monospace,"SF Mono",Menlo,monospace;
 --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E")}
 *{box-sizing:border-box}
@@ -26,8 +26,8 @@ header.nav{display:flex;align-items:center;justify-content:space-between;padding
 .lockup svg{width:36px;height:36px}
 /* Gold pill, dark label — on a dark page the filled CTA has to be the BRIGHT thing.
    (It was espresso-on-cream before, which inverts to cream-on-cream here.) */
-.nav .cta{background:var(--crema);color:var(--bg);text-decoration:none;font-weight:650;padding:10px 20px;border-radius:999px;font-size:15px;transition:background .15s}
-.nav .cta:hover{background:var(--crema-dk)}
+.nav .cta{background:var(--crema-fill);color:var(--on-crema);text-decoration:none;font-weight:650;padding:10px 20px;border-radius:999px;font-size:15px;transition:background .15s}
+.nav .cta:hover{background:var(--crema-fill-dk)}
 .navlinks{display:flex;gap:22px;margin-left:auto;margin-right:22px}
 .navlinks a{color:var(--ink);text-decoration:none;font-weight:600;font-size:15px;transition:color .15s}
 .navlinks a:hover{color:var(--crema)}
@@ -42,11 +42,11 @@ header.nav{display:flex;align-items:center;justify-content:space-between;padding
 .hero{padding:56px 0 72px;display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center}
 @media(max-width:880px){.hero{grid-template-columns:1fr;padding-top:32px;gap:64px}}
 h1{font-family:var(--fd);font-weight:700;font-size:clamp(44px,7vw,78px);line-height:.98;margin:0 0 22px;letter-spacing:-.025em}
-h1 em{font-style:italic;color:var(--crema);background:linear-gradient(transparent 62%,rgba(232,163,61,.22) 62% 94%,transparent 94%)}
+h1 em{font-style:italic;color:var(--crema);background:linear-gradient(transparent 62%,rgba(129,149,190,.22) 62% 94%,transparent 94%)}
 .sub{font-size:19.5px;color:var(--ink-soft);max-width:32em;margin:0 0 30px;line-height:1.65}
 .heroctas{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
-.btn{display:inline-block;background:var(--crema);color:var(--bg);text-decoration:none;font-weight:700;padding:15px 30px;border-radius:999px;font-size:17px;box-shadow:0 2px 0 var(--crema-dk);transition:transform .12s,background .15s}
-.btn:hover{background:var(--crema-dk);transform:translateY(-1px)}
+.btn{display:inline-block;background:var(--crema-fill);color:var(--on-crema);text-decoration:none;font-weight:700;padding:15px 30px;border-radius:999px;font-size:17px;box-shadow:0 2px 0 var(--crema-fill-dk);transition:transform .12s,background .15s}
+.btn:hover{background:var(--crema-fill-dk);transform:translateY(-1px)}
 .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink);box-shadow:none}
 .btn.ghost:hover{background:var(--ink);color:var(--bg)}
 .tiny{font-size:13.5px;color:var(--ink-soft);margin-top:14px}
@@ -58,7 +58,7 @@ h1 em{font-style:italic;color:var(--crema);background:linear-gradient(transparen
 @media(max-width:880px){.cardwrap{margin:0 auto}}
 .mockcard{--ink:#2A1A12;--ink-soft:#6B5544;--line:#E7DACA;--crema:#A8721F;--spruce:#4A6154;
 position:relative;background:#FFFDF8;color:var(--ink);border:1px solid #E2D5C2;border-radius:6px;padding:26px 26px 20px;transform:rotate(1.8deg);box-shadow:0 1px 2px rgba(0,0,0,.35),14px 18px 0 rgba(0,0,0,.35);background-image:linear-gradient(#F2E7D6 1px,transparent 1px);background-size:100% 29px;background-position:0 74px}
-.mockcard::before{content:"";position:absolute;top:-16px;left:50%;transform:translateX(-50%) rotate(-3deg);width:118px;height:32px;background:rgba(232,163,61,.5);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.mockcard::before{content:"";position:absolute;top:-16px;left:50%;transform:translateX(-50%) rotate(-3deg);width:118px;height:32px;background:rgba(129,149,190,.5);box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .mockcard::after{content:"4×6 · PRINTS CLEAN";position:absolute;bottom:9px;right:12px;font-family:var(--fm);font-size:9.5px;letter-spacing:.14em;color:#B8A48F}
 /* The only English baked into this shared stylesheet. Scoped by the page's own lang so /pt gets
    Portuguese and the card size in cm (4×6in is a US index card; Portugal uses 10×15). */
@@ -131,12 +131,12 @@ h2{font-family:var(--fd);font-size:clamp(30px,4.5vw,46px);line-height:1.08;margi
 .plan li{margin-bottom:9px;padding-left:20px;position:relative}
 .plan li::before{content:"·";position:absolute;left:4px;font-weight:900;color:var(--crema);font-size:22px;line-height:.8}
 /* the featured plan can no longer be "the dark one" — it is the GOLD-EDGED one */
-.plan.hot{background:var(--surface) var(--grain);border:1.5px solid var(--crema);box-shadow:10px 12px 0 rgba(232,163,61,.16);transform:translateY(var(--ty,0px)) rotate(-.5deg) scale(1.02)}
+.plan.hot{background:var(--surface) var(--grain);border:1.5px solid var(--crema);box-shadow:10px 12px 0 rgba(129,149,190,.16);transform:translateY(var(--ty,0px)) rotate(-.5deg) scale(1.02)}
 .plan.hot .menuline h3{color:var(--crema)}
 .plan.hot .p{color:var(--ink)}
 .plan.hot ul{color:var(--ink)}
 .plan .tag{font-family:var(--fm);font-size:11px;letter-spacing:.18em;color:var(--crema);margin-bottom:10px;font-weight:700}
-.founding{border:2px dashed var(--crema);color:var(--crema);background:rgba(232,163,61,.1);border-radius:8px;display:inline-block;padding:12px 20px;font-weight:700;margin-top:30px;font-size:15px;transform:translateY(var(--ty,0px)) rotate(-.4deg)}
+.founding{border:2px dashed var(--crema);color:var(--crema);background:rgba(129,149,190,.1);border-radius:8px;display:inline-block;padding:12px 20px;font-weight:700;margin-top:30px;font-size:15px;transform:translateY(var(--ty,0px)) rotate(-.4deg)}
 
 /* faq */
 .faq{max-width:760px}
@@ -171,7 +171,7 @@ footer a{color:var(--crema)}
 /* Nobody prints a landing page on purpose, but a dark one prints as a black slab.
    One rule, not a full print sheet. */
 @media print{
-  :root{--bg:#fff;--surface:#fff;--ink:#1A1208;--ink-soft:#5A4A3A;--line:#CFC4B6;--crema:#8A5A12;--crema-dk:#6E470E;--grain:none}
+  :root{--bg:#fff;--surface:#fff;--ink:#1A1208;--ink-soft:#5A4A3A;--line:#CFC4B6;--crema:#22355C;--crema-dk:#182747;--crema-fill:#22355C;--crema-fill-dk:#182747;--on-crema:#fff;--grain:none}
   body{background:#fff}
   .ticker,.shot{box-shadow:none}
   /* the scroll observer never fires in print, so every revealed block would

@@ -323,6 +323,20 @@ Verified against the live site, not the tests: 12/12 health checks pass, `/pt` a
 
 ---
 
+## 2026-07-28 — The gold is gone, and one accent turned out to need three
+
+The orange-gold accent was an eye sore and didn't read as a coffee shop, so it's out. Thirteen candidates got rejected across four rounds before **Ink navy** stuck — and the pattern in the rejections was the useful part: every warm mid-tone I tried (cream, sage, terracotta, latte, copper, glazed stone) came back as "these all look similar," because desaturating a warm colour doesn't escape a warm colour. It's a hue problem, not a saturation problem. The direction of every round was cooler, deeper and quieter, and that's where it landed.
+
+**The engineering surprise: a bold dark accent cannot be one colour.** Ink navy `#22355C` is dark enough to be a confident button fill, which makes it about 1.7:1 as small text on the dark page — illegible. So the accent shipped as three tokens instead of one: `--crema` `#8195BE` is the accent as *ink* (links, eyebrows, rules, the dial-in labels, 6.1:1 on the page), `--crema-fill` `#22355C` is the accent as a *fill*, and `--on-crema` `#EFF1F7` is the label that sits on that fill. That last one is a genuine flip — the old gold fill took a *dark* label, and every button in the codebase said `color:var(--bg)`. Left alone, that paints near-black on navy at roughly 1.3:1: a button that looks fine in a diff and is invisible on screen. Four of them (`.nav .cta` and `.btn` on the site, `.btn` and the selected tab in the app) all had to flip together.
+
+**Fifteen files by hand, because the brand tokens still aren't imported by anything.** `/brand` doesn't deploy, so an `@import` would 404 in production and every surface carries its own copy of the palette. Same method as the rebrand: edit `brand/brand.css` first, propagate, then re-grep and *count* to prove nothing was missed. Two occurrences deliberately survive, in `rebrand/index.html` — that page is the record of why the gold identity was chosen, and recolouring it would erase the evidence.
+
+**Printing came out clean, and I checked rather than assumed.** The recipe cards are the whole product, so a palette change that leaks onto paper mails cafés black rectangles. Rendered the cards and the new-hire pack under real print emulation: pure ink on white, untouched, because the app's print block is hardcoded and never reads the palette. The site's print block reverts the accent to the deep navy, which is already dark enough for paper — no darkening step needed this time, unlike the gold's `#8A5A12`.
+
+**Every suite green: 39 + 65 + the six behaviour suites + the four browser suites.** `verify-site.js` failed exactly as designed — it asserted the button was gold by exact RGB — and I took the chance to make it assert the *label* colour too, since that's the failure mode most likely to come back. Both onboarding PDFs re-rendered with the new accent, all 23 button labels still matching the app's dictionary. **Cost: $0**, and nothing is deployed — the live site is still gold until I say otherwise.
+
+---
+
 ## Open threads
 
 - **Crema is live.** Deployed 2026-07-28 (`dpl_G4yGZvprhEjZ4zEqxnig6iUo99XR`) and committed as `93b3ac2` on branch `rebrand-crema` — **not yet merged into `main`, not yet pushed.** Verified on the live site, not inferred: `/` and `/pt` both read Crema fourteen times with zero Portafile, `/product` matches, `site.css` serves the new `--crema:` token, and the three things that must NOT be public still 404 (`/admin/dashboard.html`, `/guide/`, and the `?k=0×40` key canary). The daily health check should go back to mailing a pass. One thing the deploy can't fix: anyone I already sent a `Portafile-Guide` PDF to still has the old brand in their inbox.

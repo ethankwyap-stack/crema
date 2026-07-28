@@ -5,7 +5,9 @@
    printing is the product, and this palette would print as a black rectangle. */
 :root {
   --bg:#17130F; --surface:#231C16; --ink:#F3EBE0; --ink-soft:#A89684; --line:#3A2E24;
-  --crema:#E8A33D; --crema-dk:#C98A2E; --spruce:#7FA98C; --alert:#E4674F;
+  /* the accent is two shades: --crema is INK (readable on dark), --crema-fill is a
+     BUTTON FILL (too dark to read as text) and takes the light --on-crema label. */
+  --crema:#8195BE; --crema-dk:#6C7EA4; --crema-fill:#22355C; --crema-fill-dk:#182747; --on-crema:#EFF1F7; --spruce:#7FA98C; --alert:#E4674F;
   --font-display:"Iowan Old Style",Palatino,Georgia,serif;
   --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
   --font-mono:ui-monospace,"SF Mono",Menlo,monospace;
@@ -25,8 +27,8 @@ input,select,textarea { font:inherit; color:inherit; }
 .tabs { display:flex; gap:4px; flex:1; min-width:280px; overflow-x:auto; }
 .tab { border:none; background:transparent; white-space:nowrap; flex:none; padding:8px 14px; border-radius:8px 8px 0 0; color:var(--ink-soft); font-weight:600; }
 /* was espresso-on-paper: a dark tab on a light bar. Inverted, that is ink-on-ink.
-   On dark the selected tab has to be the BRIGHT thing — gold fill, dark label. */
-.tab.active { background:var(--crema); color:var(--bg); }
+   On dark the selected tab has to be the DISTINCT thing — navy fill, light label. */
+.tab.active { background:var(--crema-fill); color:var(--on-crema); }
 .top-actions { display:flex; gap:6px; }
 .ghost { background:transparent; border:1px solid var(--line); border-radius:8px; padding:6px 12px; color:var(--ink); }
 .ghost:hover { border-color:var(--crema); }
@@ -37,9 +39,10 @@ h2 { font-family:var(--font-display); font-size:22px; margin:6px 0 14px; }
 .hint { color:var(--ink-soft); font-size:13px; }
 
 /* ---------- buttons ---------- */
-/* gold fill takes a DARK label — white on #E8A33D is about 2.2:1 and unreadable */
-.btn { background:var(--crema); border:none; color:var(--bg); padding:8px 16px; border-radius:9px; font-weight:650; }
-.btn:hover { background:var(--crema-dk); }
+/* the navy fill takes a LIGHT label — the old gold fill took a dark one, and reusing
+   --bg here paints #17130F on #22355C at ~1.3:1, i.e. an invisible button */
+.btn { background:var(--crema-fill); border:none; color:var(--on-crema); padding:8px 16px; border-radius:9px; font-weight:650; }
+.btn:hover { background:var(--crema-fill-dk); }
 /* secondary was a dark fill on a light page; on dark it becomes an outline button */
 .btn.sub { background:var(--surface); color:var(--ink); border:1px solid var(--line); }
 .btn.sub:hover { border-color:var(--crema); }
@@ -67,7 +70,7 @@ h2 { font-family:var(--font-display); font-size:22px; margin:6px 0 14px; }
 /* were pale pastel chips for a light page; on dark they become tinted-glass chips
    (a wash of their own colour) instead of three bright rectangles */
 .badge.good { background:rgba(127,169,140,.16); color:var(--spruce); }
-.badge.warn { background:rgba(232,163,61,.16); color:var(--crema); }
+.badge.warn { background:rgba(129,149,190,.16); color:var(--crema); }
 .badge.bad  { background:rgba(228,103,79,.16); color:var(--alert); }
 .ing-list { margin:0; padding:0; list-style:none; font-size:13.5px; color:var(--ink-soft); }
 .ing-list li { display:flex; justify-content:space-between; border-bottom:1px dotted var(--line); padding:2px 0; }
@@ -212,7 +215,7 @@ kbd { background:var(--bg); color:var(--ink); border:1px solid var(--line); bord
 /* sync badge (only present when a sync key is active) */
 /* same inversion as .badge: pale pastel pills become tinted glass on the dark page */
 .syncbadge{position:fixed;right:12px;bottom:12px;z-index:60;padding:5px 11px;border-radius:99px;font-size:12.5px;font-weight:650;background:rgba(127,169,140,.14);color:var(--spruce);border:1px solid rgba(127,169,140,.38)}
-.syncbadge.connecting{background:rgba(232,163,61,.14);color:var(--crema);border-color:rgba(232,163,61,.38)}
+.syncbadge.connecting{background:rgba(129,149,190,.14);color:var(--crema);border-color:rgba(129,149,190,.38)}
 .syncbadge.offline{background:rgba(228,103,79,.14);color:var(--alert);border-color:rgba(228,103,79,.38)}
 .syncbadge.revoked{background:rgba(228,103,79,.14);color:var(--alert);border-color:rgba(228,103,79,.38)}
 @media print{.syncbadge{display:none}}

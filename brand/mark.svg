@@ -4,7 +4,7 @@
        must be self-contained and legible at 16px. -->
   <rect width="120" height="120" rx="26" fill="#17130F"/>
   <circle cx="60" cy="60" r="36" fill="none" stroke="#F3EBE0" stroke-width="6"/>
-  <circle cx="60" cy="60" r="25" fill="#E8A33D"/>
+  <circle cx="60" cy="60" r="25" fill="#8195BE"/>
   <path d="M44.5 55A21 21 0 0 1 62.3 40.5" fill="none" stroke="#F7E3BE"
         stroke-width="5.5" stroke-linecap="round"/>
 </svg>

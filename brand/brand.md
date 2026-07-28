@@ -38,18 +38,31 @@ Barista-native, terse, concrete. We talk about **money and mornings**, not "solu
 | ink | `#F3EBE0` | primary text |
 | ink-soft | `#A89684` | muted text |
 | line | `#3A2E24` | hairlines |
-| crema | `#E8A33D` | **the brand color** — accent, links, CTA |
-| crema-dk | `#C98A2E` | accent hover |
+| crema | `#8195BE` | **the brand accent, as INK** — links, eyebrows, rules. 6.1:1 on bg |
+| crema-dk | `#6C7EA4` | the tint one step deeper — hover |
+| crema-fill | `#22355C` | **the accent as a FILL** — buttons, selected tab |
+| crema-fill-dk | `#182747` | fill hover, and the 2px shadow under a button |
+| on-crema | `#EFF1F7` | the label ON a fill. 10.7:1 — never use `--bg` here |
 | spruce | `#7FA98C` | success, dial-in OK |
 | alert | `#E4674F` | margin danger (lifted from the old `#B3261E` to read on dark) |
 
-Rationale: the palette is the espresso machine, not the paper card — dark roasted ground, warm
-amber, a cool green counterpoint. Replaces the previous "Kraft" light palette (`#FAF4EA` paper,
-`#2A1A12` espresso, `#C4502F` terracotta), which was built when the product was imagined as
-purely printed collateral.
+Rationale: the palette is the espresso machine, not the paper card — dark roasted ground, a
+cool green counterpoint, and since 2026-07-28 an **Ink navy** accent. The original warm amber
+`#E8A33D` was replaced because it read as an eye sore rather than as a coffee shop; thirteen
+candidates were tried and every warm mid-tone came back as "these all look the same," which is
+the finding worth keeping — it is a hue problem, not a saturation problem. Replaces the previous
+"Kraft" light palette (`#FAF4EA` paper, `#2A1A12` espresso, `#C4502F` terracotta), which was
+built when the product was imagined as purely printed collateral.
+
+**The accent is three tokens, and that is structural, not fussiness.** Ink navy is dark enough
+to be a confident button fill, which makes it illegible as small text on the dark page (~1.7:1).
+So `--crema` is the accent as ink, `--crema-fill` is the accent as a fill, and a fill takes the
+LIGHT `--on-crema` label — the exact opposite of the old gold, which took a dark one. Any button
+still saying `color:var(--bg)` is invisible at ~1.3:1.
 
 **Printing is protected in code, not by convention.** `brand.css` carries an `@media print` block
-that reverts every token to ink-on-white and darkens the gold to `#8A5A12`. Without it the 4×6
+that reverts every token to ink-on-white. Navy is already dark enough for paper, so `--crema`
+and `--crema-fill` both print `#22355C`; the old gold had to be darkened to `#8A5A12`. Without it the 4×6
 recipe cards and new-hire packs — the product's whole point — print as a black rectangle. Do not
 remove that block.
 
@@ -78,8 +91,13 @@ Two rules the files encode:
   back to the `style="color:…"` on the root element (default: brand cream).
 - **`mark.svg` carries its own dark tile and uses no `currentColor`** — a favicon renders against
   browser chrome we do not control, so it must be self-contained.
-- The crema disc is **always gold**, in both files. It never takes a palette token. A palette whose
-  accent is not gold would otherwise render a green or red crema, which is a contradiction.
+- The crema disc **takes the accent tint** (`#8195BE` since 2026-07-28), hardcoded in both files
+  rather than tokenised. This reverses an earlier rule that the disc must always be gold on the
+  grounds that a non-gold crema is physically a contradiction — the Ink navy identity was chosen
+  and approved with a navy disc, and a gold disc inside a navy identity reads as a leftover. The
+  older argument is still the right one to weigh if the accent ever moves to a hue that cannot
+  read as coffee at all; it lost here because the mark is quiet enough at this size to read as a
+  cup rather than as a claim about crema.
 
 ## The one-sentence brand
 Crema is the quiet, well-organized coworker who has been at the shop longer than everyone,
