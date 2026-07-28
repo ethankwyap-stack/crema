@@ -293,7 +293,9 @@ Verified against the live site, not the tests: 12/12 health checks pass, `/pt` a
 
 ## 2026-07-28 — The app is Crema now, and going dark cost more than the rename did
 
-**The product itself carries the new name and the new palette.** Portafile is becoming Crema — dark "Counter" palette, gold accent, new mark — and today the app caught up with the landing pages. Nothing is committed, pushed or deployed; this is all still local, on purpose.
+**The product itself carries the new name and the new palette.** Portafile is becoming Crema — dark "Counter" palette, gold accent, new mark — and today the app caught up with the landing pages.
+
+**And by the end of the day it shipped.** After eight steps of local-only work I committed the whole rebrand as one commit on a branch (`rebrand-crema`, `93b3ac2`) and deployed it. The customer-facing product is Crema now: the landing page, the Portuguese landing page, and the app all serve the new name and the dark palette, and the three surfaces that must never be public — the no-auth admin dashboard, the internal guides, and the private-blob key path — still answer 404. Cost of the deploy: $0. The branch is not merged into `main` and not pushed to GitHub yet, which means the only copy of this history is on this laptop; that's the next thing to fix, not a thing to leave.
 
 **The rename was the cheap half.** `portafile` is a brand name *and* an identifier: it's in the localStorage keys every real café's shop lives under, in the API headers, in the blob paths, in the domain. Renaming those would silently erase a customer's whole shop. The method that works is a capital-only swap — every protected identifier is lowercase — then re-grep and *count* the identifiers to prove they survived. Eight localStorage keys and nine headers, still there afterwards. The lowercase brand copy ("printed by portafile", the backup filename) gets handled one string at a time.
 
@@ -323,7 +325,7 @@ Verified against the live site, not the tests: 12/12 health checks pass, `/pt` a
 
 ## Open threads
 
-- **The rebrand is finished locally and deployed nowhere.** Every surface says Crema except the live site, which is still the Portafile build. Two consequences until I deploy: the daily health check mails me a failure every morning (it asserts "Crema" and the `--crema:` token against the old live build), and anyone I've already sent a `Portafile-Guide` PDF to has the old brand in their inbox. Deploying is one command and $0; I just haven't decided when.
+- **Crema is live.** Deployed 2026-07-28 (`dpl_G4yGZvprhEjZ4zEqxnig6iUo99XR`) and committed as `93b3ac2` on branch `rebrand-crema` — **not yet merged into `main`, not yet pushed.** Verified on the live site, not inferred: `/` and `/pt` both read Crema fourteen times with zero Portafile, `/product` matches, `site.css` serves the new `--crema:` token, and the three things that must NOT be public still 404 (`/admin/dashboard.html`, `/guide/`, and the `?k=0×40` key canary). The daily health check should go back to mailing a pass. One thing the deploy can't fix: anyone I already sent a `Portafile-Guide` PDF to still has the old brand in their inbox.
 - **The launch film says "Portafile" out loud** and can't be cheaply re-narrated — same blocker as the "No server" line below, and now two false claims in the same 75 seconds. Until it's re-cut, the site links a film that names a product that no longer exists.
 - **`extras/` still carries the old brand** — the investor teaser, launch-post drafts, onboarding email drip and dial-in pad, seventeen mentions. None of it has been published or sent, so nothing is wrong in the world, but the first one I reach for will be under the wrong name. Rename before using, not before then.
 - **The trademark knockout search has never been run — on either name.** "Crema" is a common coffee term, so expect collisions; that's an argument for checking before buying a domain or printing anything, not after.
