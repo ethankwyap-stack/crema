@@ -1,5 +1,5 @@
 # WORKS.md — what Crema must do
-Updated 2026-07-27 (6th run) · Run: `/still-works` (add `live` after a deploy)
+Updated 2026-07-28 (7th run) · Run: `/still-works` (add `live` after a deploy)
 
 The feature checklist and the blast-radius map. `CLAUDE.md` holds the *gotchas* (why the
 code is shaped the way it is); this file holds *what must still be true for a user*.
@@ -11,6 +11,7 @@ code is shaped the way it is); this file holds *what must still be true for a us
 | `product/app.js` | the entire app — it's one file, there is no module boundary |
 | `product/i18n.js` | **every rendered string and every price.** It defines the globals `t`, `money`, `num`, `dec`, `setLang`, `currencySymbol`, `localeTag`; `app.js` calls `t()` during its first render, so if this file fails to load the app is not "in English", it is blank. It must stay listed before `app.js` in `product/index.html` |
 | an English string used as a `t()` key | that one string reverts to English silently — there is no error for a missing translation, by design. `node verify-i18n.mjs` is the only thing that catches it |
+| the accent tokens (`--crema` / `--crema-fill` / `--on-crema`) | every button, tab, link, badge and rule on **all five surfaces** — site, app, both guides, dashboard. The accent is three tokens because Ink navy cannot be both a fill and readable text; changing one without the others makes something invisible rather than ugly, which no logic suite can see |
 | `brand/brand.css` | **nothing** at runtime — site.css, product/styles.css and both guides each carry their own COPY of the tokens (`/brand` doesn't deploy). Changing it here changes nothing until the copies are updated by hand; the risk is the palette silently drifting apart across surfaces |
 | `site/site.css` | **both** landing pages at once (`/` and `/pt`) — it was extracted from `site/index.html` so branding is edited once. A 404 here leaves fully-worded but completely unstyled pages, which a body-text health check would pass |
 | localStorage prefix `portafile.v1*` | all saved shop data. A renamed key silently wipes every existing user, and the revocation/delete wipes are written against this exact prefix (`lead*` is deliberately excluded on revoke, included on delete) |
@@ -127,7 +128,8 @@ Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *m
 - [ ] Landing page loads at `/` with scroll-reveal animations actually running
       prove: load `/`, scroll, watch sections appear (see the headless traps below)
 - [ ] **Both** landing pages are styled — the CSS is one shared file now, so check `/` AND `/pt`
-      prove: computed `background-color` of body is `rgb(250,244,234)` on both
+      prove: computed `background-color` of body is `rgb(23,19,15)` on both (this line said
+      the OLD light `rgb(250,244,234)` until 2026-07-28 — a map entry can go stale silently)
 - [ ] `/pt` serves the Portuguese landing page (a rewrite, like `/`), with euro figures in the
       mock card matching the PT seed, and the EN↔PT switch reachable **on a phone**
       (it sits outside `.navlinks`, which is `display:none` under 600px)
@@ -154,6 +156,17 @@ Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *m
 - [ ] **`/admin/dashboard.html` → 404.** The dashboard has no auth; it must never deploy.
 
 ## Known traps — bugs that already escaped once
+- **A dark accent is a fill AND an ink, and they are different colours.** Ink navy `#22355C`
+  is 1.7:1 as text on the dark page and ~1.3:1 against a `var(--bg)` label — so the accent
+  ships as `--crema` (ink, `#8195BE`), `--crema-fill` (`#22355C`) and `--on-crema`
+  (`#EFF1F7`, the label on a fill). Every button in the repo said `color:var(--bg)` under the
+  old gold, which took a *dark* label; all four had to flip to light in the same commit or
+  they'd look correct in the diff and be invisible on screen. **Screenshots are not proof
+  here** — measure it. `scratchpad/contrast.js` (2026-07-28) walks every element whose colour,
+  background or border carries an accent value and computes the WCAG ratio against its
+  *composited* background. Watch that word: the first version ignored alpha, so a
+  `rgba(129,149,190,.1)` chip was compared against itself and reported a bogus 1:1 failure.
+  A translucent layer must be composited over its ancestors before any contrast claim.
 - **An inline field that deliberately skips `render()` leaves every OTHER view of the same
   value stale.** The training-step description saves on blur without re-rendering, on purpose:
   a re-render would drop focus when the owner tabs from one description to the next. That was
