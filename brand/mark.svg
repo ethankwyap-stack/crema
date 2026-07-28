@@ -1,8 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Portafile mark">
-  <rect x="84" y="52" width="34" height="14" rx="7" fill="#2A1A12"/>
-  <circle cx="56" cy="59" r="36" fill="#2A1A12"/>
-  <rect x="37" y="45" width="38" height="5.5" rx="2.75" fill="#FAF4EA"/>
-  <rect x="37" y="57" width="38" height="5.5" rx="2.75" fill="#FAF4EA"/>
-  <rect x="37" y="69" width="25" height="5.5" rx="2.75" fill="#D9A05B"/>
-  <circle cx="56" cy="104" r="5.5" fill="#C4502F"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Crema mark">
+  <!-- Square avatar / favicon. Unlike logo.svg this carries its OWN dark tile and uses no
+       currentColor: a favicon renders against a browser chrome we do not control, so it
+       must be self-contained and legible at 16px. -->
+  <rect width="120" height="120" rx="26" fill="#17130F"/>
+  <circle cx="60" cy="60" r="36" fill="none" stroke="#F3EBE0" stroke-width="6"/>
+  <circle cx="60" cy="60" r="25" fill="#E8A33D"/>
+  <path d="M44.5 55A21 21 0 0 1 62.3 40.5" fill="none" stroke="#F7E3BE"
+        stroke-width="5.5" stroke-linecap="round"/>
 </svg>

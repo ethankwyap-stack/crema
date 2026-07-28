@@ -1,4 +1,4 @@
-# WORKS.md — what Portafile must do
+# WORKS.md — what Crema must do
 Updated 2026-07-27 (6th run) · Run: `/still-works` (add `live` after a deploy)
 
 The feature checklist and the blast-radius map. `CLAUDE.md` holds the *gotchas* (why the
@@ -11,7 +11,7 @@ code is shaped the way it is); this file holds *what must still be true for a us
 | `product/app.js` | the entire app — it's one file, there is no module boundary |
 | `product/i18n.js` | **every rendered string and every price.** It defines the globals `t`, `money`, `num`, `dec`, `setLang`, `currencySymbol`, `localeTag`; `app.js` calls `t()` during its first render, so if this file fails to load the app is not "in English", it is blank. It must stay listed before `app.js` in `product/index.html` |
 | an English string used as a `t()` key | that one string reverts to English silently — there is no error for a missing translation, by design. `node verify-i18n.mjs` is the only thing that catches it |
-| `brand/brand.css` | every page's palette and type: site, product, admin |
+| `brand/brand.css` | **nothing** at runtime — site.css, product/styles.css and both guides each carry their own COPY of the tokens (`/brand` doesn't deploy). Changing it here changes nothing until the copies are updated by hand; the risk is the palette silently drifting apart across surfaces |
 | `site/site.css` | **both** landing pages at once (`/` and `/pt`) — it was extracted from `site/index.html` so branding is edited once. A 404 here leaves fully-worded but completely unstyled pages, which a body-text health check would pass |
 | localStorage prefix `portafile.v1*` | all saved shop data. A renamed key silently wipes every existing user, and the revocation/delete wipes are written against this exact prefix (`lead*` is deliberately excluded on revoke, included on delete) |
 | `api/state.js` | sync, staff links, revocation, founder delete, usage-date stamping |
@@ -245,7 +245,7 @@ Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *m
   - Printed cards/station/pack DO contain `$` — those are *menu prices*, which are supposed
     to print. Only ingredient cost / margin / COGS must be absent. Assert against the
     margin report's Cost column, not against the dollar sign.
-  - The feedback modal's heading is "How's Portafile working?" — there is no "feedback"
+  - The feedback modal's heading is "How's Crema working?" — there is no "feedback"
     text inside the sheet, so a `hasText: /feedback/i` selector finds nothing. The button
     that opens it is `#hFeedback`.
   - The dashboard note now contains the words "Load metrics", so `text=Load metrics`

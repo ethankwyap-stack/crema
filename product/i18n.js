@@ -1,4 +1,4 @@
-/* Portafile i18n — European Portuguese (pt-PT).
+/* Crema i18n — European Portuguese (pt-PT).
 
    ponytail: the ENGLISH STRING IS THE KEY. No key namespace to invent, no English
    dictionary to keep in sync, and a missing translation renders readable English
@@ -13,7 +13,7 @@
 const I18N = {
   pt: {
     /* ---- chrome ---- */
-    'Portafile — your whole shop, dialed in': 'Portafile — o seu café todo, afinado',
+    'Crema — your whole shop, dialed in': 'Crema — o seu café todo, afinado',
     'Shop name': 'Nome do café',
     'Recipes': 'Receitas',
     'Prices': 'Preços',
@@ -39,7 +39,7 @@ const I18N = {
       'Tudo fica neste navegador. Exporte uma cópia de segurança em Dados.',
 
     /* ---- lock screen ---- */
-    'Link turned off — Portafile': 'Link desligado — Portafile',
+    'Link turned off — Crema': 'Link desligado — Crema',
     'This link has been turned off': 'Este link foi desligado',
     "The shop owner reset the staff link, so this device no longer has access to the shop's recipes, prices or training records. The copy that was stored on this device has been removed.":
       'O proprietário reiniciou o link da equipa, pelo que este dispositivo já não tem acesso às receitas, preços ou registos de formação do café. A cópia guardada neste dispositivo foi removida.',
@@ -171,7 +171,7 @@ const I18N = {
     'Build': 'Composição',
     'Steps': 'Passos',
     'Welcome to the bar.': 'Bem-vindo ao balcão.',
-    'Your training pack — printed %s by portafile': 'O seu manual de formação — impresso a %s pelo portafile',
+    'Your training pack — printed %s by crema': 'O seu manual de formação — impresso a %s pelo crema',
     'training path': 'percurso de formação',
     'Day %s': 'Dia %s',
     "today's dial-ins": 'dial-ins de hoje',
@@ -217,8 +217,8 @@ const I18N = {
     'Owner code': 'Código de proprietário',
     'Unlocks the cost pages on your <em>own</em> other devices. Treat it like a key: anyone who has it can also reset the staff link. Never give it to staff.':
       'Desbloqueia as páginas de custos nos seus <em>próprios</em> outros dispositivos. Trate-o como uma chave: quem o tiver pode também reiniciar o link da equipa. Nunca o dê à equipa.',
-    "Turn on sync to get a secret link: open it on any phone or laptop and everyone shares the same live data. Your data then also lives in Portafile's cloud storage.":
-      'Ligue a sincronização para obter um link secreto: abra-o em qualquer telemóvel ou portátil e todos partilham os mesmos dados em direto. Os seus dados passam então a existir também no armazenamento na nuvem do Portafile.',
+    "Turn on sync to get a secret link: open it on any phone or laptop and everyone shares the same live data. Your data then also lives in Crema's cloud storage.":
+      'Ligue a sincronização para obter um link secreto: abra-o em qualquer telemóvel ou portátil e todos partilham os mesmos dados em direto. Os seus dados passam então a existir também no armazenamento na nuvem do Crema.',
     'Turn on sync': 'Ligar sincronização',
     'Reset the staff link?\n\nEvery phone and laptop using the old link loses access immediately, and the shop data stored on those devices is erased. Your own device keeps everything. You cannot undo this.':
       'Reiniciar o link da equipa?\n\nTodos os telemóveis e portáteis com o link antigo perdem o acesso imediatamente, e os dados do café guardados nesses dispositivos são apagados. O seu dispositivo mantém tudo. Não é possível anular.',
@@ -233,11 +233,11 @@ const I18N = {
       'Não foi possível verificar agora — tente novamente quando tiver rede.',
     'Replace everything with the demo shop?': 'Substituir tudo pelo café de demonstração?',
     'Could not import: %s': 'Não foi possível importar: %s',
-    'not a portafile backup': 'não é uma cópia do portafile',
+    'not a crema backup': 'não é uma cópia do crema',
     'backup is damaged: %s': 'a cópia está danificada: %s',
 
     /* ---- help ---- */
-    'How Portafile works': 'Como funciona o Portafile',
+    'How Crema works': 'Como funciona o Crema',
     'Every card shows what the drink <em>costs you</em> next to its menu price. The badge goes red when cost-of-goods passes your target (set it on the dashboard). Espresso drinks carry the live dial-in for their bean.':
       'Cada ficha mostra o que a bebida <em>lhe custa</em> ao lado do preço de menu. A etiqueta fica vermelha quando o custo passa o seu objetivo (defina-o no painel). As bebidas de espresso trazem o dial-in em direto do seu café.',
     "One table of what you pay. Change a number → every card re-prices. When milk or beans jump, you'll see which drinks went underwater the same minute.":
@@ -248,8 +248,8 @@ const I18N = {
       'Ordene o percurso (bebidas + competências próprias, agrupadas por dia), escolha um barista, marque as validações. O progresso é guardado por barista.',
     'Cards and the new-hire pack hide costs on purpose — they get taped where customers can see. The margin report is the owner-only page.':
       'As fichas e o manual de acolhimento escondem os custos de propósito — ficam colados onde os clientes veem. O relatório de margens é a página só do proprietário.',
-    'Lives in this browser (localStorage). <strong>Data → Export backup</strong> before switching machines. No account, no bill. If you turn on <strong>Sync</strong> (Data menu), your data also lives in Portafile\'s cloud storage so staff phones share it via a secret link.':
-      'Ficam neste navegador (localStorage). <strong>Dados → Exportar cópia</strong> antes de mudar de máquina. Sem conta, sem fatura. Se ligar a <strong>Sincronização</strong> (menu Dados), os seus dados passam a existir também no armazenamento na nuvem do Portafile para os telemóveis da equipa os partilharem por um link secreto.',
+    'Lives in this browser (localStorage). <strong>Data → Export backup</strong> before switching machines. No account, no bill. If you turn on <strong>Sync</strong> (Data menu), your data also lives in Crema\'s cloud storage so staff phones share it via a secret link.':
+      'Ficam neste navegador (localStorage). <strong>Dados → Exportar cópia</strong> antes de mudar de máquina. Sem conta, sem fatura. Se ligar a <strong>Sincronização</strong> (menu Dados), os seus dados passam a existir também no armazenamento na nuvem do Crema para os telemóveis da equipa os partilharem por um link secreto.',
     'Devices that join through the staff link see recipes, dial-ins and training — never ingredient costs, margins or the price table. Those stay on the owner\'s devices (the ones holding the owner code, under Data ▾).':
       'Os dispositivos que entram pelo link da equipa veem receitas, dial-ins e formação — nunca custos de ingredientes, margens ou a tabela de preços. Esses ficam nos dispositivos do proprietário (os que têm o código de proprietário, em Dados ▾).',
     'Staff view': 'Vista de equipa',
@@ -257,7 +257,7 @@ const I18N = {
     'Send feedback': 'Enviar comentário',
 
     /* ---- feedback ---- */
-    "How's Portafile working?": 'Como está a correr o Portafile?',
+    "How's Crema working?": 'Como está a correr o Crema?',
     'This goes straight to the person who builds it. Nothing from your recipes, prices or staff list is attached — only what you write here.':
       'Isto vai diretamente para quem o constrói. Nada das suas receitas, preços ou lista de pessoal é anexado — apenas o que escrever aqui.',
     '👍 Working well': '👍 Está a funcionar bem',
@@ -287,8 +287,8 @@ const I18N = {
 
     /* ---- access gate ---- */
     'Before you brew…': 'Antes de começar…',
-    'Portafile is free. Tell us who\'s using it so we know which shops to build for — and so we can help if something breaks.':
-      'O Portafile é gratuito. Diga-nos quem o está a usar para sabermos para que cafés construir — e para podermos ajudar se algo falhar.',
+    'Crema is free. Tell us who\'s using it so we know which shops to build for — and so we can help if something breaks.':
+      'O Crema é gratuito. Diga-nos quem o está a usar para sabermos para que cafés construir — e para podermos ajudar se algo falhar.',
     'Email': 'Email',
     'e.g. Northside Espresso': 'ex. Café da Baixa',
     'Your role': 'A sua função',
@@ -299,7 +299,7 @@ const I18N = {
     'Just curious': 'Só curiosidade',
     'City / country': 'Cidade / país',
     'Phone (optional)': 'Telefone (opcional)',
-    'Open Portafile': 'Abrir o Portafile',
+    'Open Crema': 'Abrir o Crema',
     'No password, no verification email — this browser stays unlocked.':
       'Sem palavra-passe, sem email de verificação — este navegador fica desbloqueado.',
     'How we handle your details': 'Como tratamos os seus dados',

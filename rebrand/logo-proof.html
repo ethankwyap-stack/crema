@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crema logo — size + contrast proof</title>
+<link rel="icon" href="/brand/mark.svg">
+<style>
+  /* ponytail: proof sheet, not a shipped asset. rebrand/ can never deploy. */
+  body{margin:0;font:15px/1.5 -apple-system,system-ui,sans-serif;background:#17130F;color:#F3EBE0}
+  .wrap{max-width:900px;margin:0 auto;padding:48px 24px 80px}
+  h1{font:600 13px/1 system-ui;letter-spacing:.14em;text-transform:uppercase;
+     color:#A89684;margin:0 0 28px}
+  h2{font:600 12px/1 system-ui;letter-spacing:.12em;text-transform:uppercase;
+     color:#A89684;margin:40px 0 14px}
+  .panel{padding:28px;border-radius:14px;border:1px solid #3A2E24;background:#231C16}
+  .panel.light{background:#FFFFFF;border-color:#E0DAD2;color:#1A1208}
+  .row{display:flex;align-items:flex-end;gap:32px;flex-wrap:wrap}
+  .cell{text-align:center}
+  .cap{font:11px/1 ui-monospace,Menlo,monospace;color:#A89684;margin-top:10px}
+  .light .cap{color:#6B5F52}
+  p{color:#A89684;max-width:62ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Crema — logo proof</h1>
+
+  <h2>Lockup on brand dark (default)</h2>
+  <div class="panel">
+    <div class="row">
+      <div class="cell"><img src="/brand/logo.svg" width="280"><div class="cap">280px</div></div>
+      <div class="cell"><img src="/brand/logo.svg" width="160"><div class="cap">160px</div></div>
+      <div class="cell"><img src="/brand/logo.svg" width="100"><div class="cap">100px</div></div>
+    </div>
+  </div>
+
+  <h2>Same file inverted for light backgrounds (color: #1A1208)</h2>
+  <div class="panel light">
+    <div class="row">
+      <!-- currentColor only inherits when the SVG is INLINE, not via <img>.
+           This object/embed-free approach uses a CSS filter-free inline copy instead. -->
+      <div class="cell">
+        <svg viewBox="0 0 280 120" width="280" style="color:#1A1208" role="img" aria-label="Crema">
+          <circle cx="52" cy="59" r="30" fill="none" stroke="currentColor" stroke-width="5"/>
+          <circle cx="52" cy="59" r="21" fill="#B8791F"/>
+          <path d="M38.9 54.6A17.5 17.5 0 0 1 53.8 43.3" fill="none" stroke="#F7E3BE"
+                stroke-width="4.5" stroke-linecap="round"/>
+          <text x="112" y="78" font-family="Iowan Old Style, Palatino, Georgia, serif"
+                font-size="54" font-weight="700" letter-spacing="-1" fill="currentColor">crema</text>
+        </svg>
+        <div class="cap">inlined, color overridden</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Favicon / avatar — mark.svg at real sizes</h2>
+  <div class="panel">
+    <div class="row">
+      <div class="cell"><img src="/brand/mark.svg" width="128"><div class="cap">128</div></div>
+      <div class="cell"><img src="/brand/mark.svg" width="64"><div class="cap">64</div></div>
+      <div class="cell"><img src="/brand/mark.svg" width="32"><div class="cap">32</div></div>
+      <div class="cell"><img src="/brand/mark.svg" width="16"><div class="cap">16 — tab size</div></div>
+    </div>
+  </div>
+
+  <h2>Mark on white, to check the tile holds up</h2>
+  <div class="panel light">
+    <div class="row">
+      <div class="cell"><img src="/brand/mark.svg" width="64"><div class="cap">64</div></div>
+      <div class="cell"><img src="/brand/mark.svg" width="16"><div class="cap">16</div></div>
+    </div>
+  </div>
+
+  <p style="margin-top:36px">The 16px row is the one that matters. If the crema disc and the
+  rim stop being separable there, the mark is too detailed and the rim stroke needs weight.</p>
+</div>
+</body>
+</html>

@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Portafile — Founder Dashboard (local)</title>
+<meta name="color-scheme" content="dark">
+<title>Crema — Founder Dashboard (local)</title>
 <style>
-:root{--espresso:#2A1A12;--ink:#6B5544;--paper:#FAF4EA;--card:#FFFDF8;--crema:#D9A05B;--terra:#C4502F;--green:#5B7065;--red:#B3261E;--line:#E7DACA}
+:root{--espresso:#F3EBE0;--ink:#A89684;--paper:#17130F;--card:#231C16;--crema:#E8A33D;--terra:#E8A33D;--green:#7FA98C;--red:#E4674F;--line:#3A2E24}
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--espresso);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
 .wrap{max-width:1060px;margin:0 auto;padding:20px 22px 60px}
@@ -21,8 +22,8 @@ h2{font-size:17px;margin:26px 0 10px}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
 th{color:var(--ink);font-weight:600;font-size:12.5px;text-transform:uppercase}
-input,select,button{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--espresso)}
-button{background:var(--terra);color:#fff;border:0;cursor:pointer;font-weight:650}
+input,select,button{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--espresso)}
+button{background:var(--terra);color:var(--paper);border:0;cursor:pointer;font-weight:650}
 button.ghost{background:transparent;color:var(--terra);border:1px solid var(--terra)}
 button.mini{padding:2px 8px;font-size:12px;background:transparent;color:var(--red);border:1px solid var(--line)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
@@ -35,7 +36,7 @@ button.mini{padding:2px 8px;font-size:12px;background:transparent;color:var(--re
 <body>
 <div class="wrap">
 <div class="bar">
-  <h1>Portafile — Founder Dashboard</h1>
+  <h1>Crema — Founder Dashboard</h1>
   <div class="row">
     <button class="ghost" onclick="doExport()">Export backup</button>
     <label class="ghost" style="border:1px solid var(--terra);border-radius:8px;padding:7px 10px;color:var(--terra);font-weight:650;cursor:pointer">Import backup<input type="file" accept=".json" style="display:none" onchange="doImport(this)"></label>
@@ -228,7 +229,7 @@ async function fetchLeads() {
 function toList(i) { const l = (window._leads || [])[i]; if (l) { autoEmail(l.email, l.shop, 'interested'); save(); } }
 async function delLead(i) {
   const l = (window._leads || [])[i]; if (!l) return;
-  if (!confirm(`Permanently delete the signup record from ${l.email}?\n\nThis erases their contact details from your list — it does NOT log them out. Portafile has no accounts; their browser stays unlocked. To cut off a staff device, use "Reset staff link" in the app instead.`)) return;
+  if (!confirm(`Permanently delete the signup record from ${l.email}?\n\nThis erases their contact details from your list — it does NOT log them out. Crema has no accounts; their browser stays unlocked. To cut off a staff device, use "Reset staff link" in the app instead.`)) return;
   const k = localStorage.getItem('portafile-admin-key');
   if (!k) { alert('Click "Fetch signups" first so the admin key is set.'); return; }
   const r = await fetch(`https://portafile.vercel.app/api/lead?ts=${l.ts}`, { method: 'DELETE', headers: { 'x-portafile-admin': k } });
@@ -244,7 +245,7 @@ async function delCloud(i) {
    here so the confirm wording and the auth stay identical. */
 async function wipeShop(shopId, label, tail = '') {
   if (!/^[a-f0-9]{40}$/.test(shopId || '')) return;
-  if (!confirm(`Erase the CLOUD DATA for ${label}?\n\nTheir synced recipes and prices are permanently deleted from Portafile's storage — and every device that shop uses, the OWNER'S OWN INCLUDED, is wiped back to the demo shop and disconnected. If they never exported a backup, this destroys their only copy of their recipes. When they come back to the site, they'll see the signup form again.\n\nThis cannot be undone.${tail ? ' ' + tail : ''}`)) return;
+  if (!confirm(`Erase the CLOUD DATA for ${label}?\n\nTheir synced recipes and prices are permanently deleted from Crema's storage — and every device that shop uses, the OWNER'S OWN INCLUDED, is wiped back to the demo shop and disconnected. If they never exported a backup, this destroys their only copy of their recipes. When they come back to the site, they'll see the signup form again.\n\nThis cannot be undone.${tail ? ' ' + tail : ''}`)) return;
   const k = localStorage.getItem('portafile-admin-key');
   if (!k) { alert('Click "Fetch signups" first so the admin key is set.'); return; }
   const r = await fetch('https://portafile.vercel.app/api/state', {

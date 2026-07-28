@@ -23,7 +23,7 @@ const check = (name, cond) => { console.log((cond ? 'PASS' : 'FAIL') + '  ' + na
   await page.click('#btnData');
   await page.setInputFiles('#dImport', tmp('bad-backup.json'));
   await page.waitForTimeout(400);
-  check('keyless import rejected with alert', lastAlert.includes('not a portafile backup'));
+  check('keyless import rejected with alert', lastAlert.includes('not a crema backup'));
   const after = await page.evaluate(() => localStorage.getItem('portafile.v1') || localStorage.getItem(Object.keys(localStorage).find(k => k.includes('portafile'))));
   check('localStorage untouched by rejected import', after === before);
   await page.reload();

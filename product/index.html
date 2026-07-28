@@ -3,17 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Portafile — your whole shop, dialed in</title>
+<!-- tells the browser to render native controls (selects, scrollbars, spinners) dark;
+     without it the langSel dropdown and every scrollbar stay light on the Counter palette -->
+<meta name="color-scheme" content="dark">
+<title>Crema — your whole shop, dialed in</title>
 <link rel="stylesheet" href="styles.css">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect x='84' y='52' width='34' height='14' rx='7' fill='%232A1A12'/%3E%3Ccircle cx='56' cy='59' r='36' fill='%232A1A12'/%3E%3Crect x='37' y='45' width='38' height='5.5' rx='2.75' fill='%23FAF4EA'/%3E%3Crect x='37' y='57' width='38' height='5.5' rx='2.75' fill='%23FAF4EA'/%3E%3Crect x='37' y='69' width='25' height='5.5' rx='2.75' fill='%23D9A05B'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='26' fill='%2317130F'/%3E%3Ccircle cx='60' cy='60' r='36' fill='none' stroke='%23F3EBE0' stroke-width='6'/%3E%3Ccircle cx='60' cy='60' r='25' fill='%23E8A33D'/%3E%3Cpath d='M44.5 55A21 21 0 0 1 62.3 40.5' fill='none' stroke='%23F7E3BE' stroke-width='5.5' stroke-linecap='round'/%3E%3C/svg%3E">
 </head>
 <body>
 <div class="app">
   <header class="topbar">
     <div class="brand-lockup">
-      <svg class="brand-mark" viewBox="0 0 120 120" aria-hidden="true"><rect x="84" y="52" width="34" height="14" rx="7" fill="#2A1A12"/><circle cx="56" cy="59" r="36" fill="#2A1A12"/><rect x="37" y="45" width="38" height="5.5" rx="2.75" fill="#FAF4EA"/><rect x="37" y="57" width="38" height="5.5" rx="2.75" fill="#FAF4EA"/><rect x="37" y="69" width="25" height="5.5" rx="2.75" fill="#D9A05B"/><circle cx="56" cy="104" r="5.5" fill="#C4502F"/></svg>
+      <svg class="brand-mark" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="36" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="60" cy="60" r="25" fill="#E8A33D"/><path d="M44.5 55A21 21 0 0 1 62.3 40.5" fill="none" stroke="#F7E3BE" stroke-width="5.5" stroke-linecap="round"/></svg>
       <div>
-        <div class="brand-name">portafile</div>
+        <div class="brand-name">crema</div>
         <input id="shopName" class="shop-name" aria-label="Shop name">
       </div>
     </div>

@@ -1,17 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" role="img" aria-label="Portafile">
-  <!-- Mark: a portafilter whose basket holds document lines -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 120" style="color:#F3EBE0"
+     role="img" aria-label="Crema">
+  <!-- Mark: an espresso seen from directly above — cup rim, crema, surface highlight.
+       Ink parts use currentColor, so the lockup inverts for a light background by setting
+       `color` on this <svg> or (when inlined) on its parent. The crema itself is always
+       gold: it is the one element in the mark that must never take a palette token. -->
   <g>
-    <!-- handle -->
-    <rect x="78" y="52" width="40" height="14" rx="7" fill="#2A1A12"/>
-    <!-- basket -->
-    <circle cx="52" cy="59" r="34" fill="#2A1A12"/>
-    <!-- documents in the basket -->
-    <rect x="34" y="46" width="36" height="5" rx="2.5" fill="#FAF4EA"/>
-    <rect x="34" y="57" width="36" height="5" rx="2.5" fill="#FAF4EA"/>
-    <rect x="34" y="68" width="24" height="5" rx="2.5" fill="#D9A05B"/>
-    <!-- crema drip: single drop under the basket spout -->
-    <circle cx="52" cy="100" r="5" fill="#C4502F"/>
+    <!-- cup rim -->
+    <circle cx="52" cy="59" r="30" fill="none" stroke="currentColor" stroke-width="5"/>
+    <!-- the crema -->
+    <circle cx="52" cy="59" r="21" fill="#E8A33D"/>
+    <!-- surface highlight -->
+    <path d="M38.9 54.6A17.5 17.5 0 0 1 53.8 43.3" fill="none" stroke="#F7E3BE"
+          stroke-width="4.5" stroke-linecap="round"/>
   </g>
   <!-- Wordmark -->
-  <text x="138" y="74" font-family="Iowan Old Style, Palatino, Georgia, serif" font-size="46" font-weight="700" letter-spacing="-0.5" fill="#2A1A12">portafile</text>
+  <text x="112" y="78" font-family="Iowan Old Style, Palatino, Georgia, serif"
+        font-size="54" font-weight="700" letter-spacing="-1" fill="currentColor">crema</text>
 </svg>

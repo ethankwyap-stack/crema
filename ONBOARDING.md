@@ -1,6 +1,6 @@
-# Portafile — a guide for your shop
+# Crema — a guide for your shop
 
-Thanks for trying this. Portafile keeps your recipes, your real costs, your espresso
+Thanks for trying this. Crema keeps your recipes, your real costs, your espresso
 dial-ins and your new-hire training in one place, on your phone and your staff's phones.
 This guide covers what you're getting, how to set it up, and the few things worth knowing
 before you rely on it.
@@ -119,7 +119,7 @@ costs and margins are yours; I don't look at them and there's no analytics on th
 only thing I keep is the signup form — your email and shop name — so I can reach you.
 Ask me any time and I'll delete it.
 
-**It speaks Portuguese too.** Portafile follows your *browser's* language, not your country,
+**It speaks Portuguese too.** Crema follows your *browser's* language, not your country,
 so an English browser opens in English and you don't have to do anything. Next to the **?**
 in the top right there's a picker with **EN** and **PT**. Two things are worth knowing about
 it. While your shop is still the untouched demo, the *menu* changes with the language —

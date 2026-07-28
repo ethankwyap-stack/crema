@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en" data-pal="kraft">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rebrand review — naming + identity</title>
+<style>
+/* ponytail: single file, inline styles. This page is a decision aid, not a shipped
+   asset — rebrand/ is outside .vercelignore's allowlist so it can never deploy. */
+
+[data-pal="kraft"]{
+  --bg:#FAF4EA; --surface:#FFFDF8; --ink:#2A1A12; --ink-soft:#6B5544;
+  --line:#E3D7C6; --accent:#C4502F; --gold:#D9A05B; --ok:#5B7065;
+  --pal-name:"Kraft"; }
+[data-pal="counter"]{
+  --bg:#17130F; --surface:#231C16; --ink:#F3EBE0; --ink-soft:#A89684;
+  --line:#3A2E24; --accent:#E8A33D; --gold:#C98A2E; --ok:#7FA98C;
+  --pal-name:"Counter"; }
+[data-pal="daylight"]{
+  --bg:#FBFAF7; --surface:#FFFFFF; --ink:#171717; --ink-soft:#6B6B68;
+  --line:#E6E4DE; --accent:#E4633A; --gold:#2F6B4F; --ok:#2F6B4F;
+  --pal-name:"Daylight"; }
+
+*{box-sizing:border-box}
+body{
+  margin:0; padding:0 24px 96px;
+  background:var(--bg); color:var(--ink);
+  font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  transition:background .25s ease,color .25s ease;
+}
+.wrap{max-width:1080px;margin:0 auto}
+header{padding:56px 0 8px;border-bottom:1px solid var(--line)}
+h1{font:600 15px/1 -apple-system,system-ui,sans-serif;letter-spacing:.14em;
+   text-transform:uppercase;color:var(--ink-soft);margin:0 0 20px}
+.lede{font:400 27px/1.35 "Iowan Old Style",Palatino,Georgia,serif;max-width:30ch;margin:0 0 18px}
+.sub{color:var(--ink-soft);max-width:64ch;margin:0 0 40px;font-size:15px}
+.sub b{color:var(--ink);font-weight:600}
+
+/* palette switch */
+.palbar{position:sticky;top:0;z-index:5;display:flex;gap:8px;align-items:center;
+  padding:14px 0;background:var(--bg);border-bottom:1px solid var(--line);margin-bottom:40px}
+.palbar span{font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-soft);margin-right:6px}
+.palbar button{font:inherit;font-size:13px;padding:7px 15px;border-radius:999px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);cursor:pointer}
+.palbar button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+h2{font:600 13px/1 -apple-system,system-ui,sans-serif;letter-spacing:.14em;
+   text-transform:uppercase;color:var(--ink-soft);margin:56px 0 20px}
+
+/* name cards */
+.grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:24px;display:flex;flex-direction:column;gap:14px}
+.card.pick{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.lockup{display:flex;align-items:center;gap:13px}
+.name{font:700 34px/1 "Iowan Old Style",Palatino,Georgia,serif;letter-spacing:-.02em}
+.why{font-size:14px;color:var(--ink-soft);margin:0;flex:1}
+.why b{color:var(--ink);font-weight:600}
+.say{font-size:13px;color:var(--ink-soft);border-left:2px solid var(--gold);
+  padding-left:11px;margin:0;font-style:italic}
+.meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  border-top:1px solid var(--line);padding-top:13px;font-size:12px}
+.sizes{display:flex;align-items:flex-end;gap:9px;margin-left:auto;opacity:.85}
+.tag{padding:3px 9px;border-radius:5px;font-weight:600;letter-spacing:.03em}
+.free{background:var(--ok);color:var(--surface)}
+.taken{background:var(--line);color:var(--ink-soft)}
+.rank{font-weight:700;color:var(--accent);letter-spacing:.08em;font-size:11px;
+  text-transform:uppercase}
+
+/* palette swatches */
+.sw{display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--line);
+   margin-bottom:10px;height:52px}
+.sw i{flex:1}
+.pnote{font-size:14px;color:var(--ink-soft);margin:0 0 26px;max-width:62ch}
+footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--line);
+  font-size:14px;color:var(--ink-soft);max-width:66ch}
+footer b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Rebrand review — local only, nothing deployed</h1>
+  <p class="lede">Eight one-word names a barista already says, each with a mark drawn from its own meaning.</p>
+  <p class="sub">
+    <b>Why <i>portafile</i> isn't landing:</b> it's a portmanteau you have to be told — portafilter + file.
+    Said out loud people write down "porta-feel," or assume it's file storage, which is the wrong category
+    entirely. <b>Every name below is a word your customers already use on shift</b>, so it needs no footnote.
+    Availability is <b>.com only</b>, checked directly against the Verisign registry.
+    <b>No domain has been bought and none will be.</b>
+  </p>
+</header>
+
+<div class="palbar">
+  <span>Palette</span>
+  <button data-p="kraft" aria-pressed="true">Kraft — today's</button>
+  <button data-p="counter" aria-pressed="false">Counter</button>
+  <button data-p="daylight" aria-pressed="false">Daylight</button>
+</div>
+
+<h2>The names</h2>
+<div class="grid" id="names"></div>
+
+<h2>The palettes</h2>
+<div class="grid">
+  <div class="card">
+    <div class="sw"><i style="background:#FAF4EA"></i><i style="background:#2A1A12"></i>
+      <i style="background:#D9A05B"></i><i style="background:#C4502F"></i><i style="background:#5B7065"></i></div>
+    <div class="name" style="font-size:22px">Kraft</div>
+    <p class="why"><b>What you have now.</b> Kraft paper, espresso ink, crema gold, terracotta.
+      Built for a paper-first product — laminated cards in a daylight café. Deliberately not SaaS blue.
+      Nothing is wrong with it; the logo is the weak part, not the color.</p>
+  </div>
+  <div class="card">
+    <div class="sw"><i style="background:#17130F"></i><i style="background:#F3EBE0"></i>
+      <i style="background:#E8A33D"></i><i style="background:#C98A2E"></i><i style="background:#7FA98C"></i></div>
+    <div class="name" style="font-size:22px">Counter</div>
+    <p class="why"><b>The machine, not the card.</b> Dark roasted ground, warm amber, steel.
+      Looks expensive and modern on screen. <b>Cost:</b> your product's whole point is printing
+      cards — this palette fights the paper, and dark UI prints badly.</p>
+  </div>
+  <div class="card">
+    <div class="sw"><i style="background:#FBFAF7"></i><i style="background:#171717"></i>
+      <i style="background:#2F6B4F"></i><i style="background:#E4633A"></i><i style="background:#E6E4DE"></i></div>
+    <div class="name" style="font-size:22px">Daylight</div>
+    <p class="why"><b>Third-wave clean.</b> Near-white, true black, deep green, one hot orange.
+      Reads more current and more premium than Kraft, still prints clean. The closest thing
+      to a real upgrade rather than a sideways move.</p>
+  </div>
+</div>
+
+<footer>
+  <b>How to use this page:</b> pick one name and one palette. I'll then draw the finished logo and
+  wordmark properly, and roll the name through all 53 files that say "Portafile" — landing pages,
+  the Portuguese site, the app, the guides, the test markers.
+  <br><br>
+  <b>What will not change, ever:</b> the storage keys <code>portafile.v1.*</code> and the
+  <code>x-portafile-*</code> headers. Those are identifiers, not branding — renaming them would erase
+  every real café's saved shop and break devices already in the field.
+  <br><br>
+  <b>Out of scope:</b> the launch film says the old name aloud and can't be cheaply re-narrated.
+</footer>
+
+</div>
+
+<script>
+const M = {
+  dial:`<circle cx="24" cy="24" r="19" fill="none" stroke="var(--ink)" stroke-width="3"/>
+    <path d="M24 8v5M40 24h-5M24 40v-5M8 24h5" stroke="var(--ink-soft)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M24 24l9-9" stroke="var(--accent)" stroke-width="3.4" stroke-linecap="round"/>
+    <circle cx="24" cy="24" r="3.4" fill="var(--ink)"/>`,
+  crema:`<circle cx="24" cy="24" r="19" fill="none" stroke="var(--ink)" stroke-width="3"/>
+    <!-- crema is gold by definition; never borrow --gold, which Daylight maps to green -->
+    <circle cx="24" cy="24" r="13" fill="#D9A05B"/>
+    <path d="M15 20c4 3.4 14 3.4 18 0" fill="none" stroke="var(--surface)"
+      stroke-width="2.6" stroke-linecap="round" opacity=".85"/>`,
+  ninebar:`<circle cx="24" cy="26" r="18" fill="none" stroke="var(--ink)" stroke-width="3"/>
+    <path d="M11 15A18 18 0 0 1 37 15" fill="none" stroke="var(--ink-soft)"
+      stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M24 26L12.5 18" stroke="var(--accent)" stroke-width="3.4" stroke-linecap="round"/>
+    <circle cx="24" cy="26" r="3.2" fill="var(--ink)"/>`,
+  puck:`<path d="M9 15h30" stroke="var(--ink-soft)" stroke-width="3" stroke-linecap="round"/>
+    <rect x="8" y="21" width="32" height="13" rx="6.5" fill="var(--ink)"/>
+    <path d="M15 28h18" stroke="var(--gold)" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="24" cy="41" r="3.2" fill="var(--accent)"/>`,
+  grind:`<circle cx="24" cy="24" r="19" fill="none" stroke="var(--ink)" stroke-width="3"/>
+    <circle cx="24" cy="24" r="10" fill="none" stroke="var(--ink-soft)" stroke-width="2.4"/>
+    <path d="M24 5v10M43 24H33M24 43V33M5 24h10M37.4 10.6l-7 7M37.4 37.4l-7-7M10.6 37.4l7-7M10.6 10.6l7 7"
+      stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="24" cy="24" r="3.6" fill="var(--accent)"/>`,
+  spro:`<path d="M11 14h22v12a11 11 0 0 1-22 0z" fill="var(--ink)"/>
+    <path d="M33 17h4a5 5 0 0 1 0 10h-4" fill="none" stroke="var(--ink)" stroke-width="3"/>
+    <path d="M15 19h14" stroke="var(--gold)" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M9 41h30" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>`,
+  dose:`<rect x="6" y="10" width="36" height="28" rx="6" fill="none" stroke="var(--ink)" stroke-width="3"/>
+    <path d="M13 22h13" stroke="var(--ink)" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M13 29h8" stroke="var(--gold)" stroke-width="3.2" stroke-linecap="round"/>
+    <circle cx="34" cy="26" r="4" fill="var(--accent)"/>`,
+  tamp:`<rect x="20" y="6" width="8" height="17" rx="4" fill="var(--ink)"/>
+    <rect x="9" y="23" width="30" height="9" rx="4.5" fill="var(--ink)"/>
+    <path d="M14 39h20" stroke="var(--gold)" stroke-width="3" stroke-linecap="round"/>`,
+};
+
+const NAMES = [
+  { id:'dial', word:'Dialed', rank:'my pick',
+    why:`<b>It's already your tagline</b> — "your whole shop, dialed in." Dialing in a recipe is
+      the exact job this app does, and past tense means <i>finished, correct, settled</i>.
+      One syllable of meaning, no explanation.`,
+    say:`"We keep the recipes in Dialed." — lands first try, spells itself.`, free:false },
+  { id:'crema', word:'Crema', rank:'strongest sound',
+    why:`The golden layer only a good shot makes — <b>coffee's own word for "done right."</b>
+      Warm, easy in English <i>and</i> Portuguese, which matters for your Lisbon cafés.`,
+    say:`"Crema" — universally pronounceable, never misspelled.`, free:false },
+  { id:'ninebar', word:'Ninebar', rank:'most ownable',
+    why:`Nine bar is the pressure espresso is pulled at. <b>Pure insider signal</b> — a café owner
+      hears it and knows you're one of them. Distinctive enough to actually own in search.`,
+    say:`"Ninebar" — needs spelling out once (one word, not "9 bar").`, free:true },
+  { id:'puck', word:'Puck', rank:'',
+    why:`The compressed bed of grounds. Short, physical, memorable, and it makes an
+      unmistakable mark. <b>Downside:</b> hockey owns the word outside coffee.`,
+    say:`"Puck" — impossible to mishear, easy to misplace in category.`, free:false },
+  { id:'tamp', word:'Tamp', rank:'',
+    why:`One syllable, a verb every barista performs a hundred times a shift.
+      <b>Cleanest possible spelling.</b> Risk: it's an action, not a place things live.`,
+    say:`"Tamp" — one beat, zero ambiguity.`, free:false },
+  { id:'grind', word:'Grind', rank:'',
+    why:`The setting every shop chases daily. Instantly on-category. <b>Downside:</b> "the daily
+      grind" means drudgery — the opposite of what you're selling to an owner.`,
+    say:`"Grind" — memorable, but carries a tired second meaning.`, free:false },
+  { id:'dose', word:'Dose', rank:'',
+    why:`The gram weight in the basket — the number your costing math literally starts from.
+      Precise and short. <b>Downside:</b> medical/drug connotation outside the café.`,
+    say:`"Dose" — clean, slightly clinical.`, free:false },
+  { id:'spro', word:'Spro', rank:'',
+    why:`Barista shorthand for espresso. <b>Maximum insider, maximum ownable</b>, four letters.
+      Risk: reads like a typo to anyone outside the trade, including investors.`,
+    say:`"Spro" — fun in the shop, confusing on a business card.`, free:false },
+];
+
+const svg = (id,s) => `<svg width="${s}" height="${s}" viewBox="0 0 48 48"
+  role="img" aria-label="${id} mark">${M[id]}</svg>`;
+
+document.getElementById('names').innerHTML = NAMES.map(n => `
+  <div class="card${n.rank==='my pick'?' pick':''}">
+    <div class="lockup">${svg(n.id,44)}<div class="name">${n.word}</div></div>
+    <p class="why">${n.why}</p>
+    <p class="say">${n.say}</p>
+    <div class="meta">
+      ${n.rank?`<span class="rank">${n.rank}</span>`:''}
+      <span class="tag ${n.free?'free':'taken'}">${n.free
+        ? n.word.toLowerCase()+'.com free'
+        : n.word.toLowerCase()+'.com taken'}</span>
+      <span class="sizes" title="24px and 16px — favicon legibility"
+        >${svg(n.id,24)}${svg(n.id,16)}</span>
+    </div>
+  </div>`).join('');
+
+const setPal = p => {
+  if (!document.querySelector(`.palbar button[data-p="${p}"]`)) return;
+  document.documentElement.dataset.pal = p;
+  document.querySelectorAll('.palbar button').forEach(o =>
+    o.setAttribute('aria-pressed', String(o.dataset.p === p)));
+};
+document.querySelectorAll('.palbar button').forEach(b =>
+  b.onclick = () => { location.hash = b.dataset.p; setPal(b.dataset.p); });
+addEventListener('hashchange', () => setPal(location.hash.slice(1)));
+setPal(location.hash.slice(1) || 'kraft');
+</script>
+</body>
+</html>

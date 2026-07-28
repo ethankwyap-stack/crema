@@ -1,4 +1,4 @@
-/* Portafile v1 — local-first. All data in localStorage; nothing leaves the browser. */
+/* Crema v1 — local-first. All data in localStorage; nothing leaves the browser. */
 'use strict';
 
 /* ---------------- state ---------------- */
@@ -210,7 +210,7 @@ applyLang();
    takes effect without a reload. */
 function applyChrome() {
   document.documentElement.lang = getLang() === 'pt' ? 'pt-PT' : 'en';
-  document.title = t('Portafile — your whole shop, dialed in');
+  document.title = t('Crema — your whole shop, dialed in');
   const nm = $('#shopName'); if (nm) nm.setAttribute('aria-label', t('Shop name'));
   const bh = $('#btnHelp'); if (bh) bh.title = t('Help');
   const bd = $('#btnData'); if (bd) { bd.title = t('Backup, restore, reset'); bd.textContent = t('Data ▾'); }
@@ -296,7 +296,7 @@ function syncBadge() {
 }
 let syncPollT;
 function lockScreen() {
-  document.title = t('Link turned off — Portafile');
+  document.title = t('Link turned off — Crema');
   document.body.innerHTML = `<div class="gatewrap"><div class="sheet">
     <h3>${t('This link has been turned off')}</h3>
     <p>${t("The shop owner reset the staff link, so this device no longer has access to the shop's recipes, prices or training records. The copy that was stored on this device has been removed.")}</p>
@@ -725,7 +725,7 @@ const pCard = r => `
     <ol>${r.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
     ${r.bean ? `<div class="dial-ref">⏚ ${t('%s — check the board', esc(dialRefText(r)))}</div>` : ''}
   </div>`;
-const pHead = title => `<div class="phead"><span>${esc(S.shop.name)} — ${title}</span><span>portafile · ${new Date().toLocaleDateString(localeTag())}</span></div>`;
+const pHead = title => `<div class="phead"><span>${esc(S.shop.name)} — ${title}</span><span>crema · ${new Date().toLocaleDateString(localeTag())}</span></div>`;
 
 function buildPrint(kind) {
   const root = $('#printRoot');
@@ -746,7 +746,7 @@ function buildPrint(kind) {
       <div class="pcover">
         <div class="big">${t('Welcome to the bar.')}</div>
         <div class="shop">${esc(S.shop.name)}</div>
-        <div class="date">${t('Your training pack — printed %s by portafile', new Date().toLocaleDateString(localeTag()))}</div>
+        <div class="date">${t('Your training pack — printed %s by crema', new Date().toLocaleDateString(localeTag()))}</div>
       </div>
       ${pHead(t('training path'))}
       <div class="pchecklist">
@@ -812,7 +812,7 @@ function dataMenu() {
       <h4 style="margin-top:18px">${t('Owner code')}</h4>
       <p class="hint">${t('Unlocks the cost pages on your <em>own</em> other devices. Treat it like a key: anyone who has it can also reset the staff link. Never give it to staff.')}</p>
       <p><input id="dOwnerShow" readonly value="${esc(localStorage.getItem(OWNER_KEY))}" style="width:100%;font-family:var(--font-mono)"></p>` : ''}` : `
-      <p class="hint">${t("Turn on sync to get a secret link: open it on any phone or laptop and everyone shares the same live data. Your data then also lives in Portafile's cloud storage.")}</p>
+      <p class="hint">${t("Turn on sync to get a secret link: open it on any phone or laptop and everyone shares the same live data. Your data then also lives in Crema's cloud storage.")}</p>
       <div class="bar" style="justify-content:flex-start"><button class="btn" id="dSyncOn">${t('Turn on sync')}</button></div>`}`}`);
   const syncOn = $('#dSyncOn'); if (syncOn) syncOn.onclick = () => {
     // three independent secrets: durable identity, ownership proof, and the rotatable link
@@ -862,7 +862,7 @@ function dataMenu() {
     const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `portafile-${S.shop.name.replace(/\W+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `crema-${S.shop.name.replace(/\W+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.json`;
     a.click(); URL.revokeObjectURL(a.href);
   };
   $('#dImport').onchange = e => {
@@ -870,7 +870,7 @@ function dataMenu() {
     f.text().then(txt => {
       try {
         const s = JSON.parse(txt);
-        if (!validBackup(s)) throw new Error(t('not a portafile backup'));
+        if (!validBackup(s)) throw new Error(t('not a crema backup'));
         s.shop.cogsTarget = +s.shop.cogsTarget || 30; s.tab = s.tab || 'recipes';
         const prev = S;
         try { S = s; render(); }
@@ -885,14 +885,14 @@ function dataMenu() {
 
 function helpModal() {
   openModal(`
-    <h3>${t('How Portafile works')}</h3>
+    <h3>${t('How Crema works')}</h3>
     <div class="helpbody">
       <h4>${t('Recipes')}</h4><p>${t('Every card shows what the drink <em>costs you</em> next to its menu price. The badge goes red when cost-of-goods passes your target (set it on the dashboard). Espresso drinks carry the live dial-in for their bean.')}</p>
       <h4>${t('Prices')}</h4><p>${t("One table of what you pay. Change a number → every card re-prices. When milk or beans jump, you'll see which drinks went underwater the same minute.")}</p>
       <h4>${t('Dial-in')}</h4><p>${t('Log grind/dose/yield/time per bean. The newest entry is "the board" — it appears on cards and print packs. History stays forever.')}</p>
       <h4>${t('Training')}</h4><p>${t('Order the path (drinks + custom skills, grouped by day), pick a barista, tick sign-offs. Progress is saved per barista.')}</p>
       <h4>${t('Print')}</h4><p>${t('Cards and the new-hire pack hide costs on purpose — they get taped where customers can see. The margin report is the owner-only page.')}</p>
-      <h4>${t('Your data')}</h4><p>${t("Lives in this browser (localStorage). <strong>Data → Export backup</strong> before switching machines. No account, no bill. If you turn on <strong>Sync</strong> (Data menu), your data also lives in Portafile's cloud storage so staff phones share it via a secret link.")}</p>
+      <h4>${t('Your data')}</h4><p>${t("Lives in this browser (localStorage). <strong>Data → Export backup</strong> before switching machines. No account, no bill. If you turn on <strong>Sync</strong> (Data menu), your data also lives in Crema's cloud storage so staff phones share it via a secret link.")}</p>
       <h4>${t('Staff view')}</h4><p>${t("Devices that join through the staff link see recipes, dial-ins and training — never ingredient costs, margins or the price table. Those stay on the owner's devices (the ones holding the owner code, under Data ▾).")}</p>
     </div>
     <div class="bar">${location.protocol === 'file:' ? '' : `<button class="ghost" id="hFeedback">${t('Send feedback')}</button>`}<button class="btn" data-close>${t('Got it')}</button></div>`);
@@ -903,7 +903,7 @@ function helpModal() {
    no recipes, no prices, no shopId — only what the person typed. */
 function feedbackModal() {
   openModal(`
-    <h3>${t("How's Portafile working?")}</h3>
+    <h3>${t("How's Crema working?")}</h3>
     <p class="hint">${t('This goes straight to the person who builds it. Nothing from your recipes, prices or staff list is attached — only what you write here.')}</p>
     <div class="bar" style="justify-content:flex-start">
       <button class="ghost" id="fbUp" aria-pressed="false">${t('👍 Working well')}</button>
@@ -1162,7 +1162,7 @@ function selftest() {
   d.className = 'selftest' + (fails.length ? ' fail' : '');
   d.textContent = fails.length ? `SELFTEST FAIL: ${fails.join(', ')}` : `SELFTEST PASS (${total} checks)`;
   document.body.appendChild(d);
-  console.log('[portafile selftest]', fails.length ? fails : 'all pass');
+  console.log('[crema selftest]', fails.length ? fails : 'all pass');
 }
 
 /* ---------------- access gate (fill once, remembered) ---------------- */
@@ -1180,14 +1180,14 @@ function gate() {
      buckets; only the label the person reads is translated. */
   g.innerHTML = `<form class="sheet gate">
     <h3>${t('Before you brew…')}</h3>
-    <p class="hint">${t("Portafile is free. Tell us who's using it so we know which shops to build for — and so we can help if something breaks.")}</p>
+    <p class="hint">${t("Crema is free. Tell us who's using it so we know which shops to build for — and so we can help if something breaks.")}</p>
     <label>${t('Email')} *<input name="email" type="email" required autocomplete="email"></label>
     <label>${t('Shop name')} *<input name="shop" required placeholder="${t('e.g. Northside Espresso')}"></label>
     <label>${t('Your role')}<select name="role"><option value="">—</option><option value="Owner">${t('Owner')}</option><option value="Manager">${t('Manager')}</option><option value="Barista">${t('Barista')}</option><option value="Roaster">${t('Roaster|role')}</option><option value="Just curious">${t('Just curious')}</option></select></label>
     <label>${t('City / country')}<input name="city" autocomplete="address-level2"></label>
     <label>${t('Phone (optional)')}<input name="phone" type="tel" autocomplete="tel"></label>
     <input name="hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
-    <div class="bar" style="justify-content:flex-end"><button class="btn" type="submit">${t('Open Portafile')}</button></div>
+    <div class="bar" style="justify-content:flex-end"><button class="btn" type="submit">${t('Open Crema')}</button></div>
     <p class="hint">${t('No password, no verification email — this browser stays unlocked.')} <a href="${getLang() === 'pt' ? '/site/pt/privacy.html' : '/site/privacy.html'}" target="_blank" rel="noopener">${t('How we handle your details')}</a></p>
   </form>`;
   document.body.appendChild(g);

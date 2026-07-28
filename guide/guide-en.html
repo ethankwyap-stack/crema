@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Portafile — a guide for your shop</title>
+<title>Crema — a guide for your shop</title>
 <!--
   English onboarding guide, printed to PDF. Sibling of guia-pt.html — same design,
   ADAPTED not translated: the US demo (15 drinks, dollars, fluid ounces, °F), the
@@ -12,9 +12,12 @@
 -->
 <style>
   :root {
-    --espresso: #2A1A12; --roast: #4A3527; --ink-soft: #6B5544;
-    --paper: #FAF4EA; --card: #FFFDF8; --crema: #D9A05B;
-    --terra: #C4502F; --spruce: #5B7065; --line: #E7DACA;
+    /* Crema, print side of the palette (brand/brand.css @media print). The page stays
+       warm paper; the ink and the gold are the brand's printed values. Gold on white is
+       unreadable at #E8A33D, so print uses the darkened #8A5A12 — do not "fix" it back. */
+    --espresso: #1A1208; --roast: #3A2C1C; --ink-soft: #5A4A3A;
+    --paper: #FAF4EA; --card: #FFFDF8; --crema: #8A5A12;
+    --spruce: #34503F; --line: #CFC4B6;
     --font-display: "Iowan Old Style", Palatino, Georgia, serif;
     --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   }
@@ -26,7 +29,7 @@
   }
   h1 { font-family: var(--font-display); font-size: 19pt; margin: 0 0 2pt; letter-spacing: -.2pt; }
   .sub { color: var(--roast); font-size: 9.4pt; margin: 0 0 2.5pt; }
-  .url { font-size: 8.6pt; color: var(--terra); font-weight: 600; margin: 0; }
+  .url { font-size: 8.6pt; color: var(--crema); font-weight: 600; margin: 0; }
   header { border-bottom: 2.5px solid var(--espresso); padding-bottom: 5pt; margin-bottom: 8pt; }
 
   section { break-inside: avoid; margin-bottom: 7pt; }
@@ -37,7 +40,7 @@
   }
   h2 .n {
     font-family: var(--font-ui); font-size: 8pt; font-weight: 700; color: var(--card);
-    background: var(--terra); border-radius: 50%; width: 15pt; height: 15pt;
+    background: var(--crema); border-radius: 50%; width: 15pt; height: 15pt;
     display: inline-flex; align-items: center; justify-content: center; flex: none;
   }
   h2 .when { margin-left: auto; font-family: var(--font-ui); font-size: 8pt; font-weight: 400; color: var(--ink-soft); }
@@ -48,25 +51,25 @@
   b, strong { color: var(--roast); }
   .btn {
     font-family: var(--font-ui); font-size: 8.4pt; font-weight: 600; white-space: nowrap;
-    background: var(--card); border: 1px solid var(--crema); border-radius: 4pt;
+    background: var(--card); border: 1px solid var(--line); border-radius: 4pt;
     padding: 0.5pt 3.5pt; color: var(--roast);
   }
   .muted { color: var(--ink-soft); }
 
   .callout {
-    background: var(--card); border: 1px solid var(--crema);
-    border-left: 3.5px solid var(--terra); border-radius: 5pt;
+    background: var(--card); border: 1px solid var(--line);
+    border-left: 3.5px solid var(--crema); border-radius: 5pt;
     padding: 6pt 8.5pt; margin: 0 0 4pt;
   }
   .callout h3 {
     margin: 0 0 3pt; font-size: 9pt; font-family: var(--font-ui);
-    color: var(--terra); text-transform: uppercase; letter-spacing: .4pt;
+    color: var(--crema); text-transform: uppercase; letter-spacing: .4pt;
   }
   .warn { border-left-color: var(--spruce); }
   .warn h3 { color: var(--spruce); }
 
   .tabs { display: grid; grid-template-columns: 62pt 1fr; gap: 3pt 9pt; margin-bottom: 4pt; }
-  .tabs dt { font-weight: 700; color: var(--terra); }
+  .tabs dt { font-weight: 700; color: var(--crema); }
   .tabs dd { margin: 0; }
 
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16pt; }
@@ -77,7 +80,7 @@
 </style>
 
 <header>
-  <h1>Portafile</h1>
+  <h1>Crema</h1>
   <p class="sub">Recipe cards, real costs, dial-ins and training — on your phone and your staff's.</p>
   <p class="url">portafile.vercel.app/product/</p>
 </header>
@@ -181,7 +184,7 @@
   </div>
   <div class="callout">
     <h3>It speaks Portuguese too</h3>
-    <p style="margin-bottom:0">Portafile follows your <b>browser's</b> language, so an English browser
+    <p style="margin-bottom:0">Crema follows your <b>browser's</b> language, so an English browser
     opens in English and you don't need to do anything. Next to the <span class="btn">?</span> in the
     top right there's a picker with <span class="btn">EN</span> and <span class="btn">PT</span>. While
     the shop is still the untouched demo, the <b>menu changes with the language</b> — press PT and you
@@ -217,6 +220,6 @@
 </section>
 
 <footer>
-  <span><b>Portafile</b> — a guide for your shop · English</span>
+  <span><b>Crema</b> — a guide for your shop · English</span>
   <span>portafile.vercel.app</span>
 </footer>

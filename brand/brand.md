@@ -1,9 +1,23 @@
-# Portafile — Brand Guide
+# Crema — Brand Guide
 
 ## Name
-**Portafile** = portafilter + file. The portafilter is the one tool every barista holds a hundred times a day; Portafile is where the shop's knowledge lives. Lowercase wordmark: `portafile`.
+**Crema** — the golden layer only a correctly-pulled shot produces. It is coffee's own word for
+*done right*, which is exactly what this product sells: recipes that are dialled in, costed, and
+repeatable by whoever is on bar.
 
-**Domains (checked available 2026-07-15 via whois, NOT purchased per mission guardrails):** `portafile.io`, `getportafile.com`. (`portafile.com` is registered — a physical office-products line, different category; flagged for a proper trademark search before launch.)
+Chosen over `Portafile` (portafilter + file) because that name was a portmanteau you had to be
+told. Said out loud, people wrote down "porta-feel" or assumed it was file storage — the wrong
+category entirely. Crema needs no footnote, survives being heard once, and is pronounceable and
+spellable in **both** English and European Portuguese, which matters for the Lisbon cafés.
+
+Lowercase wordmark: `crema`.
+
+**Domains (checked 2026-07-27 against whois.verisign-grs.com directly — NOT purchased, per the
+zero-cost guardrail):** `crema.com` is registered. So is every other short coffee word tested
+(dialed, ninebar, puck, tamp, grind, dose, spro, burr, hopper, doppio, cortado). Bare `whois` on
+macOS returns only the IANA referral and reports everything as taken — query the registry host
+directly, with a known-free control, or the result is meaningless. `.coffee` and `.app` were not
+successfully checked. A proper trademark search is still owed before any paid launch.
 
 ## Tagline
 **"Your whole shop, dialed in."**
@@ -16,20 +30,35 @@ Barista-native, terse, concrete. We talk about **money and mornings**, not "solu
 - Numbers beat adjectives: "a latte that costs you $1.38 to make" not "actionable cost insights."
 - Respect the reader's margin: they run an 11% business; every sentence should pay rent.
 
-## Palette (see brand.css for tokens)
+## Palette — "Counter" (see brand.css for tokens)
 | Token | Hex | Use |
 |---|---|---|
-| espresso | `#2A1A12` | text, logo |
-| roast | `#4A3527` | secondary headings |
-| ink-soft | `#6B5544` | muted text |
-| paper | `#FAF4EA` | backgrounds |
-| card | `#FFFDF8` | surfaces |
-| crema | `#D9A05B` | highlights |
-| terra | `#C4502F` | primary accent / CTA |
-| spruce | `#5B7065` | dial-in / success |
-| alert | `#B3261E` | margin danger |
+| bg | `#17130F` | page background |
+| surface | `#231C16` | cards, panels |
+| ink | `#F3EBE0` | primary text |
+| ink-soft | `#A89684` | muted text |
+| line | `#3A2E24` | hairlines |
+| crema | `#E8A33D` | **the brand color** — accent, links, CTA |
+| crema-dk | `#C98A2E` | accent hover |
+| spruce | `#7FA98C` | success, dial-in OK |
+| alert | `#E4674F` | margin danger (lifted from the old `#B3261E` to read on dark) |
 
-Rationale: paper-first product → warm print palette (kraft card + espresso ink + crema), deliberately NOT a SaaS blue and deliberately not dark/neon (the house style of Ethan's personal apps) — this brand belongs to daylight cafes and laminated cards. Decision logged (D17).
+Rationale: the palette is the espresso machine, not the paper card — dark roasted ground, warm
+amber, a cool green counterpoint. Replaces the previous "Kraft" light palette (`#FAF4EA` paper,
+`#2A1A12` espresso, `#C4502F` terracotta), which was built when the product was imagined as
+purely printed collateral.
+
+**Printing is protected in code, not by convention.** `brand.css` carries an `@media print` block
+that reverts every token to ink-on-white and darkens the gold to `#8A5A12`. Without it the 4×6
+recipe cards and new-hire packs — the product's whole point — print as a black rectangle. Do not
+remove that block.
+
+**Nothing links this file.** `site/site.css`, `product/styles.css` and both guides carry their own
+COPY of the tokens above, because `/brand` is not in `.vercelignore`'s allowlist — an `@import` or a
+`<link>` would 404 in production and the page would render unstyled. This file is the source of
+truth a human edits first; the copies follow by hand. The old Kraft token names
+(`--espresso --roast --paper --card --terra --terra-dk`) were removed once every consumer migrated —
+the two guides still use those names, but they define them locally as their own print palette.
 
 ## Type
 Display: Iowan Old Style / Palatino / Georgia (system serifs — $0, print-native).
@@ -37,8 +66,22 @@ UI: system sans. Numbers (dial-ins, costs): system mono so digits align on cards
 No webfonts: local-first product must render offline and print identically.
 
 ## Logo
-`logo.svg` (mark + wordmark) · `mark.svg` (square avatar/favicon).
-The mark is a portafilter whose basket holds three document lines — the third line crema-colored (knowledge in progress), one terracotta drop below (the shot you pull from it). Works at 16px.
+`logo.svg` (mark + wordmark, viewBox 280×120) · `mark.svg` (square avatar/favicon, 120×120).
+
+The mark is an espresso seen from directly above: the cup rim, the crema disc, one highlight arc
+across its surface. Verified legible down to 16px — at that size the highlight disappears and the
+rim and disc remain separable, which is the intended floor.
+
+Two rules the files encode:
+- **`logo.svg` uses `currentColor`** for the rim and wordmark, so one file serves dark and light
+  backgrounds. `currentColor` only inherits when the SVG is **inlined**; through `<img>` it falls
+  back to the `style="color:…"` on the root element (default: brand cream).
+- **`mark.svg` carries its own dark tile and uses no `currentColor`** — a favicon renders against
+  browser chrome we do not control, so it must be self-contained.
+- The crema disc is **always gold**, in both files. It never takes a palette token. A palette whose
+  accent is not gold would otherwise render a green or red crema, which is a contradiction.
 
 ## The one-sentence brand
-Portafile is the quiet, well-organized coworker who has been at the shop longer than everyone, remembers every recipe and every grind setting, and hands the new kid exactly the right card at exactly the right moment.
+Crema is the quiet, well-organized coworker who has been at the shop longer than everyone,
+remembers every recipe and every grind setting, and hands the new kid exactly the right card at
+exactly the right moment.

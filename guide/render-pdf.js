@@ -13,7 +13,7 @@ const PW = '/Users/ethanyap/.npm/_npx/e41f203b7505f1fb/node_modules/playwright';
 const { chromium } = require(PW);
 
 const DIR = __dirname;
-const OUT = { 'guia-pt.html': 'Portafile-Guia-PT.pdf', 'guide-en.html': 'Portafile-Guide-EN.pdf' };
+const OUT = { 'guia-pt.html': 'Crema-Guia-PT.pdf', 'guide-en.html': 'Crema-Guide-EN.pdf' };
 
 /* Every <span class="btn"> in the guide names a real button in the app. If someone renames a
    button in product/i18n.js, the guide silently starts lying — the same silent-drift failure the

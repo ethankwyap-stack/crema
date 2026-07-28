@@ -1,4 +1,4 @@
-"""Portafile site health check — run daily by .github/workflows/health.yml.
+"""Crema site health check — run daily by .github/workflows/health.yml.
 
 Probes the live site the way a real visitor does (plain HTTPS, no credentials) and
 emails the operator the result every run, pass or fail. Stdlib only: urllib + smtplib,
@@ -22,12 +22,12 @@ RETRY_AFTER = 20  # seconds — a single blip is not an outage (learned on reg-d
 
 # (label, path, expected status, expected text in body or None)
 CHECKS = [
-    ("Landing page",        "/",                        200, "Portafile"),
+    ("Landing page",        "/",                        200, "Crema"),
     ("Privacy page",        "/site/privacy.html",       200, "Privacy"),
     # The landing pages' CSS lives in one shared file now. If it 404s the page still returns 200
     # with all its text, so only a direct check catches it — an unstyled site looks broken to a
     # visitor but passes a body-text assertion.
-    ("Landing stylesheet",  "/site/site.css",           200, "--espresso"),
+    ("Landing stylesheet",  "/site/site.css",           200, "--crema:"),
     # Portuguese landing page, reached through a rewrite like "/" is. Guards both the rewrite and
     # .vercelignore: a new directory under site/ that fails to publish would 404 silently.
     ("Portuguese landing",  "/pt",                      200, "afinado"),
@@ -98,12 +98,12 @@ def report(results, secs):
     lines = [("  FAIL  " if not ok else "  ok    ") + f"{label}: {detail}" for ok, label, detail in results]
     body = head + "\n" + "\n".join(lines) + "\n"
     if failures:
-        subject = f"Portafile DOWN — {len(failures)} check{'s' if len(failures) > 1 else ''} failing"
+        subject = f"Crema DOWN — {len(failures)} check{'s' if len(failures) > 1 else ''} failing"
         body += ("\nWhat to do: open https://portafile.vercel.app in a browser, then check the Vercel\n"
                  "dashboard (Deployments → latest → Runtime Logs). Re-run this check any time from\n"
                  "GitHub → Actions → Site health check → Run workflow.\n")
     else:
-        subject = "Portafile healthy — everything is running fine"
+        subject = "Crema healthy — everything is running fine"
     return subject, body, failures
 
 
@@ -123,7 +123,7 @@ def send(subject, body):
     if not addr or not pw:
         raise RuntimeError("Set GMAIL_ADDRESS and GMAIL_APP_PASSWORD (repo secrets or .env).")
     msg = EmailMessage()
-    msg["From"] = f"Portafile Health <{addr}>"
+    msg["From"] = f"Crema Health <{addr}>"
     msg["To"] = TO
     msg["Subject"] = subject
     msg.set_content(body)

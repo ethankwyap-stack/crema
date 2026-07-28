@@ -1,4 +1,6 @@
-# Portafile
+# Crema
+
+*Built as **Portafile**; renamed to **Crema** on 2026-07-28. The lowercase `portafile` you'll still see in localStorage keys, API headers, blob paths, the deploy URL and `video/portafile-launch.mp4` are identifiers, not the brand — renaming them would erase existing users' data.*
 
 **The recipe card, upgraded.** A local-first operating system for independent coffee shops: recipe cards that carry live cost and margin, dial-in state per bean, printable training paths, and a barista sign-off sheet — all in one no-account web app that runs offline from a single folder.
 
@@ -38,7 +40,7 @@ The site's CTA links point at `../product/index.html` and `../video/portafile-la
 
 ## Status & what's still human
 
-The package is complete through the kill pass (see `07-kill-pass.md`). Deliberately **not** done, because they need a human: the Phase-0 validation gates in `03-design-the-business.md` §8, creating the Stripe payment link, the USPTO trademark knockout search on "Portafile", buying a domain, and posting any of the launch drafts. Nothing has been published anywhere.
+The package is complete through the kill pass (see `07-kill-pass.md`). Deliberately **not** done, because they need a human: the Phase-0 validation gates in `03-design-the-business.md` §8, creating the Stripe payment link, the USPTO trademark knockout search on "Crema" (never run for "Portafile" either, and "crema" is a coffee term in common use — expect collisions), buying a domain, and posting any of the launch drafts. Nothing has been published anywhere.
 
 ## Sync branch (not deployed yet)
 

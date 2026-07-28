@@ -1,29 +1,34 @@
-/* Portafile app — brand tokens inlined so the file works standalone offline */
+/* Crema app — "Counter" palette. Tokens are a COPY of brand/brand.css, not an @import:
+   /brand is not in .vercelignore's allowlist, so an @import would 404 in production and
+   the app would render completely unstyled. Same deliberate duplication as site/site.css.
+   The @media print block at the bottom is hardcoded ink-on-white and must stay that way —
+   printing is the product, and this palette would print as a black rectangle. */
 :root {
-  --espresso:#2A1A12; --roast:#4A3527; --ink-soft:#6B5544; --paper:#FAF4EA;
-  --card:#FFFDF8; --crema:#D9A05B; --terra:#C4502F; --terra-dk:#A03E22;
-  --spruce:#5B7065; --alert:#B3261E; --line:#E7DACA;
+  --bg:#17130F; --surface:#231C16; --ink:#F3EBE0; --ink-soft:#A89684; --line:#3A2E24;
+  --crema:#E8A33D; --crema-dk:#C98A2E; --spruce:#7FA98C; --alert:#E4674F;
   --font-display:"Iowan Old Style",Palatino,Georgia,serif;
   --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
   --font-mono:ui-monospace,"SF Mono",Menlo,monospace;
 }
 * { box-sizing:border-box; }
-body { margin:0; background:var(--paper); color:var(--espresso); font-family:var(--font-ui); font-size:15px; line-height:1.45; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--font-ui); font-size:15px; line-height:1.45; }
 button { font:inherit; cursor:pointer; }
 input,select,textarea { font:inherit; color:inherit; }
 
 /* ---------- chrome ---------- */
-.topbar { display:flex; align-items:center; gap:18px; padding:10px 18px; border-bottom:2px solid var(--espresso); background:var(--paper); position:sticky; top:0; z-index:20; flex-wrap:wrap; }
+.topbar { display:flex; align-items:center; gap:18px; padding:10px 18px; border-bottom:1px solid var(--line); background:var(--bg); position:sticky; top:0; z-index:20; flex-wrap:wrap; }
 .brand-lockup { display:flex; align-items:center; gap:10px; }
 .brand-mark { width:40px; height:40px; }
 .brand-name { font-family:var(--font-display); font-weight:700; font-size:20px; line-height:1; }
 .shop-name { border:none; background:transparent; border-bottom:1px dashed var(--crema); color:var(--ink-soft); font-size:13px; padding:1px 2px; width:180px; }
-.shop-name:focus { outline:none; border-bottom-color:var(--terra); }
+.shop-name:focus { outline:none; border-bottom-color:var(--crema); color:var(--ink); }
 .tabs { display:flex; gap:4px; flex:1; min-width:280px; overflow-x:auto; }
 .tab { border:none; background:transparent; white-space:nowrap; flex:none; padding:8px 14px; border-radius:8px 8px 0 0; color:var(--ink-soft); font-weight:600; }
-.tab.active { background:var(--espresso); color:var(--paper); }
+/* was espresso-on-paper: a dark tab on a light bar. Inverted, that is ink-on-ink.
+   On dark the selected tab has to be the BRIGHT thing — gold fill, dark label. */
+.tab.active { background:var(--crema); color:var(--bg); }
 .top-actions { display:flex; gap:6px; }
-.ghost { background:transparent; border:1px solid var(--line); border-radius:8px; padding:6px 12px; color:var(--roast); }
+.ghost { background:transparent; border:1px solid var(--line); border-radius:8px; padding:6px 12px; color:var(--ink); }
 .ghost:hover { border-color:var(--crema); }
 main { max-width:1180px; margin:0 auto; padding:20px 18px 60px; }
 .foot { text-align:center; color:var(--ink-soft); font-size:12.5px; padding:14px; border-top:1px solid var(--line); }
@@ -32,16 +37,19 @@ h2 { font-family:var(--font-display); font-size:22px; margin:6px 0 14px; }
 .hint { color:var(--ink-soft); font-size:13px; }
 
 /* ---------- buttons ---------- */
-.btn { background:var(--terra); border:none; color:#fff; padding:8px 16px; border-radius:9px; font-weight:650; }
-.btn:hover { background:var(--terra-dk); }
-.btn.sub { background:var(--espresso); }
+/* gold fill takes a DARK label — white on #E8A33D is about 2.2:1 and unreadable */
+.btn { background:var(--crema); border:none; color:var(--bg); padding:8px 16px; border-radius:9px; font-weight:650; }
+.btn:hover { background:var(--crema-dk); }
+/* secondary was a dark fill on a light page; on dark it becomes an outline button */
+.btn.sub { background:var(--surface); color:var(--ink); border:1px solid var(--line); }
+.btn.sub:hover { border-color:var(--crema); }
 .btn.small { padding:4px 10px; font-size:13px; border-radius:7px; }
-.linkish { background:none; border:none; color:var(--terra); font-weight:600; padding:2px 6px; }
+.linkish { background:none; border:none; color:var(--crema); font-weight:600; padding:2px 6px; }
 .danger { color:var(--alert); }
 
 /* ---------- dashboard strip ---------- */
 .dash { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
-.stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 16px; min-width:150px; }
+.stat { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 16px; min-width:150px; }
 .stat .k { font-size:12px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.4px; }
 .stat .v { font-family:var(--font-mono); font-size:22px; font-weight:700; }
 .stat .v.bad { color:var(--alert); }
@@ -49,69 +57,77 @@ h2 { font-family:var(--font-display); font-size:22px; margin:6px 0 14px; }
 
 /* ---------- recipe cards ---------- */
 .cardgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
-.rcard { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; display:flex; flex-direction:column; gap:8px; box-shadow:0 1px 2px rgba(42,26,18,.05); }
+.rcard { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; display:flex; flex-direction:column; gap:8px; box-shadow:0 1px 2px rgba(0,0,0,.3); }
 .rcard header { display:flex; justify-content:space-between; align-items:baseline; gap:8px; border:none; padding:0; position:static; }
 .rcard h3 { margin:0; font-family:var(--font-display); font-size:18px; }
 .rcard .cat { font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.5px; }
 .money { display:flex; gap:10px; align-items:center; font-family:var(--font-mono); font-size:13.5px; flex-wrap:wrap; }
 .money b { font-size:16px; }
 .badge { padding:2px 9px; border-radius:99px; font-size:12px; font-weight:700; font-family:var(--font-mono); }
-.badge.good { background:#e6ede8; color:var(--spruce); }
-.badge.warn { background:#f6e8cd; color:#8a6116; }
-.badge.bad  { background:#f7dedb; color:var(--alert); }
-.ing-list { margin:0; padding:0; list-style:none; font-size:13.5px; color:var(--roast); }
+/* were pale pastel chips for a light page; on dark they become tinted-glass chips
+   (a wash of their own colour) instead of three bright rectangles */
+.badge.good { background:rgba(127,169,140,.16); color:var(--spruce); }
+.badge.warn { background:rgba(232,163,61,.16); color:var(--crema); }
+.badge.bad  { background:rgba(228,103,79,.16); color:var(--alert); }
+.ing-list { margin:0; padding:0; list-style:none; font-size:13.5px; color:var(--ink-soft); }
 .ing-list li { display:flex; justify-content:space-between; border-bottom:1px dotted var(--line); padding:2px 0; }
 .ing-list .c { font-family:var(--font-mono); color:var(--ink-soft); }
-.steps { margin:4px 0 0; padding-left:18px; font-size:13.5px; color:var(--roast); }
+.steps { margin:4px 0 0; padding-left:18px; font-size:13.5px; color:var(--ink-soft); }
 .steps li { margin-bottom:2px; }
 .rcard .dial-ref { font-size:12.5px; color:var(--spruce); font-weight:600; }
 .rcard .actions { display:flex; gap:6px; margin-top:auto; padding-top:6px; }
 
 /* ---------- tables ---------- */
 .tablewrap { overflow-x:auto; -webkit-overflow-scrolling:touch; } /* phones scroll the table instead of blowing up the layout viewport */
-table.grid { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
-table.grid th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); padding:9px 12px; border-bottom:2px solid var(--espresso); }
+table.grid { width:100%; border-collapse:collapse; background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+table.grid th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:var(--ink-soft); padding:9px 12px; border-bottom:2px solid var(--line); }
 table.grid td { padding:7px 12px; border-bottom:1px solid var(--line); }
 table.grid tr:last-child td { border-bottom:none; }
 table.grid input { width:90px; border:1px solid transparent; background:transparent; border-radius:6px; padding:3px 6px; font-family:var(--font-mono); }
 table.grid input.wide { width:170px; font-family:var(--font-ui); }
 table.grid input:hover { border-color:var(--line); }
-table.grid input:focus { border-color:var(--terra); outline:none; background:#fff; }
+/* a focused field used to go white on a cream page; on dark it recesses to the page colour */
+table.grid input:focus { border-color:var(--crema); outline:none; background:var(--bg); }
 .uses { font-size:12.5px; color:var(--ink-soft); }
 
 /* ---------- dial-in ---------- */
 .beans { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:16px; }
-.bean { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; }
+.bean { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; }
 .bean h3 { margin:0 0 2px; font-family:var(--font-display); }
 .bean .roaster { color:var(--ink-soft); font-size:13px; margin-bottom:10px; }
-.dial-now { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; background:var(--espresso); color:var(--paper); border-radius:12px; padding:12px; margin-bottom:10px; }
+/* the dial-in readout was the one dark panel on a light page. Surface would now make it
+   vanish into the .bean card it sits in, so it recesses to the page colour with a gold
+   edge — an inset machine readout rather than a raised block. */
+.dial-now { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; background:var(--bg); color:var(--ink); border:1px solid var(--crema); border-radius:12px; padding:12px; margin-bottom:10px; }
 .dial-now .cell { text-align:center; }
 .dial-now .num { font-family:var(--font-mono); font-size:22px; font-weight:700; }
 .dial-now .lbl { font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--crema); }
 .dial-updated { font-size:12px; color:var(--ink-soft); margin-bottom:8px; }
 .dial-form { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
-.dial-form input { width:64px; border:1px solid var(--line); border-radius:7px; padding:5px 7px; font-family:var(--font-mono); background:#fff; }
+.dial-form input { width:64px; border:1px solid var(--line); border-radius:7px; padding:5px 7px; font-family:var(--font-mono); background:var(--bg); }
 .dial-form input.note { width:130px; font-family:var(--font-ui); }
 .dial-hist { font-size:12.5px; width:100%; border-collapse:collapse; }
-.dial-hist td { padding:3px 6px; border-bottom:1px dotted var(--line); font-family:var(--font-mono); color:var(--roast); }
+.dial-hist td { padding:3px 6px; border-bottom:1px dotted var(--line); font-family:var(--font-mono); color:var(--ink-soft); }
 .dial-hist td.n { font-family:var(--font-ui); color:var(--ink-soft); }
 
 /* ---------- training ---------- */
 .train-wrap { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
 @media (max-width:840px){ .train-wrap { grid-template-columns:1fr; } }
 .pathlist { list-style:none; margin:0; padding:0; }
-.pathlist li { display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:6px; }
+.pathlist li { display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:6px; }
 .pathlist .t { flex:1; }
-.pathlist .day { display:inline-flex; align-items:center; font-size:11px; font-weight:700; color:var(--terra); text-transform:uppercase; }
+.pathlist .day { display:inline-flex; align-items:center; font-size:11px; font-weight:700; color:var(--crema); text-transform:uppercase; }
 /* the day number is an input, styled to read as part of the badge until you focus it */
 .pathlist .day input { width:22px; font:inherit; color:inherit; background:none; border:1px solid transparent; border-radius:5px; padding:1px 0; margin-left:-2px; appearance:textfield; -moz-appearance:textfield; }
 .pathlist .day input::-webkit-inner-spin-button, .pathlist .day input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
-.pathlist .day input:focus { outline:none; border-color:var(--crema); background:var(--paper); }
+.pathlist .day input:focus { outline:none; border-color:var(--crema); background:var(--bg); }
 /* step description: quiet second row, only looks like a field once you're in it */
 .pathlist .note { flex:1 0 100%; border:none; border-top:1px dashed var(--line); background:none; font-size:13px; color:var(--ink-soft); padding:6px 0 0; }
-.pathlist .note:focus { outline:none; color:var(--espresso); border-top-color:var(--crema); }
+/* focus used to DARKEN this to espresso — on dark that is the page colour, i.e. invisible.
+   It now brightens to full ink instead. */
+.pathlist .note:focus { outline:none; color:var(--ink); border-top-color:var(--crema); }
 .pathlist .note::placeholder { color:var(--ink-soft); opacity:.55; }
-.mini { background:none; border:1px solid var(--line); border-radius:6px; padding:1px 7px; font-size:12px; color:var(--roast); }
+.mini { background:none; border:1px solid var(--line); border-radius:6px; padding:1px 7px; font-size:12px; color:var(--ink-soft); }
 .checklist { list-style:none; margin:0; padding:0; }
 .checklist li { display:flex; gap:10px; align-items:center; padding:7px 10px; border-bottom:1px solid var(--line); }
 .checklist input[type=checkbox] { width:18px; height:18px; accent-color:var(--spruce); }
@@ -123,30 +139,34 @@ table.grid input:focus { border-color:var(--terra); outline:none; background:#ff
 
 /* ---------- print tab ---------- */
 .packs { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
-.pack { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; width:250px; }
+.pack { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px; width:250px; }
 .pack h3 { margin:0 0 6px; font-family:var(--font-display); }
 .pack p { font-size:13px; color:var(--ink-soft); min-height:54px; }
 
 /* ---------- modal ---------- */
-.modal { position:fixed; inset:0; background:rgba(42,26,18,.45); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow:auto; z-index:50; }
+/* scrim darkened: a 45% wash that separated a sheet from a cream page does nothing on #17130F */
+.modal { position:fixed; inset:0; background:rgba(8,5,3,.72); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow:auto; z-index:50; }
 .modal.hidden { display:none; }
-.sheet { background:var(--paper); border-radius:16px; padding:22px 24px; width:min(560px,100%); box-shadow:0 12px 40px rgba(0,0,0,.25); }
+/* the sheet was page-coloured; on dark it must be the RAISED surface, or it merges with the page */
+.sheet { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:22px 24px; width:min(560px,100%); box-shadow:0 12px 40px rgba(0,0,0,.55); }
 .sheet h3 { margin:0 0 12px; font-family:var(--font-display); }
 .frm { display:grid; gap:10px; }
-.frm label { font-size:12.5px; font-weight:650; color:var(--roast); display:block; margin-bottom:3px; }
-.frm input,.frm select,.frm textarea { width:100%; border:1px solid var(--line); border-radius:8px; padding:7px 9px; background:#fff; }
+.frm label { font-size:12.5px; font-weight:650; color:var(--ink); display:block; margin-bottom:3px; }
+/* white fields would be the brightest thing on the whole app — recess them to the page colour */
+.frm input,.frm select,.frm textarea { width:100%; border:1px solid var(--line); border-radius:8px; padding:7px 9px; background:var(--bg); color:var(--ink); }
+.frm input:focus,.frm select:focus,.frm textarea:focus { outline:none; border-color:var(--crema); }
 .frm .row { display:flex; gap:10px; }
 .frm .row > div { flex:1; }
 .ing-rows .irow { display:flex; gap:6px; margin-bottom:6px; align-items:center; }
 .ing-rows select { flex:2; } .ing-rows input { flex:1; }
 .sheet .bar { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
 .helpbody h4 { margin:14px 0 4px; font-family:var(--font-display); }
-.helpbody p, .helpbody li { font-size:13.5px; color:var(--roast); }
-kbd { background:var(--espresso); color:var(--paper); border-radius:4px; padding:0 5px; font-family:var(--font-mono); font-size:12px; }
+.helpbody p, .helpbody li { font-size:13.5px; color:var(--ink-soft); }
+kbd { background:var(--bg); color:var(--ink); border:1px solid var(--line); border-radius:4px; padding:0 5px; font-family:var(--font-mono); font-size:12px; }
 
 /* ---------- selftest banner ---------- */
-.selftest { position:fixed; bottom:12px; right:12px; background:var(--espresso); color:var(--paper); padding:10px 16px; border-radius:10px; font-family:var(--font-mono); font-size:13px; z-index:99; }
-.selftest.fail { background:var(--alert); }
+.selftest { position:fixed; bottom:12px; right:12px; background:var(--surface); color:var(--ink); border:1px solid var(--crema); padding:10px 16px; border-radius:10px; font-family:var(--font-mono); font-size:13px; z-index:99; }
+.selftest.fail { background:var(--alert); color:var(--bg); border-color:var(--alert); }
 
 /* ---------- PRINT ---------- */
 .print-root { display:none; }
@@ -190,14 +210,15 @@ kbd { background:var(--espresso); color:var(--paper); border-radius:4px; padding
 }
 
 /* sync badge (only present when a sync key is active) */
-.syncbadge{position:fixed;right:12px;bottom:12px;z-index:60;padding:5px 11px;border-radius:99px;font-size:12.5px;font-weight:650;background:#E8F0EA;color:#3E5247;border:1px solid #C9DACD}
-.syncbadge.connecting{background:#F5EEDF;color:#7A6238;border-color:#E3D5B8}
-.syncbadge.offline{background:#F7E7E4;color:#8C3B2C;border-color:#EACFC8}
-.syncbadge.revoked{background:#F7E7E4;color:#8C3B2C;border-color:#EACFC8}
+/* same inversion as .badge: pale pastel pills become tinted glass on the dark page */
+.syncbadge{position:fixed;right:12px;bottom:12px;z-index:60;padding:5px 11px;border-radius:99px;font-size:12.5px;font-weight:650;background:rgba(127,169,140,.14);color:var(--spruce);border:1px solid rgba(127,169,140,.38)}
+.syncbadge.connecting{background:rgba(232,163,61,.14);color:var(--crema);border-color:rgba(232,163,61,.38)}
+.syncbadge.offline{background:rgba(228,103,79,.14);color:var(--alert);border-color:rgba(228,103,79,.38)}
+.syncbadge.revoked{background:rgba(228,103,79,.14);color:var(--alert);border-color:rgba(228,103,79,.38)}
 @media print{.syncbadge{display:none}}
 
 /* access gate */
-.gatewrap{position:fixed;inset:0;z-index:80;background:rgba(42,26,18,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.gatewrap{position:fixed;inset:0;z-index:80;background:rgba(8,5,3,.78);display:flex;align-items:center;justify-content:center;padding:16px}
 .gate{max-width:420px;width:100%}
 .gate label{display:block;margin:10px 0;font-size:13.5px;font-weight:600}
 .gate input,.gate select{display:block;width:100%;margin-top:4px;font-weight:400}

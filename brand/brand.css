@@ -1,20 +1,36 @@
-/* Portafile brand tokens — single source of truth for product + site + collateral */
+/* Crema brand tokens — single source of truth for product + site + collateral.
+   Palette: "Counter" — the espresso machine, not the paper card. Dark, warm, amber. */
 :root {
-  /* palette */
-  --espresso: #2A1A12;   /* primary text, marks */
-  --roast:    #4A3527;   /* secondary headings */
-  --ink-soft: #6B5544;   /* muted text */
-  --paper:    #FAF4EA;   /* page background */
-  --card:     #FFFDF8;   /* card surfaces */
-  --crema:    #D9A05B;   /* highlights, table accents */
-  --terra:    #C4502F;   /* primary accent: buttons, links, alerts-positive */
-  --terra-dk: #A03E22;   /* accent hover */
-  --spruce:   #5B7065;   /* cool counterpoint: success, dial-in */
-  --alert:    #B3261E;   /* margin danger */
-  --line:     #E7DACA;   /* hairlines */
+  /* --- palette (source of truth) --- */
+  --bg:       #17130F;   /* page background */
+  --surface:  #231C16;   /* cards, panels, raised surfaces */
+  --ink:      #F3EBE0;   /* primary text on dark */
+  --ink-soft: #A89684;   /* muted text, captions */
+  --line:     #3A2E24;   /* hairlines, borders */
+  --crema:    #E8A33D;   /* THE brand color — crema gold. Accent, links, CTA */
+  --crema-dk: #C98A2E;   /* accent hover / deeper gold */
+  --spruce:   #7FA98C;   /* success, dial-in OK */
+  --alert:    #E4674F;   /* margin danger — lifted from #B3261E so it reads on dark */
 
-  /* type — zero external fonts, print-friendly */
+  /* --- type — zero external fonts, print-friendly --- */
   --font-display: "Iowan Old Style", Palatino, Georgia, serif;
   --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace; /* dial-in numbers */
+}
+
+/* Printing is the product's whole point — a 4x6 recipe card and a new-hire pack come
+   out of a real printer. The Counter palette would print as a black rectangle, so paper
+   ALWAYS reverts to ink-on-white. Do not remove: this is what keeps the cards usable. */
+@media print {
+  :root {
+    --bg:       #FFFFFF;
+    --surface:  #FFFFFF;
+    --ink:      #1A1208;
+    --ink-soft: #5A4A3A;
+    --line:     #CFC4B6;
+    --crema:    #8A5A12;   /* darkened: gold on white is unreadable */
+    --crema-dk: #6E470E;
+    --spruce:   #34503F;
+    --alert:    #9B2418;
+  }
 }

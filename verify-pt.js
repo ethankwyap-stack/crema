@@ -98,7 +98,7 @@ const ok = (name, cond, got) => { n++; const s = cond ? 'PASS' : 'FAIL'; if (!co
   // ---- 6. Help + gate copy -------------------------------------------------------------------
   await p.click('#btnHelp');
   const help = await p.textContent('.sheet');
-  ok('help modal translated', help.includes('Como funciona o Portafile'));
+  ok('help modal translated', help.includes('Como funciona o Crema'));
   ok('help keeps its <strong> markup', (await p.$$('.sheet strong')).length > 0);
   await p.click('.sheet .btn');
 
