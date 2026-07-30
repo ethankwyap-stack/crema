@@ -1,180 +1,231 @@
-/* Crema marketing site — shared by the English (/) and Portuguese (/pt) landing pages.
-   Extracted from site/index.html so a branding change is made once, not once per language.
-   Referenced ABSOLUTELY as /site/site.css: both pages are served through a vercel.json
-   rewrite (/ and /pt), where a relative href would resolve off-root and 404.
+/* Crema landing stylesheet — shared by / (site/index.html) and /pt (site/pt/index.html).
+   The palette is a hand-kept COPY of brand/brand.css "Counter" tokens: /brand is not in
+   .vercelignore's allowlist, so an @import would 404 in production. Edit brand.css first,
+   then propagate here. Type is system-only, zero external requests. Every URL in the
+   markup is absolute (/site/...) because / is a rewrite and relative URLs 404 there. */
 
-   ponytail: the palette below is a COPY of brand/brand.css's "Counter" tokens, not an
-   @import of it. Deliberate — /brand is not in .vercelignore's allowlist, so an @import
-   would 404 in production and both landing pages would render completely unstyled. If
-   the two ever need to be one file, add !/brand to .vercelignore in the same commit. */
-:root{--bg:#17130F;--surface:#231C16;--ink:#F3EBE0;--ink-soft:#A89684;--line:#3A2E24;--crema:#8195BE;--crema-dk:#6C7EA4;--crema-fill:#22355C;--crema-fill-dk:#182747;--on-crema:#EFF1F7;--spruce:#7FA98C;--alert:#E4674F;
---fd:"Iowan Old Style",Palatino,Georgia,serif;--fu:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;--fm:ui-monospace,"SF Mono",Menlo,monospace;
---grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E")}
+:root{
+  --bg:#17130F;--surface:#231C16;--surface-2:#2C231B;
+  --ink:#F3EBE0;--ink-soft:#A89684;--line:#3A2E24;
+  --crema:#8195BE;--crema-dk:#6C7EA4;--crema-fill:#22355C;--crema-fill-dk:#182747;--on-crema:#EFF1F7;
+  --spruce:#7FA98C;--alert:#E4674F;
+  --fd:"Iowan Old Style",Palatino,Georgia,serif;
+  --fu:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --fm:ui-monospace,"SF Mono",Menlo,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+  --r:14px;              /* ONE radius scale: panels 14px, pills 999px, paper 6px */
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg) var(--grain);color:var(--ink);font-family:var(--fu);font-size:16.5px;line-height:1.6}
+body{margin:0;background:var(--bg) var(--grain);color:var(--ink);font-family:var(--fu);font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased}
+img{max-width:100%;height:auto;display:block}
 a{color:var(--crema)}
-a:focus-visible,button:focus-visible,summary:focus-visible{outline:2.5px solid var(--crema);outline-offset:3px;border-radius:3px}
-img{max-width:100%;height:auto}
-.wrap{max-width:1100px;margin:0 auto;padding:0 24px}
-.eyebrow{font-family:var(--fm);font-size:12.5px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--crema);display:flex;align-items:center;gap:14px;margin:0 0 14px}
-.eyebrow::after{content:"";height:1px;flex:0 0 56px;background:var(--crema);opacity:.5}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:2.5px solid var(--crema);outline-offset:3px;border-radius:4px}
 
-/* ---------- nav ---------- */
-header.nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;gap:16px}
-.lockup{display:flex;align-items:center;gap:10px;font-family:var(--fd);font-weight:700;font-size:23px;letter-spacing:-.02em;color:var(--ink)}
-.lockup svg{width:36px;height:36px}
-/* Gold pill, dark label — on a dark page the filled CTA has to be the BRIGHT thing.
-   (It was espresso-on-cream before, which inverts to cream-on-cream here.) */
-.nav .cta{background:var(--crema-fill);color:var(--on-crema);text-decoration:none;font-weight:650;padding:10px 20px;border-radius:999px;font-size:15px;transition:background .15s}
-.nav .cta:hover{background:var(--crema-fill-dk)}
-.navlinks{display:flex;gap:22px;margin-left:auto;margin-right:22px}
-.navlinks a{color:var(--ink);text-decoration:none;font-weight:600;font-size:15px;transition:color .15s}
+.wrap{max-width:1180px;margin:0 auto;padding:0 26px}
+.eyebrow{font-family:var(--fm);font-size:12px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--crema);display:flex;align-items:center;gap:14px;margin:0 0 18px}
+.eyebrow::after{content:"";height:1px;flex:0 0 56px;background:currentColor;opacity:.45}
+
+h1,h2,h3{font-family:var(--fd);letter-spacing:-.022em;margin:0}
+h1{font-weight:700;font-size:clamp(46px,7.4vw,86px);line-height:.96}
+h2{font-weight:700;font-size:clamp(31px,4.4vw,50px);line-height:1.05}
+h3{font-weight:700;font-size:clamp(21px,2.4vw,27px);line-height:1.14}
+.lead{font-size:18.5px;color:var(--ink-soft);max-width:34em;line-height:1.62;margin:16px 0 0}
+
+/* ---------------- nav: one line, 68px, sticky with a real backdrop ---------------- */
+.nav{position:sticky;top:0;z-index:50;background:rgba(23,19,15,.86);backdrop-filter:saturate(150%) blur(14px);-webkit-backdrop-filter:saturate(150%) blur(14px);border-bottom:1px solid var(--line)}
+@supports not (backdrop-filter:blur(1px)){.nav{background:var(--bg)}}
+.nav .wrap{display:flex;align-items:center;gap:14px;height:68px}
+.lockup{display:flex;align-items:center;gap:10px;font-family:var(--fd);font-weight:700;font-size:23px;letter-spacing:-.02em;color:var(--ink);text-decoration:none}
+.lockup svg{width:34px;height:34px;flex:none}
+.navlinks{display:flex;gap:24px;margin-left:auto}
+.navlinks a{color:var(--ink);text-decoration:none;font-weight:600;font-size:15px;transition:color .15s ease}
 .navlinks a:hover{color:var(--crema)}
-@media(max-width:600px){.navlinks{display:none}}
-/* EN/PT switch. Deliberately OUTSIDE .navlinks, which is display:none on phones — a Portuguese
-   barista on a phone is exactly who must be able to find it. */
-.langlink{color:var(--ink);text-decoration:none;font-family:var(--fm);font-size:13px;font-weight:700;letter-spacing:.08em;border:1.5px solid var(--line);border-radius:999px;padding:7px 12px;margin-right:12px;white-space:nowrap;transition:border-color .15s,color .15s}
+@media(max-width:720px){.navlinks{display:none}}
+.langlink{margin-left:auto;color:var(--ink);text-decoration:none;font-family:var(--fm);font-size:12.5px;font-weight:700;letter-spacing:.08em;border:1.5px solid var(--line);border-radius:999px;padding:7px 12px;white-space:nowrap;transition:border-color .15s ease,color .15s ease}
+.navlinks ~ .langlink{margin-left:24px}
 .langlink:hover{border-color:var(--crema);color:var(--crema)}
-@media(max-width:600px){.langlink{margin-left:auto}}
 
-/* ---------- hero ---------- */
-.hero{padding:56px 0 72px;display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center}
-@media(max-width:880px){.hero{grid-template-columns:1fr;padding-top:32px;gap:64px}}
-h1{font-family:var(--fd);font-weight:700;font-size:clamp(44px,7vw,78px);line-height:.98;margin:0 0 22px;letter-spacing:-.025em}
-h1 em{font-style:italic;color:var(--crema);background:linear-gradient(transparent 62%,rgba(129,149,190,.22) 62% 94%,transparent 94%)}
-.sub{font-size:19.5px;color:var(--ink-soft);max-width:32em;margin:0 0 30px;line-height:1.65}
-.heroctas{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
-.btn{display:inline-block;background:var(--crema-fill);color:var(--on-crema);text-decoration:none;font-weight:700;padding:15px 30px;border-radius:999px;font-size:17px;box-shadow:0 2px 0 var(--crema-fill-dk);transition:transform .12s,background .15s}
-.btn:hover{background:var(--crema-fill-dk);transform:translateY(-1px)}
-.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink);box-shadow:none}
-.btn.ghost:hover{background:var(--ink);color:var(--bg)}
-.tiny{font-size:13.5px;color:var(--ink-soft);margin-top:14px}
+/* ---------------- buttons ---------------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;background:var(--crema-fill);color:var(--on-crema);text-decoration:none;font-weight:700;padding:15px 30px;border-radius:999px;font-size:17px;box-shadow:0 2px 0 var(--crema-fill-dk);transition:background .15s ease,transform .16s ease-out,box-shadow .16s ease-out}
+.btn:hover{background:var(--crema-fill-dk);transform:translateY(-2px);box-shadow:0 4px 0 var(--crema-fill-dk)}
+.btn:active{transform:scale(.975) translateY(0);box-shadow:0 1px 0 var(--crema-fill-dk)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line);box-shadow:none}
+.btn.ghost:hover{border-color:var(--ink);background:rgba(243,235,224,.05);box-shadow:none}
+.btn.sm{padding:10px 20px;font-size:15px;box-shadow:none}
+.btn.sm:hover{box-shadow:none;transform:none}
+.nav .btn.sm{margin-left:14px}
+@media(max-width:520px){.nav .btn.sm{display:none}}
 
-/* the 4x6 index card — deliberately the ONE paper-coloured object on a dark page.
-   It is a picture of a PRINTED card, so it keeps the light palette and redefines the
-   tokens locally; every rule nested below therefore resolves to ink-on-paper. */
-.cardwrap{position:relative;max-width:410px;margin-left:auto}
-@media(max-width:880px){.cardwrap{margin:0 auto}}
-.mockcard{--ink:#2A1A12;--ink-soft:#6B5544;--line:#E7DACA;--crema:#A8721F;--spruce:#4A6154;
-position:relative;background:#FFFDF8;color:var(--ink);border:1px solid #E2D5C2;border-radius:6px;padding:26px 26px 20px;transform:rotate(1.8deg);box-shadow:0 1px 2px rgba(0,0,0,.35),14px 18px 0 rgba(0,0,0,.35);background-image:linear-gradient(#F2E7D6 1px,transparent 1px);background-size:100% 29px;background-position:0 74px}
-.mockcard::before{content:"";position:absolute;top:-16px;left:50%;transform:translateX(-50%) rotate(-3deg);width:118px;height:32px;background:rgba(129,149,190,.5);box-shadow:0 1px 3px rgba(0,0,0,.25)}
-.mockcard::after{content:"4×6 · PRINTS CLEAN";position:absolute;bottom:9px;right:12px;font-family:var(--fm);font-size:9.5px;letter-spacing:.14em;color:#B8A48F}
-/* The only English baked into this shared stylesheet. Scoped by the page's own lang so /pt gets
-   Portuguese and the card size in cm (4×6in is a US index card; Portugal uses 10×15). */
+/* ---------------- 1. hero: asymmetric split ---------------- */
+.hero{padding:clamp(48px,7vw,88px) 0 clamp(56px,7vw,92px);display:grid;grid-template-columns:1.06fr .94fr;gap:clamp(40px,5vw,72px);align-items:center}
+@media(max-width:900px){.hero{grid-template-columns:1fr;gap:56px;padding-top:44px}}
+.hero h1 em{font-style:italic;color:var(--crema);line-height:1.1;display:inline-block;padding-bottom:.06em;background:linear-gradient(transparent 64%,rgba(129,149,190,.24) 64% 93%,transparent 93%)}
+.hero .sub{font-size:20px;color:var(--ink-soft);max-width:24em;margin:24px 0 32px;line-height:1.55}
+.heroctas{display:flex;gap:14px;flex-wrap:wrap}
+
+/* the paper card: the ONE light object on a dark page. It is a depiction of the
+   printed 4x6, so it redefines the tokens locally and everything nested reads ink-on-paper. */
+.paperstack{position:relative;max-width:430px;margin-left:auto}
+@media(max-width:900px){.paperstack{margin:0 auto}}
+.paperstack::before,.paperstack::after{content:"";position:absolute;inset:0;border-radius:6px;background:#EFE6D6;border:1px solid #D8C9B4}
+.paperstack::before{transform:rotate(-3.4deg) translate(-10px,10px)}
+.paperstack::after{transform:rotate(-1.4deg) translate(-4px,5px);background:#F6EEE0}
+.mockcard{--ink:#2A1A12;--ink-soft:#6B5544;--line:#E7DACA;--crema:#22355C;--spruce:#3F6350;
+  /* z-index is load-bearing: .paperstack::after is a positioned sibling that comes
+     AFTER this element in paint order, so without it the decorative sheet covers
+     the whole card and it renders as a blank cream rectangle. */
+  position:relative;z-index:1;background:#FFFDF8;color:var(--ink);border:1px solid #E2D5C2;border-radius:6px;padding:26px 26px 22px;transform:rotate(1.6deg);
+  box-shadow:0 1px 2px rgba(0,0,0,.4),16px 20px 0 rgba(0,0,0,.34);
+  background-image:linear-gradient(#F2E7D6 1px,transparent 1px);background-size:100% 29px;background-position:0 76px}
+.mockcard::before{content:"";position:absolute;top:-15px;left:50%;transform:translateX(-50%) rotate(-3deg);width:118px;height:30px;background:rgba(129,149,190,.55);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.mockcard::after{content:"4×6 · PRINTS CLEAN";position:absolute;bottom:9px;right:13px;font-family:var(--fm);font-size:9.5px;letter-spacing:.14em;color:#B8A48F}
 html[lang="pt-PT"] .mockcard::after{content:"10×15 · IMPRIME LIMPO"}
-.mockcard h3{font-family:var(--fd);margin:0;display:flex;justify-content:space-between;align-items:baseline;font-size:25px;border-bottom:2px solid var(--crema);padding-bottom:8px}
+.mockcard h3{margin:0;display:flex;justify-content:space-between;align-items:baseline;font-size:26px;border-bottom:2px solid var(--crema);padding-bottom:8px;color:var(--ink)}
 .mockcard h3 .price{font-family:var(--fm);font-size:20px}
-.mockcard .m{font-family:var(--fm);font-size:14px;margin:12px 0;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.mockcard .m{font-family:var(--fm);font-size:14px;margin:13px 0;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .mockcard .m b{font-size:17px}
-.badge{padding:2px 10px;border-radius:99px;font-weight:700;font-family:var(--fm);font-size:12px;background:#e6ede8;color:var(--spruce)}
+.mockcard .badge{padding:2px 10px;border-radius:99px;font-weight:700;font-family:var(--fm);font-size:12px;background:#E4EDE7;color:var(--spruce)}
+.mockcard .keeps{color:var(--spruce)}
 .mockcard ul{list-style:none;margin:0 0 12px;padding:0;font-size:14.5px}
 .mockcard li{display:flex;justify-content:space-between;border-bottom:1px dotted var(--line);padding:4px 0}
 .mockcard li .c{font-family:var(--fm);color:var(--ink-soft)}
 .mockcard ol{margin:0;padding-left:20px;font-size:14.5px;color:var(--ink-soft)}
 .mockcard .dial{margin-top:14px;border-top:1.5px solid var(--ink);padding-top:9px;font-family:var(--fm);font-size:12.5px;font-weight:700;color:var(--spruce)}
 
-/* ---------- ticker ---------- */
-.ticker{background:var(--surface);overflow:hidden;padding:13px 0;border-top:3px solid var(--crema);border-bottom:3px solid var(--crema)}
-.ticker .track{display:flex;width:max-content;animation:tick 36s linear infinite}
+/* ---------------- 2. ticker (the one marquee on the page) ---------------- */
+.ticker{background:var(--surface);overflow:hidden;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.ticker .track{display:flex;width:max-content;animation:tick 42s linear infinite}
 .ticker span{font-family:var(--fm);font-size:13.5px;letter-spacing:.06em;color:var(--crema);white-space:nowrap;padding-right:3.2em}
 .ticker span b{color:var(--ink)}
 @keyframes tick{to{transform:translateX(-50%)}}
-@media(prefers-reduced-motion:reduce){.ticker .track{animation:none}}
 
-/* ---------- sections ---------- */
-section{padding:76px 0}
-h2{font-family:var(--fd);font-size:clamp(30px,4.5vw,46px);line-height:1.08;margin:0 0 16px;letter-spacing:-.02em}
-.lead{font-size:18.5px;color:var(--ink-soft);max-width:36em;line-height:1.65}
+/* ---------------- 3. proof: one lead quote + two supporting ---------------- */
+.proof{background:var(--surface) var(--grain);padding:clamp(64px,8vw,104px) 0}
+.proof h2{max-width:14em}
+/* stretch, not start: the lead quote is short and the stacked pair is tall, so
+   aligning to the top leaves a dead rectangle under the lead quote. */
+.qgrid{display:grid;grid-template-columns:1.25fr 1fr;gap:26px;margin-top:46px;align-items:stretch}
+.q.big{display:flex;flex-direction:column;justify-content:center}
+.q.big .who{margin-top:auto;padding-top:24px}
+@media(max-width:860px){.qgrid{grid-template-columns:1fr}}
+.qside{display:grid;gap:26px}
+.q{position:relative;background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:34px 28px 24px;box-shadow:0 14px 40px rgba(0,0,0,.35)}
+.q::before{content:"\201C";position:absolute;top:2px;left:18px;font-family:var(--fd);font-size:68px;line-height:1;color:var(--crema);opacity:.55}
+.q p{margin:0 0 16px;font-family:var(--fd);font-size:19px;line-height:1.42}
+.q.big p{font-size:clamp(22px,2.6vw,29px);line-height:1.3}
+.q .who{font-size:13px;color:var(--ink-soft);line-height:1.5}
+.q .who a{color:var(--crema)}
+.qnote{font-size:12.5px;color:var(--ink-soft);margin:28px 0 0;max-width:56em}
 
-/* quotes — was an espresso block on a cream page. On a dark page that inverts to nothing,
-   so the band is now the RAISED surface and the cards drop back to the page colour. */
-.quotes{background:var(--surface) var(--grain)}
-.quotes h2{max-width:15em}
-.qgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:26px;margin-top:44px}
-.q{position:relative;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:30px 24px 20px;font-size:15px;line-height:1.55;box-shadow:6px 8px 0 #0D0A07}
-.q:nth-child(1){transform:translateY(var(--ty,0px)) rotate(-1.2deg)}
-.q:nth-child(2){transform:translateY(var(--ty,0px)) rotate(.8deg)}
-.q:nth-child(3){transform:translateY(var(--ty,0px)) rotate(-.6deg)}
-.q::before{content:"“";position:absolute;top:-6px;left:14px;font-family:var(--fd);font-size:64px;line-height:1;color:var(--crema)}
-.q p{margin:0 0 14px;font-family:var(--fd);font-size:17.5px}
-.q .who{font-size:13px;color:var(--ink-soft)}
-.q a{color:var(--crema)}
-.qnote{font-size:12.5px;color:var(--ink-soft);margin-top:26px;max-width:52em}
+/* ---------------- 4. bento: three jobs, three cells, no empties ---------------- */
+.bento{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:48px}
+@media(max-width:860px){.bento{grid-template-columns:1fr}}
+.cell{border:1px solid var(--line);border-radius:var(--r);padding:34px 32px;background:var(--surface);position:relative;overflow:hidden;transition:transform .5s var(--ease),border-color .3s ease}
+.cell:hover{transform:translateY(-4px);border-color:var(--crema-dk)}
+.cell.wide{grid-column:1/-1;display:grid;grid-template-columns:.9fr 1.1fr;gap:36px;align-items:center;padding:38px 36px}
+@media(max-width:860px){.cell.wide{grid-template-columns:1fr;gap:26px}}
+.cell p{color:var(--ink-soft);margin:14px 0 0;font-size:16px}
+.cell .kicker{font-family:var(--fm);font-size:11.5px;letter-spacing:.2em;color:var(--crema);font-weight:700;margin:0 0 12px}
+/* The app is dark, so the screenshot gets a dark bezel. A white mat here reads as
+   a paper frame around a screen, which is the wrong object. */
+.shot{border-radius:10px;border:1px solid var(--line);background:var(--surface-2);padding:7px;box-shadow:0 18px 44px rgba(0,0,0,.5)}
+.cell.tint{background:linear-gradient(150deg,rgba(34,53,92,.55),var(--surface) 62%)}
+.cell.tint2{background:linear-gradient(150deg,rgba(127,169,140,.16),var(--surface) 62%)}
+.readout{font-family:var(--fm);margin-top:24px;border-top:1px solid var(--line);padding-top:18px;display:grid;gap:9px;font-size:14px;color:var(--ink-soft)}
+.readout div{display:flex;justify-content:space-between;gap:12px}
+.readout b{color:var(--ink);font-weight:700}
+.bigfig{font-family:var(--fd);font-size:clamp(56px,8vw,88px);line-height:.9;color:var(--crema);margin-top:26px;letter-spacing:-.03em}
+.bigfig small{display:block;font-family:var(--fm);font-size:12px;letter-spacing:.2em;color:var(--ink-soft);margin-top:12px;font-weight:700}
 
-/* pillars — numbered menu rows */
-.pillar{display:grid;grid-template-columns:110px 1fr 1.4fr;gap:28px;align-items:start;padding:34px 0;border-top:1px solid var(--line)}
-.pillar:last-of-type{border-bottom:1px solid var(--line)}
-.pillars{margin-top:44px}
-.pillar .num{font-family:var(--fd);font-style:italic;font-size:clamp(44px,5vw,64px);line-height:1;color:var(--crema);opacity:.85}
-.pillar .n{font-family:var(--fm);color:var(--crema);font-weight:700;font-size:12px;letter-spacing:.18em}
-.pillar h3{font-family:var(--fd);font-size:clamp(22px,2.6vw,28px);margin:6px 0 0;line-height:1.15}
-.pillar p{margin:0;color:var(--ink-soft);font-size:16px;line-height:1.65}
-@media(max-width:760px){.pillar{grid-template-columns:64px 1fr;gap:16px}.pillar p{grid-column:2}}
+/* ---------------- 5. the money: full-width figures ---------------- */
+.money{padding:clamp(72px,9vw,116px) 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--bg)}
+.money h2{max-width:15em}
+.figs{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5vw,72px);margin-top:52px}
+@media(max-width:720px){.figs{grid-template-columns:1fr;gap:38px}}
+.fig .n{font-family:var(--fm);font-weight:700;font-size:clamp(52px,8.5vw,96px);line-height:.92;letter-spacing:-.045em;color:var(--ink)}
+.fig .n.warn{color:var(--alert)}
+.fig .t{margin-top:16px;color:var(--ink-soft);font-size:16.5px;max-width:22em;border-top:1px solid var(--line);padding-top:16px}
+.srcline{font-size:12.5px;color:var(--ink-soft);margin-top:40px}
 
-/* money rows */
-.money-sec{padding:60px 0}
-.money-sec .row{display:grid;grid-template-columns:1fr 1.05fr;gap:56px;align-items:center}
-@media(max-width:880px){.money-sec .row{grid-template-columns:1fr;gap:36px}}
-.shot{display:block;background:#fff;padding:10px;border:1px solid var(--line);border-radius:4px;box-shadow:10px 12px 0 rgba(0,0,0,.4);transform:rotate(-1deg)}
-.money-sec:nth-of-type(odd) .shot{transform:rotate(1deg)}
+/* ---------------- 6. paper: narrow column, image bleeding right ---------------- */
+.paper{padding:clamp(64px,8vw,104px) 0;overflow:hidden}
+.paper .wrap{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:clamp(30px,4vw,58px);align-items:center}
+@media(max-width:900px){.paper .wrap{grid-template-columns:1fr;gap:34px}}
+.paper .bleed{margin-right:calc(-1 * max(26px,(100vw - 1180px) / 2 + 26px))}
+@media(max-width:900px){.paper .bleed{margin-right:0}}
 
-/* pricing — menu board */
-.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:26px;margin-top:44px;align-items:start}
-.plan{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:30px 28px}
-.plan .menuline{display:flex;align-items:baseline;gap:10px;border-bottom:none}
-.plan .menuline h3{font-family:var(--fd);margin:0;font-size:23px;white-space:nowrap}
-.plan .menuline .dots{flex:1;border-bottom:2px dotted var(--crema);transform:translateY(-5px)}
+/* ---------------- 7. pricing: menu board ---------------- */
+.pricing{padding:clamp(64px,8vw,104px) 0;background:var(--surface) var(--grain);border-top:1px solid var(--line)}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:22px;margin-top:46px;align-items:start}
+.plan{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:30px 28px;transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
+.plan:not(.hot):hover{transform:translateY(-5px);box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.menuline{display:flex;align-items:baseline;gap:10px}
+.menuline h3{margin:0;font-size:23px;white-space:nowrap}
+.menuline .dots{flex:1;border-bottom:2px dotted var(--line);transform:translateY(-5px)}
 .plan .p{font-family:var(--fm);font-size:26px;font-weight:700;white-space:nowrap}
-.plan .per{font-size:13px;color:var(--ink-soft);margin-top:4px}
-.plan ul{padding-left:0;list-style:none;margin:18px 0 0;font-size:14.5px;color:var(--ink-soft)}
-.plan li{margin-bottom:9px;padding-left:20px;position:relative}
-.plan li::before{content:"·";position:absolute;left:4px;font-weight:900;color:var(--crema);font-size:22px;line-height:.8}
-/* the featured plan can no longer be "the dark one" — it is the GOLD-EDGED one */
-.plan.hot{background:var(--surface) var(--grain);border:1.5px solid var(--crema);box-shadow:10px 12px 0 rgba(129,149,190,.16);transform:translateY(var(--ty,0px)) rotate(-.5deg) scale(1.02)}
+.plan .p .u{font-size:14px;font-weight:400;color:var(--ink-soft)}
+.plan .per{font-size:13px;color:var(--ink-soft);margin-top:5px}
+.plan ul{padding:0;list-style:none;margin:20px 0 0;font-size:14.5px;color:var(--ink-soft)}
+.plan li{margin-bottom:10px;padding-left:18px;position:relative;line-height:1.5}
+.plan li::before{content:"";position:absolute;left:0;top:.62em;width:7px;height:1px;background:var(--crema)}
+.plan.hot{border-color:var(--crema);background:linear-gradient(150deg,rgba(34,53,92,.5),var(--bg) 60%);box-shadow:0 20px 50px rgba(0,0,0,.5)}
 .plan.hot .menuline h3{color:var(--crema)}
-.plan.hot .p{color:var(--ink)}
 .plan.hot ul{color:var(--ink)}
-.plan .tag{font-family:var(--fm);font-size:11px;letter-spacing:.18em;color:var(--crema);margin-bottom:10px;font-weight:700}
-.founding{border:2px dashed var(--crema);color:var(--crema);background:rgba(129,149,190,.1);border-radius:8px;display:inline-block;padding:12px 20px;font-weight:700;margin-top:30px;font-size:15px;transform:translateY(var(--ty,0px)) rotate(-.4deg)}
+.plan .tag{font-family:var(--fm);font-size:11px;letter-spacing:.18em;color:var(--crema);margin:0 0 12px;font-weight:700}
+.founding{border:1.5px dashed var(--crema);color:var(--crema);background:rgba(129,149,190,.09);border-radius:var(--r);display:block;padding:16px 22px;font-weight:700;margin-top:30px;font-size:15.5px}
+.pricing .fineprint{font-size:12.5px;color:var(--ink-soft);margin-top:20px;max-width:52em}
 
-/* faq */
-.faq{max-width:760px}
-.faq details{border-bottom:1px solid var(--line);padding:4px 2px}
-.faq details:first-of-type{border-top:1px solid var(--line);margin-top:36px}
-.faq summary{font-family:var(--fd);font-weight:700;cursor:pointer;font-size:18.5px;padding:16px 36px 16px 0;list-style:none;position:relative}
+/* ---------------- 8. faq: accordion ---------------- */
+.faq{padding:clamp(64px,8vw,104px) 0}
+/* Constrain the COLUMN, not the container: a narrower centred .wrap would push the
+   FAQ off the left axis every other section shares, which reads as a misalignment. */
+.faq h2,.faq details{max-width:830px}
+.faq details{border-bottom:1px solid var(--line)}
+.faq details:first-of-type{border-top:1px solid var(--line);margin-top:38px}
+.faq summary{font-family:var(--fd);font-weight:700;cursor:pointer;font-size:19.5px;padding:19px 40px 19px 0;list-style:none;position:relative;transition:color .15s ease}
+.faq summary:hover{color:var(--crema)}
 .faq summary::-webkit-details-marker{display:none}
-.faq summary::after{content:"+";position:absolute;right:6px;top:12px;font-family:var(--fd);font-size:26px;color:var(--crema);transition:transform .2s}
+.faq summary::after{content:"+";position:absolute;right:6px;top:14px;font-family:var(--fd);font-size:28px;line-height:1;color:var(--crema);transition:transform .2s ease-out}
 .faq details[open] summary::after{transform:rotate(45deg)}
-.faq p{color:var(--ink-soft);font-size:15.5px;margin:0 0 18px;line-height:1.65}
+.faq details p{color:var(--ink-soft);font-size:15.5px;margin:0 0 20px;line-height:1.65;max-width:62ch}
 
-/* ---------- motion ---------- */
-:where(.js) :where([data-reveal]){opacity:0;--ty:30px;transform:translateY(var(--ty))}
-.js .in[data-reveal]{opacity:1;--ty:0px}
-@media(prefers-reduced-motion:no-preference){
-  [data-reveal]{transition:opacity 1s cubic-bezier(.16,1,.3,1),transform 1s cubic-bezier(.16,1,.3,1)}
-  .shot{transition:transform .7s cubic-bezier(.16,1,.3,1),box-shadow .7s cubic-bezier(.16,1,.3,1)}
-  .row div:hover .shot{transform:rotate(0) translateY(-6px);box-shadow:12px 16px 0 rgba(0,0,0,.5)}
-  .plan{transition:transform .5s cubic-bezier(.16,1,.3,1),box-shadow .5s cubic-bezier(.16,1,.3,1)}
-  .plan:not(.hot):hover{transform:translateY(-6px);box-shadow:0 14px 30px rgba(0,0,0,.45)}
-  .faq details[open] p{animation:fadeup .5s cubic-bezier(.16,1,.3,1)}
-  @keyframes fadeup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-}
-@media(prefers-reduced-motion:reduce){.js [data-reveal]{opacity:1;transform:none}}
+/* ---------------- closing call ---------------- */
+.close{padding:clamp(72px,9vw,112px) 0;text-align:center;border-top:1px solid var(--line);background:linear-gradient(180deg,var(--bg),rgba(34,53,92,.22))}
+.close h2{max-width:16em;margin:0 auto}
+.close .lead{margin:18px auto 32px;text-align:center}
+.close .heroctas{justify-content:center}
 
-/* footer */
-footer{background:var(--surface) var(--grain);color:var(--ink-soft);padding:44px 0 52px;font-size:14px;margin-top:40px}
+/* ---------------- footer ---------------- */
+footer{background:var(--surface) var(--grain);color:var(--ink-soft);padding:44px 0 54px;font-size:14px}
 footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
-footer .lockup{color:var(--ink);font-size:19px}
+footer .lockup{font-size:19px}
 footer a{color:var(--crema)}
 
+/* ---------------- motion ----------------
+   Hiding styles sit behind the JS-added .js class at zero specificity (:where) so a
+   no-JS or print render shows everything. Do not raise their specificity. */
+:where(.js) :where([data-reveal]){opacity:0;--ty:26px;transform:translateY(var(--ty))}
+.js .in[data-reveal]{opacity:1;--ty:0px}
+@media(prefers-reduced-motion:no-preference){
+  [data-reveal]{transition:opacity .85s var(--ease),transform .85s var(--ease)}
+  .faq details[open] p{animation:fadeup .45s var(--ease)}
+  @keyframes fadeup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+}
+@media(prefers-reduced-motion:reduce){
+  .js [data-reveal]{opacity:1;transform:none}
+  .ticker .track{animation:none}
+  .cell:hover,.plan:hover,.btn:hover{transform:none}
+}
+@media not (hover:hover){.cell:hover,.plan:hover{transform:none}}
+
 /* Nobody prints a landing page on purpose, but a dark one prints as a black slab.
-   One rule, not a full print sheet. */
+   Kept from site.css: this is the rule that makes the page printable at all. */
 @media print{
-  :root{--bg:#fff;--surface:#fff;--ink:#1A1208;--ink-soft:#5A4A3A;--line:#CFC4B6;--crema:#22355C;--crema-dk:#182747;--crema-fill:#22355C;--crema-fill-dk:#182747;--on-crema:#fff;--grain:none}
+  :root{--bg:#fff;--surface:#fff;--surface-2:#fff;--ink:#1A1208;--ink-soft:#5A4A3A;--line:#CFC4B6;--crema:#22355C;--crema-dk:#182747;--crema-fill:#22355C;--crema-fill-dk:#182747;--on-crema:#fff;--grain:none}
   body{background:#fff}
-  .ticker,.shot{box-shadow:none}
-  /* the scroll observer never fires in print, so every revealed block would
-     otherwise come out blank — this is what makes the page actually printable */
+  .nav{position:static;background:#fff;backdrop-filter:none}
+  .ticker,.shot,.q,.plan,.cell{box-shadow:none}
   .js [data-reveal]{opacity:1;transform:none}
 }

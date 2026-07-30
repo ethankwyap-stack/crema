@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
 <title>Crema — o seu café todo, afinado</title>
 <meta name="description" content="Fichas técnicas que sabem quanto custam. Um quadro de dial-in que responde à pergunta da manhã. Um manual de acolhimento pronto antes de segunda-feira. Gratuito, local, feito para cafés independentes.">
 <meta property="og:title" content="Crema — o seu café todo, afinado">
@@ -22,38 +23,41 @@
 </head>
 <body>
 
-<div class="wrap">
-  <header class="nav">
-    <div class="lockup">
+<header class="nav">
+  <div class="wrap">
+    <a class="lockup" href="/pt">
       <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="36" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="60" cy="60" r="25" fill="#8195BE"/><path d="M44.5 55A21 21 0 0 1 62.3 40.5" fill="none" stroke="#F7E3BE" stroke-width="5.5" stroke-linecap="round"/></svg>
       crema
-    </div>
+    </a>
     <nav class="navlinks" aria-label="Secções">
+      <a href="#what">O que faz</a>
       <a href="#pricing">Preços</a>
       <a href="#faq">Perguntas</a>
     </nav>
     <a class="langlink" href="/" hreflang="en" lang="en" title="View in English">EN</a>
-    <a class="cta" href="/product/index.html">Abrir a app — grátis</a>
-  </header>
+    <a class="btn sm cta" href="/product/index.html">Abrir o Crema, grátis</a>
+  </div>
+</header>
 
+<!-- 1. HERO: divisão assimétrica. Quatro elementos de texto, não mais. -->
+<div class="wrap">
   <section class="hero">
     <div>
       <p class="eyebrow" data-reveal>Para cafés independentes</p>
-      <h1 data-reveal style="--d:.08s">O seu café todo, <em>afinado.</em></h1>
-      <p class="sub" data-reveal style="--d:.18s">Fichas técnicas que sabem exactamente quanto lhe custa cada bebida. Um quadro de dial-in que responde à pergunta da manhã. Um manual de acolhimento impresso e pronto antes de segunda-feira. Feito para cafés independentes — não para cadeias.</p>
-      <div class="heroctas" data-reveal style="--d:.28s">
-        <a class="btn" href="/product/index.html">Abrir o Crema — grátis</a>
-        <a class="btn ghost" href="/video/portafile-launch.mp4">Ver o filme de 75 segundos <span style="font-size:13px;opacity:.75">(em inglês)</span></a>
+      <h1 data-reveal style="--d:.06s">O seu café todo, <em>afinado.</em></h1>
+      <p class="sub" data-reveal style="--d:.14s">Fichas técnicas que sabem quanto lhe custa cada bebida. Gratuitas, prontas a imprimir, e suas.</p>
+      <div class="heroctas" data-reveal style="--d:.22s">
+        <a class="btn" href="/product/index.html">Abrir o Crema, grátis</a>
+        <a class="btn ghost" href="/video/portafile-launch.mp4">Ver o filme&nbsp;<span style="font-size:13px;opacity:.75">(em inglês)</span></a>
       </div>
-      <p class="tiny" data-reveal style="--d:.36s">Sem conta. Sem cartão. As suas receitas ficam no seu navegador — sincronize para os telemóveis da equipa só se quiser — e imprimem-se em papel, onde o balcão realmente as lê.</p>
     </div>
-    <div class="cardwrap" data-reveal style="--d:.4s">
+    <div class="paperstack" data-reveal style="--d:.3s">
       <div class="mockcard" aria-label="Exemplo de ficha técnica">
         <h3><span>Galão</span><span class="price">1,80 €</span></h3>
-        <div class="m"><span>custa-lhe <b>0,44 €</b></span><span class="badge">25% de custo</span><span style="color:var(--spruce)">margem 1,36 €</span></div>
+        <div class="m"><span>custa-lhe <b>0,44 €</b></span><span class="badge">25% de custo</span><span class="keeps">margem 1,36 €</span></div>
         <ul>
-          <li><span>Café em grão — 14 g</span><span class="c">0,25 €</span></li>
-          <li><span>Leite meio-gordo — 190 ml</span><span class="c">0,17 €</span></li>
+          <li><span>Café em grão, 14 g</span><span class="c">0,25 €</span></li>
+          <li><span>Leite meio-gordo, 190 ml</span><span class="c">0,17 €</span></li>
           <li><span>Louça (lavagem)</span><span class="c">0,02 €</span></li>
         </ul>
         <ol>
@@ -61,12 +65,13 @@
           <li>Vaporizar o leite a 60 °C</li>
           <li>Encher o copo, espuma no topo</li>
         </ol>
-        <div class="dial">⏚ Lote da Casa: 18g dentro → 36g fora, 28s (moagem 12,2)</div>
+        <div class="dial">Lote da Casa: 18g dentro, 36g fora, 28s (moagem 12,2)</div>
       </div>
     </div>
   </section>
 </div>
 
+<!-- 2. TICKER: o único marquee da página. -->
 <div class="ticker" aria-hidden="true">
   <div class="track">
     <span>GALÃO custa <b>0,44 €</b> vende <b>1,80 €</b> margem <b>1,36 €</b></span>
@@ -84,91 +89,150 @@
   </div>
 </div>
 
-<section class="quotes">
+<!-- 3. PROVA: uma citação principal, duas de apoio. Textuais, em inglês, por decisão. -->
+<section class="proof">
   <div class="wrap">
-    <p class="eyebrow" data-reveal>Ouvido no balcão</p>
-    <h2 data-reveal style="--d:.08s">Os melhores cafés funcionam com receitas que ninguém escreveu.</h2>
-    <p class="lead" data-reveal style="--d:.16s">São publicações reais de gente real do café, encontradas enquanto o Crema era construído:</p>
+    <h2 data-reveal>Os melhores cafés funcionam com receitas que ninguém escreveu.</h2>
+    <p class="lead" data-reveal style="--d:.08s">Publicações reais de gente real do café, encontradas enquanto o Crema era construído.</p>
     <div class="qgrid">
-      <div class="q" data-reveal><p lang="en">"[C]offee like no other, has the absolute WORST training standards… 9/10 of the coffee shops I visit these days have absolutely no standards."</p><div class="who">— proprietário de café, 7 anos em specialty · <a href="https://www.reddit.com/r/barista/comments/1k6ee41/" rel="noopener">r/barista, Abr 2025</a></div></div>
-      <div class="q" data-reveal style="--d:.14s"><p lang="en">"[T]he shop is lacking a lot of basics such as guidelines on making drinks… Now on top of all this my boss expects me to make this training guide and then train the new barista. It's unbelievable."</p><div class="who">— barista num café independente novo · <a href="https://www.reddit.com/r/barista/comments/1jb70yd/" rel="noopener">r/barista, Mar 2025</a></div></div>
-      <div class="q" data-reveal style="--d:.28s"><p lang="en">"[W]e really don't have a ideal recipe book to make sure things and drinks are being made the same…"</p><div class="who">— barista, café sem fins lucrativos · <a href="https://www.reddit.com/r/barista/comments/1c9z6b2/" rel="noopener">r/barista, Abr 2024</a></div></div>
+      <div class="q big" data-reveal style="--d:.14s">
+        <p lang="en">[C]offee like no other, has the absolute WORST training standards… 9/10 of the coffee shops I visit these days have absolutely no standards.</p>
+        <div class="who">Proprietário de café, 7 anos em specialty<br><a href="https://www.reddit.com/r/barista/comments/1k6ee41/" rel="noopener">r/barista, Abr 2025</a></div>
+      </div>
+      <div class="qside">
+        <div class="q" data-reveal style="--d:.22s">
+          <p lang="en">[T]he shop is lacking a lot of basics such as guidelines on making drinks… Now on top of all this my boss expects me to make this training guide and then train the new barista.</p>
+          <div class="who">Barista num café independente novo<br><a href="https://www.reddit.com/r/barista/comments/1jb70yd/" rel="noopener">r/barista, Mar 2025</a></div>
+        </div>
+        <div class="q" data-reveal style="--d:.3s">
+          <p lang="en">[W]e really don't have a ideal recipe book to make sure things and drinks are being made the same…</p>
+          <div class="who">Barista, café sem fins lucrativos<br><a href="https://www.reddit.com/r/barista/comments/1c9z6b2/" rel="noopener">r/barista, Abr 2024</a></div>
+        </div>
+      </div>
     </div>
-    <p class="qnote">As citações são de publicações públicas no Reddit (obtidas através do arquivo PullPush, Julho de 2026), textuais — os cortes estão marcados com … e [parênteses] — e ligadas às fontes. Ficam no inglês original, porque uma citação textual não se traduz. Descrevem o problema — não são recomendações do Crema.</p>
+    <p class="qnote">As citações são de publicações públicas no Reddit (obtidas através do arquivo PullPush, Julho de 2026), textuais, com os cortes marcados com … e [parênteses], e ligadas às fontes. Ficam no inglês original, porque uma citação textual não se traduz. Descrevem o problema. Não são recomendações do Crema.</p>
   </div>
 </section>
 
-<div class="wrap">
-  <section>
+<!-- 4. O QUE FAZ: bento, três trabalhos, três células. -->
+<section id="what">
+  <div class="wrap">
     <p class="eyebrow" data-reveal>O que faz</p>
-    <h2 data-reveal style="--d:.08s">Uma ferramenta, três trabalhos que o dossiê não faz.</h2>
-    <div class="pillars">
-      <div class="pillar" data-reveal><div class="num">01</div><div><div class="n">O DINHEIRO</div><h3>Fichas que sabem o seu custo</h3></div><p>Introduza uma vez o que paga pelo leite, pelo café e pelos copos. Cada ficha técnica mostra o custo, a margem e a percentagem de custo da bebida — e recalcula-se no momento em que um preço de ingrediente muda. Quando o seu fornecedor de café aumentar os preços, saberá quais as bebidas que passaram a dar prejuízo antes da caixa saber.</p></div>
-      <div class="pillar" data-reveal><div class="num">02</div><div><div class="n">A MANHÃ</div><h3>Um quadro de dial-in com memória</h3></div><p>Moagem, dose, extração, tempo — registados por lote em cinco segundos. O quadro mostra sempre a definição actual, todas as fichas a transportam, e o histórico continua lá quando aquele Etiópia voltar na próxima estação.</p></div>
-      <div class="pillar" data-reveal><div class="num">03</div><div><div class="n">A SEGUNDA-FEIRA</div><h3>Um manual de acolhimento em dez minutos</h3></div><p>Ordene o percurso de formação e imprima: capa, checklist dia a dia, todas as fichas técnicas, os dial-ins de hoje. Validações registadas por barista. O conhecimento deixa de sair pela porta com quem escreveu o dossiê antigo.</p></div>
-    </div>
-  </section>
-
-  <section class="money-sec">
-    <div class="row">
-      <div data-reveal>
-        <p class="eyebrow">O dinheiro</p>
-        <h2>O café verde duplicou. A sua lista de preços plastificada não notou.</h2>
-        <p class="lead">O arábica atingiu o pico de <strong>4,41 $/lb</strong> em 2025 — um máximo histórico — e o café médio fica com <strong>11 cêntimos de cada euro</strong>. Com margens assim, "mais ou menos meio euro por galão" não é uma estratégia de custeio. O Crema torna o número real omnipresente: em cada ficha, todos os dias, aos preços de hoje.</p>
-        <p class="tiny">Fontes: Perfect Daily Grind (Fev 2026) · estatísticas do sector em coffeedasher.com. Lista completa de citações no repositório.</p>
+    <h2 data-reveal style="--d:.06s">Uma ferramenta, três trabalhos que o dossiê não faz.</h2>
+    <div class="bento">
+      <div class="cell wide" data-reveal>
+        <div>
+          <p class="kicker">O DINHEIRO</p>
+          <h3>Fichas que sabem o seu custo</h3>
+          <p>Introduza uma vez o que paga pelo leite, pelo café e pelos copos. Cada ficha mostra o custo, a margem e a percentagem de custo da bebida, e recalcula-se no momento em que um ingrediente muda de preço. Quando o seu fornecedor de café aumentar os preços, saberá quais as bebidas que passaram a dar prejuízo antes da caixa saber.</p>
+        </div>
+        <img class="shot" src="/site/assets/01-recipes.png" width="1280" height="860" alt="Vista de receitas do Crema: fichas com custo, margem e etiquetas de percentagem de custo em directo" loading="lazy">
       </div>
-      <div data-reveal style="--d:.15s"><img class="shot" src="/site/assets/01-recipes.png" width="1280" height="860" alt="Vista de receitas do Crema: fichas com custo, margem e etiquetas de percentagem de custo em directo" loading="lazy"></div>
-    </div>
-  </section>
-
-  <section class="money-sec">
-    <div class="row">
-      <div data-reveal style="--d:.15s"><img class="shot" src="/site/assets/03-dialin.png" width="1280" height="860" alt="Quadro de dial-in do Crema: moagem, dose, extração e tempo actuais por lote, com histórico" loading="lazy"></div>
-      <div data-reveal>
-        <p class="eyebrow">O papel</p>
-        <h2>O papel sobrevive à hora de ponta. A app mantém-no honesto.</h2>
-        <p class="lead">Ninguém desbloqueia um telemóvel com as mãos molhadas às 7h58. O Crema imprime fichas prontas a plastificar, uma folha de posto de uma página e o manual de acolhimento completo — enquanto a app continua a ser a fonte viva da verdade, para que o papel nunca volte a ser a versão desactualizada. (As fichas impressas escondem os seus custos. O relatório de margens é a página só do proprietário.)</p>
+      <div class="cell tint" data-reveal style="--d:.1s">
+        <p class="kicker">A MANHÃ</p>
+        <h3>Um quadro de dial-in com memória</h3>
+        <p>Moagem, dose, extração e tempo, registados por lote em cinco segundos. O quadro mostra a definição actual, todas as fichas a transportam, e o histórico continua lá quando aquele Etiópia voltar na próxima estação.</p>
+        <div class="readout">
+          <div><span>Lote da Casa</span><b>18g → 36g · 28s</b></div>
+          <div><span>Moagem</span><b>12,2</b></div>
+          <div><span>Registado</span><b>hoje de manhã, 6:41</b></div>
+        </div>
+      </div>
+      <div class="cell tint2" data-reveal style="--d:.18s">
+        <p class="kicker">A SEGUNDA-FEIRA</p>
+        <h3>Um manual de acolhimento em dez minutos</h3>
+        <p>Ordene o percurso de formação e imprima: capa, checklist dia a dia, todas as fichas técnicas, os dial-ins de hoje. Validações registadas por barista. O conhecimento deixa de sair pela porta com quem escreveu o dossiê antigo.</p>
+        <div class="bigfig">10 min<small>DA CAPA À FOLHA DE VALIDAÇÕES</small></div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section id="pricing">
+<!-- 5. O DINHEIRO -->
+<section class="money">
+  <div class="wrap">
+    <h2 data-reveal>O café verde duplicou. A sua lista de preços plastificada não notou.</h2>
+    <div class="figs">
+      <div class="fig" data-reveal style="--d:.1s">
+        <div class="n">4,41 $</div>
+        <div class="t">O pico do arábica por libra em 2025, um máximo histórico.</div>
+      </div>
+      <div class="fig" data-reveal style="--d:.18s">
+        <div class="n warn">0,11 €</div>
+        <div class="t">O que fica ao café médio de cada euro que recebe.</div>
+      </div>
+    </div>
+    <p class="lead" data-reveal style="--d:.24s">Com margens assim, "mais ou menos meio euro por galão" não é uma estratégia de custeio. O Crema torna o número real omnipresente: em cada ficha, todos os dias, aos preços de hoje.</p>
+    <p class="srcline">Fontes: Perfect Daily Grind (Fev 2026) e estatísticas do sector em coffeedasher.com. Lista completa de citações no repositório.</p>
+  </div>
+</section>
+
+<!-- 6. O PAPEL -->
+<section class="paper">
+  <div class="wrap">
+    <div data-reveal>
+      <h2>O papel sobrevive à hora de ponta. A app mantém-no honesto.</h2>
+      <p class="lead">Ninguém desbloqueia um telemóvel com as mãos molhadas às 7h58. O Crema imprime fichas prontas a plastificar, uma folha de posto de uma página e o manual de acolhimento completo, enquanto a app continua a ser a fonte viva da verdade. O papel nunca mais é a versão desactualizada.</p>
+      <p class="lead">As fichas impressas escondem os seus custos. O relatório de margens é a página só do proprietário.</p>
+    </div>
+    <div class="bleed" data-reveal style="--d:.12s">
+      <img class="shot" src="/site/assets/03-dialin.png" width="1280" height="860" alt="Quadro de dial-in do Crema: moagem, dose, extração e tempo actuais por lote, com histórico" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<!-- 7. PREÇOS -->
+<section class="pricing" id="pricing">
+  <div class="wrap">
     <p class="eyebrow" data-reveal>A ementa</p>
-    <h2 data-reveal style="--d:.08s">Preços que respeitam uma margem de 11%.</h2>
-    <p class="lead" data-reveal style="--d:.16s">Valor fixo por café. Nunca por posto — não o penalizamos por ter de contratar outra vez.</p>
+    <h2 data-reveal style="--d:.06s">Preços que respeitam uma margem de 11%.</h2>
+    <p class="lead" data-reveal style="--d:.12s">Valor fixo por café. Nunca por posto. Não o penalizamos por ter de contratar outra vez.</p>
     <div class="plans">
-      <div class="plan" data-reveal>
+      <div class="plan" data-reveal style="--d:.16s">
         <div class="menuline"><h3>Local</h3><span class="dots"></span><span class="p">0 €</span></div>
         <div class="per">para sempre</div>
         <ul><li>Tudo: fichas, custeio, quadro de dial-in, manuais de formação, impressão</li><li>Vive inteiramente no seu navegador</li><li>Cópia de segurança e restauro em JSON</li></ul>
       </div>
-      <div class="plan hot" data-reveal style="--d:.14s">
-        <div class="tag">FAVORITO DA CASA</div>
-        <div class="menuline"><h3>Café</h3><span class="dots"></span><span class="p">$29<span style="font-size:14px">/mês</span></span></div>
-        <div class="per">ou $199/ano · 30 dias de experiência completa</div>
+      <div class="plan hot" data-reveal style="--d:.24s">
+        <p class="tag">FAVORITO DA CASA</p>
+        <div class="menuline"><h3>Café</h3><span class="dots"></span><span class="p">$29<span class="u">/mês</span></span></div>
+        <div class="per">ou $199/ano, 30 dias de experiência completa</div>
         <ul><li>Sincronizado entre os dispositivos do café</li><li>Partilha por link secreto para os telemóveis da equipa</li><li>Histórico de validações e tendências de margem</li><li>Um preço fixo por estabelecimento</li></ul>
       </div>
-      <div class="plan" data-reveal style="--d:.28s">
-        <div class="menuline"><h3>Parceiro Torrefactor</h3><span class="dots"></span><span class="p">$149<span style="font-size:14px">/mês</span></span></div>
+      <div class="plan" data-reveal style="--d:.32s">
+        <div class="menuline"><h3>Torrefactor</h3><span class="dots"></span><span class="p">$149<span class="u">/mês</span></span></div>
         <div class="per">até 50 contas de grosso</div>
-        <ul><li>Crema com a sua marca, como presente de integração para as suas contas de café</li><li>Os seus lotes e dial-ins recomendados pré-carregados</li><li>Actualize uma especificação de estação uma vez — o quadro de cada conta segue</li></ul>
+        <ul><li>Crema com a sua marca, como presente de integração para as suas contas de café</li><li>Os seus lotes e dial-ins recomendados pré-carregados</li><li>Actualize uma especificação de estação uma vez, o quadro de cada conta segue</li></ul>
       </div>
     </div>
-    <div class="founding" data-reveal>☕ Cafés fundadores: primeiro ano $99 — para os primeiros 50 cafés que tragam a sua ementa real.</div>
-    <p class="tiny">O nível Local é o produto que pode abrir hoje. Os níveis Café e Torrefactor chegam depois da validação com os cafés fundadores — os preços mostrados são o plano de referência. <strong>Os valores dos planos pagos estão em dólares (USD)</strong>; o preço em euros será fixado antes do lançamento desses planos.</p>
-  </section>
+    <div class="founding" data-reveal>Cafés fundadores: primeiro ano $99, para os primeiros 50 cafés que tragam a sua ementa real.</div>
+    <p class="fineprint">O nível Local é o produto que pode abrir hoje. Os níveis Café e Torrefactor chegam depois da validação com os cafés fundadores, e os preços mostrados são o plano de referência. <strong>Os valores dos planos pagos estão em dólares (USD)</strong>; o preço em euros será fixado antes do lançamento desses planos.</p>
+  </div>
+</section>
 
-  <section class="faq" id="faq">
-    <p class="eyebrow" data-reveal>Perguntas justas</p>
-    <h2 data-reveal style="--d:.08s">Feitas ao balcão</h2>
-    <details data-reveal><summary>Onde ficam os meus dados?</summary><p>No seu navegador (localStorage), na sua máquina — nada é enviado a não ser que ligue a Sincronização. A Sincronização mantém uma cópia privada na nuvem para que os telemóveis da equipa partilhem os mesmos dados em directo através de um link secreto. Exporte uma cópia JSON no menu Dados e guarde-a com os documentos do café. Detalhes na <a href="/site/pt/privacy.html">política de privacidade</a>.</p></details>
-    <details data-reveal><summary>A minha equipa consegue ver quanto me custam as bebidas?</summary><p>Não. Os dispositivos com o link da equipa recebem receitas, composições, dial-ins e formação — os custos dos ingredientes, as margens e a tabela de preços ficam escondidos e permanecem nos dispositivos do proprietário. As fichas impressas e os manuais de acolhimento também nunca mostram custos. O relatório de margens é a página só do proprietário.</p></details>
-    <details data-reveal><summary>Porque é que a versão Local é gratuita? Onde está a armadilha?</summary><p>Não há armadilha: é gratuita como uma amostra de café é gratuita. Se o Crema merecer um lugar colado à sua máquina, o nível Café sincronizado é onde ganhamos a vida. Se não merecer, não perdeu nada.</p></details>
-    <details data-reveal><summary>Não podia simplesmente usar o Google Docs?</summary><p>Podia — os cafés podem há 15 anos e, como disse um proprietário com 7 anos em specialty, 9 de cada 10 cafés que visita continuam sem normas. O Docs não calcula a sua margem ao preço do leite de hoje, não se lembra da sua moagem e não imprime uma ficha de 10×15. A página em branco é o inimigo; o Crema começa com 19 bebidas editáveis.</p></details>
-    <details data-reveal><summary>E os meus dez estabelecimentos?</summary><p>O Crema é deliberadamente feito primeiro para um café — é quem está mal servido. Um nível Grupo (2 a 5 estabelecimentos) está no plano de referência.</p></details>
+<!-- 8. PERGUNTAS -->
+<section class="faq" id="faq">
+  <div class="wrap">
+    <h2 data-reveal>Feitas ao balcão</h2>
+    <details data-reveal><summary>Onde ficam os meus dados?</summary><p>No seu navegador, na sua máquina. Nada é enviado a não ser que ligue a Sincronização. A Sincronização mantém uma cópia privada na nuvem para que os telemóveis da equipa partilhem os mesmos dados em directo através de um link secreto. Exporte uma cópia JSON no menu Dados e guarde-a com os documentos do café. Detalhes na <a href="/site/pt/privacy.html">política de privacidade</a>.</p></details>
+    <details data-reveal><summary>A minha equipa consegue ver quanto me custam as bebidas?</summary><p>Não. Os dispositivos com o link da equipa recebem receitas, composições, dial-ins e formação. Os custos dos ingredientes, as margens e a tabela de preços ficam escondidos e permanecem nos dispositivos do proprietário. As fichas impressas e os manuais de acolhimento também nunca mostram custos. O relatório de margens é a página só do proprietário.</p></details>
+    <details data-reveal><summary>Porque é que a versão Local é gratuita? Onde está a armadilha?</summary><p>Não há armadilha. É gratuita como uma amostra de café é gratuita. Se o Crema merecer um lugar colado à sua máquina, o nível Café sincronizado é onde ganhamos a vida. Se não merecer, não perdeu nada.</p></details>
+    <details data-reveal><summary>Não podia simplesmente usar o Google Docs?</summary><p>Podia, e os cafés podem há 15 anos. Como disse um proprietário com 7 anos em specialty, 9 de cada 10 cafés que visita continuam sem normas. O Docs não calcula a sua margem ao preço do leite de hoje, não se lembra da sua moagem e não imprime uma ficha de 10×15. A página em branco é o inimigo. O Crema começa com 19 bebidas editáveis.</p></details>
+    <details data-reveal><summary>E os meus dez estabelecimentos?</summary><p>O Crema é deliberadamente feito primeiro para um café, porque é quem está mal servido. Um nível Grupo (2 a 5 estabelecimentos) está no plano de referência.</p></details>
     <details data-reveal><summary>Os meus baristas precisam de conta?</summary><p>Não há contas em lado nenhum. Os baristas usam os manuais impressos ou o dispositivo do café. As validações são registadas por nome, não por login.</p></details>
-  </section>
-</div>
+  </div>
+</section>
+
+<!-- 9. FECHO -->
+<section class="close">
+  <div class="wrap">
+    <h2 data-reveal>Já lá estão dezanove bebidas. Mude os preços para os seus.</h2>
+    <p class="lead" data-reveal style="--d:.08s">Sem conta, sem cartão, nada para instalar. Abre no separador que já tem aberto.</p>
+    <div class="heroctas" data-reveal style="--d:.16s">
+      <a class="btn" href="/product/index.html">Abrir o Crema, grátis</a>
+    </div>
+  </div>
+</section>
 
 <footer>
   <div class="wrap">
