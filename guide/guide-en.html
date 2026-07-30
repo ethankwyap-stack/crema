@@ -31,7 +31,13 @@
   h1 { font-family: var(--font-display); font-size: 19pt; margin: 0 0 2pt; letter-spacing: -.2pt; }
   .sub { color: var(--roast); font-size: 9.4pt; margin: 0 0 2.5pt; }
   .url { font-size: 8.6pt; color: var(--crema); font-weight: 600; margin: 0; }
-  header { border-bottom: 2.5px solid var(--espresso); padding-bottom: 5pt; margin-bottom: 8pt; }
+  header {
+    border-bottom: 2.5px solid var(--espresso); padding-bottom: 5pt; margin-bottom: 8pt;
+    display: flex; align-items: flex-start; gap: 9pt;
+  }
+  /* The lockup from brand/logo.svg, mark only. Ink is currentColor; the crema disc takes the
+     PRINT accent (#22355C), not the screen tint — see the palette note above. */
+  .mark { width: 30pt; height: 30pt; flex: none; margin-top: 1.5pt; }
 
   section { break-inside: avoid; margin-bottom: 7pt; }
   h2 {
@@ -81,9 +87,17 @@
 </style>
 
 <header>
-  <h1>Crema</h1>
-  <p class="sub">Recipe cards, real costs, dial-ins and training — on your phone and your staff's.</p>
-  <p class="url">portafile.vercel.app/product/</p>
+  <svg class="mark" viewBox="19 26 66 66" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <circle cx="52" cy="59" r="30" fill="none" stroke="currentColor" stroke-width="5"/>
+    <circle cx="52" cy="59" r="21" fill="#22355C"/>
+    <path d="M38.9 54.6A17.5 17.5 0 0 1 53.8 43.3" fill="none" stroke="#F7E3BE"
+          stroke-width="4.5" stroke-linecap="round"/>
+  </svg>
+  <div>
+    <h1>Crema</h1>
+    <p class="sub">Recipe cards, real costs, dial-ins and training — on your phone and your staff's.</p>
+    <p class="url">portafile.vercel.app/product/</p>
+  </div>
 </header>
 
 <section>
