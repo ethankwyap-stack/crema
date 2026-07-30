@@ -156,6 +156,17 @@ Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *m
 - [ ] **`/admin/dashboard.html` → 404.** The dashboard has no auth; it must never deploy.
 
 ## Known traps — bugs that already escaped once
+- **Hiding a nav link on a phone deletes the destination.** `.navlinks` was `display:none`
+  below 720px with nothing replacing it, so Pricing and FAQ existed as sections that nothing
+  on a phone could reach. Fixed 2026-07-29 by wrapping the links onto their own row.
+  `prove:` at 390px and 320px, click each of `#what` / `#pricing` / `#faq` in the nav and
+  watch the section's first line of text land **below** the sticky bar. Two things this
+  needs and neither is obvious: a sticky nav requires `scroll-margin-top` on every
+  `section[id]` or the anchor lands the heading *under* the bar, and the reserve must be
+  bigger on phones because the nav grows to two rows there.
+- **`scroll-behavior:smooth` makes anchor tests lie.** A 500 ms wait after `.click()` reads
+  the *pre-scroll* position over a long jump, so all 18 checks reported FAIL when the page
+  was fine. Wait 2500 ms, or assert on scroll completion — do not "fix" the page.
 - **A dark accent is a fill AND an ink, and they are different colours.** Ink navy `#22355C`
   is 1.7:1 as text on the dark page and ~1.3:1 against a `var(--bg)` label — so the accent
   ships as `--crema` (ink, `#8195BE`), `--crema-fill` (`#22355C`) and `--on-crema`

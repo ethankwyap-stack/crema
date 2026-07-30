@@ -18,6 +18,10 @@
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
+/* The nav is sticky, so an anchor jump lands the section's top edge UNDER it and hides
+   the eyebrow. The reserve is larger on phones because the nav grows to two rows there. */
+section[id]{scroll-margin-top:80px}
+@media(max-width:720px){section[id]{scroll-margin-top:106px}}
 body{margin:0;background:var(--bg) var(--grain);color:var(--ink);font-family:var(--fu);font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased}
 img{max-width:100%;height:auto;display:block}
 a{color:var(--crema)}
@@ -42,7 +46,17 @@ h3{font-weight:700;font-size:clamp(21px,2.4vw,27px);line-height:1.14}
 .navlinks{display:flex;gap:24px;margin-left:auto}
 .navlinks a{color:var(--ink);text-decoration:none;font-weight:600;font-size:15px;transition:color .15s ease}
 .navlinks a:hover{color:var(--crema)}
-@media(max-width:720px){.navlinks{display:none}}
+/* Below 720px the section links used to be display:none with nothing replacing them,
+   which made Pricing and FAQ unreachable on a phone — the anchors existed and nothing
+   linked to them. They wrap onto their own row instead. No hamburger: three links do
+   not earn a menu, and a menu would need JS that the CSP would have to allow. */
+@media(max-width:720px){
+  .nav .wrap{height:auto;flex-wrap:wrap;padding-top:11px;padding-bottom:11px;row-gap:10px}
+  .navlinks{order:3;width:100%;margin-left:0;gap:20px;font-size:14.5px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .navlinks a{white-space:nowrap}
+  .langlink{margin-left:auto}
+  .navlinks ~ .langlink{margin-left:auto}
+}
 .langlink{margin-left:auto;color:var(--ink);text-decoration:none;font-family:var(--fm);font-size:12.5px;font-weight:700;letter-spacing:.08em;border:1.5px solid var(--line);border-radius:999px;padding:7px 12px;white-space:nowrap;transition:border-color .15s ease,color .15s ease}
 .navlinks ~ .langlink{margin-left:24px}
 .langlink:hover{border-color:var(--crema);color:var(--crema)}
