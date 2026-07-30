@@ -4,7 +4,7 @@ Coffee-shop recipe-card + costing app (recipes with live cost/margin, dial-in bo
 
 ## Live deployment
 - https://portafile.vercel.app — root rewrites to `/site/`, app at `/product/` (Vercel project `ethan16/portafile`).
-- Deploy: `vercel deploy --prod --yes` from repo root. **git push does NOT auto-deploy** despite `vercel git connect`.
+- Deploy: `vercel deploy --prod --yes` from repo root. **A push to `main` ALSO deploys to production** — measured 2026-07-29, when a push meant only as a checkpoint went live within seconds (the new markup was serving before the push command's output finished). This reverses the old note here; the Vercel git integration is active now, whatever it did before. Treat any push to `main` as a deploy: run `/still-works` first and get approval for the deploy, not just the push.
 - Secrets: ADMIN_KEY in Vercel prod env, local copy in gitignored `.admin-key`; Blob token in `.env.local`.
 
 ## Layout
