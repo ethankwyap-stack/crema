@@ -57,7 +57,7 @@ const ok = (name, cond, got) => { n++; console.log(`${cond ? 'PASS' : 'FAIL'}  $
       ok('pt: paid tiers flagged as USD', html.includes('em dólares (USD)'));
       ok('pt: privacy link is the PT one', html.includes('/site/pt/privacy.html'));
       ok('pt: app link is absolute', await p.getAttribute('.cta', 'href') === '/product/index.html');
-      ok('pt: film labelled as English', (await p.textContent('.heroctas')).includes('em inglês'));
+      ok('pt: no film link while the video is pulled', !html.includes('portafile-launch.mp4'));
       ok('pt: faq drink count matches the pt seed (19)', html.includes('19 bebidas'));
       const faqs = await p.$$('details');
       ok('pt: all six faqs present', faqs.length === 6, faqs.length);

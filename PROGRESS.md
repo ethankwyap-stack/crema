@@ -359,13 +359,21 @@ The orange-gold accent was an eye sore and didn't read as a coffee shop, so it's
 
 ---
 
+## 2026-07-30 — The launch film comes down until it tells the truth
+
+The film made two false claims in 75 seconds — it says "No server" (untrue since sync shipped 07-17) and it says "Portafile" out loud (a product that no longer exists). Rather than keep linking it while the re-narration waits, it's pulled: both hero buttons lose the "Watch the film" link, and `/video` comes out of `.vercelignore`'s allowlist so the MP4 stops being published at all. Nothing is deleted — `video/portafile-launch.mp4` and all of `video-src/` stay in the repo, ready for the re-cut with a re-recorded narration.
+
+The one suite that noticed was `verify-site.js`, whose PT check asserted the film link was labelled "(em inglês)". That check now asserts the opposite — that no `portafile-launch.mp4` link exists — so it will fail loudly when the film is republished without someone re-reading this entry. 39/39 site checks pass. **Not deployed yet. Cost: $0.**
+
+---
+
 ## Open threads
 
 - **Pricing and FAQ are reachable on a phone again** (fixed and live 2026-07-29). They had been `display:none` below 720px with nothing replacing them, flagged twice across two sessions and never fixed: two sections that existed and that no phone visitor could reach. The links wrap onto their own row now. No hamburger — three links do not earn a menu, and one would need JS the CSP would have to be opened up for. The fix surfaced a second thing nobody had noticed: with a sticky nav, an anchor jump lands the section's eyebrow *underneath* the bar, so every anchored section needed `scroll-margin-top`. Verified live: 24 anchor jumps across both languages at four widths all clear the nav.
 - **A push to `main` deploys this project to production.** Discovered 2026-07-29 the hard way. The old note claiming otherwise is corrected in `CLAUDE.md`. Nothing about the current state is wrong, but the working assumption for every future session has changed: there is no such thing as a safe checkpoint push here.
 - **The redesigned landing is live** (2026-07-29). Verified against the real URL, not inferred: 39/39 site checks and 12/12 health checks pass, `/` and `/pt` both serve the new nine-section page, the stylesheet carries the new classes, and the private paths still 404.
 - **Crema is live.** Deployed 2026-07-28 (`dpl_G4yGZvprhEjZ4zEqxnig6iUo99XR`), merged into `main` and pushed. Verified on the live site, not inferred: `/` and `/pt` both read Crema fourteen times with zero Portafile, `/product` matches, `site.css` serves the new `--crema:` token, and the three things that must NOT be public still 404 (`/admin/dashboard.html`, `/guide/`, and the `?k=0×40` key canary). The daily health check should go back to mailing a pass. One thing the deploy can't fix: anyone I already sent a `Portafile-Guide` PDF to still has the old brand in their inbox.
-- **The launch film says "Portafile" out loud** and can't be cheaply re-narrated — same blocker as the "No server" line below, and now two false claims in the same 75 seconds. Until it's re-cut, the site links a film that names a product that no longer exists.
+- **The launch film says "Portafile" out loud** and can't be cheaply re-narrated — same blocker as the "No server" line below, and now two false claims in the same 75 seconds. **Taken off the site 2026-07-30** — both hero links removed and `/video` dropped from the deploy allowlist, so nothing false is published. Republish only after the narration is re-recorded (`video-src/script-v2.md`).
 - **`extras/` still carries the old brand** — the investor teaser, launch-post drafts, onboarding email drip and dial-in pad, seventeen mentions. None of it has been published or sent, so nothing is wrong in the world, but the first one I reach for will be under the wrong name. Rename before using, not before then.
 - **The trademark knockout search has never been run — on either name.** "Crema" is a common coffee term, so expect collisions; that's an argument for checking before buying a domain or printing anything, not after.
 - **Portuguese grammatical gender: the PT copy says "o Crema"** (masculine, matching "o creme"), carried over from "o Portafile" and now consistent across `site/pt/`, `product/i18n.js` and `guia-pt.html`. If a native speaker says "a Crema", it's one find-and-replace across those three places.
