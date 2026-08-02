@@ -6,21 +6,13 @@
 <meta name="color-scheme" content="dark">
 <title>Crema — your whole shop, dialed in</title>
 <meta name="description" content="Recipe cards that know their cost. A dial-in board that answers the morning question. A new-hire pack ready before Monday. Free, local-first, built for independent coffee shops.">
-<meta property="og:title" content="Crema — your whole shop, dialed in">
-<meta property="og:description" content="Recipe cards that know their cost. A dial-in board that answers the morning question. A new-hire pack ready before Monday. Free, local-first, built for independent coffee shops.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://portafile.vercel.app/">
-<meta property="og:image" content="https://portafile.vercel.app/assets/01-recipes.png">
-<meta property="og:image:width" content="1280">
-<meta property="og:image:height" content="860">
-<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='26' fill='%2317130F'/%3E%3Ccircle cx='60' cy='60' r='36' fill='none' stroke='%23F3EBE0' stroke-width='6'/%3E%3Ccircle cx='60' cy='60' r='25' fill='%238195BE'/%3E%3Cpath d='M44.5 55A21 21 0 0 1 62.3 40.5' fill='none' stroke='%23F7E3BE' stroke-width='5.5' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="/site/site.css">
-<link rel="alternate" hreflang="en" href="https://portafile.vercel.app/">
-<link rel="alternate" hreflang="pt-PT" href="https://portafile.vercel.app/pt">
+<link rel="stylesheet" href="/site/v2.css">
 <script src="/site/reveal.js" defer></script>
 </head>
 <body>
+
+<div class="aurora" aria-hidden="true"></div>
 
 <header class="nav">
   <div class="wrap">
@@ -34,42 +26,61 @@
       <a href="#faq">FAQ</a>
     </nav>
     <a class="langlink" href="/pt" hreflang="pt-PT" lang="pt-PT" title="Ver em português">PT</a>
-    <a class="btn sm cta" href="/product/index.html">Open Crema, free</a>
+    <a class="btn sm" href="/product/index.html">Open Crema, free</a>
   </div>
 </header>
 
-<!-- 1. HERO: asymmetric split. Four text elements, no more. -->
-<div class="wrap">
-  <section class="hero">
-    <div>
-      <p class="eyebrow" data-reveal>For independent coffee shops</p>
-      <h1 data-reveal style="--d:.06s">Your whole shop, <em>dialed&nbsp;in.</em></h1>
-      <p class="sub" data-reveal style="--d:.14s">Recipe cards that know what every drink costs you. Free, printable, and yours.</p>
-      <div class="heroctas" data-reveal style="--d:.22s">
-        <a class="btn" href="/product/index.html">Open Crema, free</a>
+<!-- ============ 1. HERO ============ -->
+<section class="hero-sec">
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <p class="eyebrow" data-reveal>For independent coffee shops</p>
+        <h1 data-reveal style="--d:.06s">Your whole shop,<br><em>dialed&nbsp;in.</em></h1>
+        <p class="sub" data-reveal style="--d:.14s">Recipe cards that know what every drink costs you. Free, printable, and yours.</p>
+        <div class="heroctas" data-reveal style="--d:.22s">
+          <a class="btn" href="/product/index.html">Open Crema, free</a>
+          <span class="note">No account · No card</span>
+        </div>
+      </div>
+      <div class="paperstack" data-reveal style="--d:.3s">
+        <div class="steam" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="mockcard" aria-label="Example printed recipe card">
+          <h3><span>Latte</span><span class="price">$5.00</span></h3>
+          <div class="m"><span>costs you <b>$1.22</b></span><span class="badge">24% COGS</span><span class="keeps">keeps $3.78</span></div>
+          <ul>
+            <li><span>Espresso beans, 18 g</span><span class="c">$0.60</span></li>
+            <li><span>Whole milk, 9 fl oz</span><span class="c">$0.32</span></li>
+            <li><span>12oz cup + lid + sleeve</span><span class="c">$0.30</span></li>
+          </ul>
+          <ol>
+            <li>Pull double shot</li>
+            <li>Steam to 140°F, wet-paint texture</li>
+            <li>Pour from 3in, finish low</li>
+          </ol>
+          <div class="dial">House Blend: 18g in, 36g out, 28s (grind 12.2)</div>
+        </div>
       </div>
     </div>
-    <div class="paperstack" data-reveal style="--d:.3s">
-      <div class="mockcard" aria-label="Example printed recipe card">
-        <h3><span>Latte</span><span class="price">$5.00</span></h3>
-        <div class="m"><span>costs you <b>$1.22</b></span><span class="badge">24% COGS</span><span class="keeps">keeps $3.78</span></div>
-        <ul>
-          <li><span>Espresso beans, 18 g</span><span class="c">$0.60</span></li>
-          <li><span>Whole milk, 9 fl oz</span><span class="c">$0.32</span></li>
-          <li><span>12oz cup + lid + sleeve</span><span class="c">$0.30</span></li>
-        </ul>
-        <ol>
-          <li>Pull double shot</li>
-          <li>Steam to 140°F, wet-paint texture</li>
-          <li>Pour from 3in, finish low</li>
-        </ol>
-        <div class="dial">House Blend: 18g in, 36g out, 28s (grind 12.2)</div>
-      </div>
-    </div>
-  </section>
-</div>
+  </div>
+  <!-- the horizon: coffee grows on a slope, so the page gets one. Back-to-front,
+       each layer darker — aerial perspective, the same trick real distance uses. -->
+  <div class="ridge" aria-hidden="true">
+    <!-- the one photograph on the page: real ridges at dusk, masked so it dissolves
+         into the dark instead of ending on a hard edge -->
+    <i class="ridgephoto"></i>
+    <svg viewBox="0 0 1440 260" preserveAspectRatio="none" role="presentation">
+      <!-- far: real peaks, deliberately UNEVEN. Evenly spaced teeth of one height
+           read as a sawtooth chart, not a mountain range. -->
+      <path class="far" d="M0 176 L84 138 L146 162 L236 42 L300 96 L352 74 L418 154 L520 108 L596 150 L672 26 L742 104 L800 82 L868 158 L960 118 L1032 148 L1112 58 L1188 122 L1248 98 L1322 156 L1400 126 L1440 148 V260 H0 Z"/>
+      <!-- mid: rolling hills, all curves — the slopes the coffee actually grows on -->
+      <path class="mid" d="M0 214 Q116 172 236 204 T476 198 Q598 162 718 202 T958 196 Q1078 166 1198 206 T1440 200 V260 H0 Z"/>
+      <!-- near: the foreground the reader is standing on -->
+      <path class="near" d="M0 246 Q178 224 358 242 T718 240 Q898 222 1078 242 T1440 238 V260 H0 Z"/>
+    </svg>
+  </div>
+</section>
 
-<!-- 2. TICKER: the only marquee on the page. -->
 <div class="ticker" aria-hidden="true">
   <div class="track">
     <span>LATTE costs <b>$1.22</b> sells <b>$5.00</b> keeps <b>$3.78</b></span>
@@ -87,38 +98,73 @@
   </div>
 </div>
 
-<!-- 3. PROOF: one lead quote, two supporting. Not three equal cards. -->
-<section class="proof">
+<!-- ============ 2. THE PROBLEM (quote + the two numbers, merged) ============ -->
+<section class="problem topo seam">
+  <div class="branch bl" aria-hidden="true">
+    <svg viewBox="0 0 300 160" role="presentation" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+      <path d="M6 148C82 138 172 108 294 24"/>
+      <g stroke-width="2">
+        <g transform="translate(70,127) rotate(-38)"><path d="M0 0Q26-22 56-7Q26 14 0 0Z"/><path d="M4 -1 51 -6"/></g>
+        <g transform="translate(112,116) rotate(34)"><path d="M0 0Q24-20 50-6Q24 12 0 0Z"/><path d="M4 -1 45 -5"/></g>
+        <g transform="translate(158,101) rotate(-42)"><path d="M0 0Q28-24 60-8Q28 15 0 0Z"/><path d="M4 -1 55 -7"/></g>
+        <g transform="translate(202,84) rotate(30)"><path d="M0 0Q22-19 47-6Q22 11 0 0Z"/><path d="M4 -1 42 -5"/></g>
+        <g transform="translate(246,60) rotate(-34)"><path d="M0 0Q24-21 52-7Q24 13 0 0Z"/><path d="M4 -1 47 -6"/></g>
+      </g>
+      <g fill="currentColor" stroke="none">
+        <circle cx="132" cy="112" r="7"/><circle cx="146" cy="106" r="6"/>
+        <circle cx="220" cy="76" r="6.5"/><circle cx="234" cy="70" r="5.5"/>
+      </g>
+    </svg>
+  </div>
+
   <div class="wrap">
-    <h2 data-reveal>The best shops run on recipes nobody wrote down.</h2>
-    <p class="lead" data-reveal style="--d:.08s">Real posts from real coffee people, found while building Crema.</p>
-    <div class="qgrid">
-      <div class="q big" data-reveal style="--d:.14s">
+    <p class="eyebrow" data-reveal>The problem</p>
+    <h2 data-reveal style="--d:.06s">The best shops run on recipes nobody wrote down.</h2>
+    <div class="qwrap">
+      <div class="q grit" data-reveal style="--d:.14s">
         <p>[C]offee like no other, has the absolute WORST training standards… 9/10 of the coffee shops I visit these days have absolutely no standards.</p>
         <div class="who">Cafe owner, 7 years in specialty<br><a href="https://www.reddit.com/r/barista/comments/1k6ee41/" rel="noopener">r/barista, Apr 2025</a></div>
       </div>
-      <div class="qside">
-        <div class="q" data-reveal style="--d:.22s">
-          <p>[T]he shop is lacking a lot of basics such as guidelines on making drinks… Now on top of all this my boss expects me to make this training guide and then train the new barista.</p>
-          <div class="who">Barista at a new indie shop<br><a href="https://www.reddit.com/r/barista/comments/1jb70yd/" rel="noopener">r/barista, Mar 2025</a></div>
+      <div class="figs">
+        <div class="fig grit" data-reveal style="--d:.22s">
+          <div class="n">$4.41</div>
+          <div class="t">What a pound of arabica peaked at in 2025, a historic high.</div>
         </div>
-        <div class="q" data-reveal style="--d:.3s">
-          <p>[W]e really don't have a ideal recipe book to make sure things and drinks are being made the same…</p>
-          <div class="who">Barista, nonprofit cafe<br><a href="https://www.reddit.com/r/barista/comments/1c9z6b2/" rel="noopener">r/barista, Apr 2024</a></div>
+        <div class="fig grit" data-reveal style="--d:.3s">
+          <div class="n warn">11¢</div>
+          <div class="t">What the average shop keeps out of every dollar it takes.</div>
         </div>
       </div>
     </div>
-    <p class="qnote">Quotes are from public Reddit posts (fetched via the PullPush archive, July 2026), verbatim, with cuts marked … and [brackets], and linked to their sources. They describe the problem. They are not endorsements of Crema.</p>
+    <p class="lead" data-reveal style="--d:.36s">At margins like that, "roughly a dollar a latte" is not a costing strategy. Crema makes the real number ambient: on every card, every day, at today's prices.</p>
+    <p class="srcline">Quote is a public Reddit post, verbatim, with cuts marked … and [brackets]. It describes the problem; it is not an endorsement. Figures: Perfect Daily Grind (Feb 2026) and coffeedasher.com industry statistics.</p>
   </div>
 </section>
 
-<!-- 4. WHAT IT DOES: bento, three items, three cells, no empty tiles. -->
-<section id="what">
+<!-- ============ 3. WHAT IT DOES (three jobs + the paper promise) ============ -->
+<section class="what topo seam" id="what">
+  <div class="branch tr" aria-hidden="true">
+    <svg viewBox="0 0 300 160" role="presentation" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+      <path d="M6 148C82 138 172 108 294 24"/>
+      <g stroke-width="2">
+        <g transform="translate(70,127) rotate(-38)"><path d="M0 0Q26-22 56-7Q26 14 0 0Z"/><path d="M4 -1 51 -6"/></g>
+        <g transform="translate(112,116) rotate(34)"><path d="M0 0Q24-20 50-6Q24 12 0 0Z"/><path d="M4 -1 45 -5"/></g>
+        <g transform="translate(158,101) rotate(-42)"><path d="M0 0Q28-24 60-8Q28 15 0 0Z"/><path d="M4 -1 55 -7"/></g>
+        <g transform="translate(202,84) rotate(30)"><path d="M0 0Q22-19 47-6Q22 11 0 0Z"/><path d="M4 -1 42 -5"/></g>
+        <g transform="translate(246,60) rotate(-34)"><path d="M0 0Q24-21 52-7Q24 13 0 0Z"/><path d="M4 -1 47 -6"/></g>
+      </g>
+      <g fill="currentColor" stroke="none">
+        <circle cx="132" cy="112" r="7"/><circle cx="146" cy="106" r="6"/>
+        <circle cx="220" cy="76" r="6.5"/><circle cx="234" cy="70" r="5.5"/>
+      </g>
+    </svg>
+  </div>
+
   <div class="wrap">
     <p class="eyebrow" data-reveal>What it does</p>
     <h2 data-reveal style="--d:.06s">One tool, three jobs your binder can't do.</h2>
     <div class="bento">
-      <div class="cell wide" data-reveal>
+      <div class="cell grit wide" data-reveal>
         <div>
           <p class="kicker">THE MONEY</p>
           <h3>Cards that know their cost</h3>
@@ -126,7 +172,7 @@
         </div>
         <img class="shot" src="/site/assets/01-recipes.png" width="1280" height="860" alt="Crema recipes view: cards with live cost, margin and COGS badges" loading="lazy">
       </div>
-      <div class="cell tint" data-reveal style="--d:.1s">
+      <div class="cell grit tint" data-reveal style="--d:.1s">
         <p class="kicker">THE MORNING</p>
         <h3>A dial-in board with memory</h3>
         <p>Grind, dose, yield and time, logged per bean in five seconds. The board shows the current setting, every card carries it, and the history is still there when that Ethiopia comes back next season.</p>
@@ -136,68 +182,42 @@
           <div><span>Logged</span><b>this morning, 6:41</b></div>
         </div>
       </div>
-      <div class="cell tint2" data-reveal style="--d:.18s">
+      <div class="cell grit tint2" data-reveal style="--d:.18s">
         <p class="kicker">THE MONDAY</p>
         <h3>A new-hire pack in ten minutes</h3>
         <p>Order your training path, hit print: cover page, day-by-day checklist, every recipe card, today's dial-ins. Sign-offs tracked per barista. The knowledge stops walking out the door with whoever wrote the old binder.</p>
         <div class="bigfig">10 min<small>COVER TO SIGN-OFF SHEET</small></div>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- 5. THE MONEY: full-width figures. -->
-<section class="money">
-  <div class="wrap">
-    <h2 data-reveal>Green coffee doubled. Your laminated price list didn't notice.</h2>
-    <div class="figs">
-      <div class="fig" data-reveal style="--d:.1s">
-        <div class="n">$4.41</div>
-        <div class="t">What a pound of arabica peaked at in 2025, a historic high.</div>
+    <div class="paperline">
+      <div data-reveal>
+        <h2>Paper survives the rush. The app keeps it honest.</h2>
+        <p class="lead">Nobody unlocks a phone with wet hands at 7:58am. Crema prints laminated-ready cards, a station sheet and the full new-hire pack, while the app stays the living source of truth. Printed cards hide your costs — the margin report is the owner-only page.</p>
       </div>
-      <div class="fig" data-reveal style="--d:.18s">
-        <div class="n warn">11¢</div>
-        <div class="t">What the average shop keeps out of every dollar it takes.</div>
-      </div>
-    </div>
-    <p class="lead" data-reveal style="--d:.24s">At margins like that, "roughly a dollar a latte" is not a costing strategy. Crema makes the real number ambient: on every card, every day, at today's prices.</p>
-    <p class="srcline">Sources: Perfect Daily Grind (Feb 2026) and coffeedasher.com industry statistics. Full citation list in the repo.</p>
-  </div>
-</section>
-
-<!-- 6. PAPER: narrow text column, screenshot bleeding off the right edge. -->
-<section class="paper">
-  <div class="wrap">
-    <div data-reveal>
-      <h2>Paper survives the rush. The app keeps it honest.</h2>
-      <p class="lead">Nobody unlocks a phone with wet hands at 7:58am. Crema prints laminated-ready cards, a one-page station sheet and the full new-hire pack, while the app stays the living source of truth. The paper is never the stale version again.</p>
-      <p class="lead">Printed cards hide your costs. The margin report is the owner-only page.</p>
-    </div>
-    <div class="bleed" data-reveal style="--d:.12s">
-      <img class="shot" src="/site/assets/03-dialin.png" width="1280" height="860" alt="Crema dial-in board: current grind, dose, yield and time per bean, with history" loading="lazy">
+      <img class="shot" data-reveal style="--d:.12s" src="/site/assets/03-dialin.png" width="1280" height="860" alt="Crema dial-in board: current grind, dose, yield and time per bean, with history" loading="lazy">
     </div>
   </div>
 </section>
 
-<!-- 7. PRICING: menu board. -->
-<section class="pricing" id="pricing">
+<!-- ============ 4. PRICING ============ -->
+<section class="pricing seam" id="pricing">
   <div class="wrap">
     <p class="eyebrow" data-reveal>The menu</p>
     <h2 data-reveal style="--d:.06s">Pricing that respects an 11% margin.</h2>
     <p class="lead" data-reveal style="--d:.12s">Flat per shop. Never per seat. We don't tax you for having to hire again.</p>
     <div class="plans">
-      <div class="plan" data-reveal style="--d:.16s">
+      <div class="plan grit" data-reveal style="--d:.16s">
         <div class="menuline"><h3>Local</h3><span class="dots"></span><span class="p">$0</span></div>
         <div class="per">forever</div>
         <ul><li>Everything: cards, costing, dial-in board, training packs, printing</li><li>Lives entirely in your browser</li><li>JSON backup and restore</li></ul>
       </div>
-      <div class="plan hot" data-reveal style="--d:.24s">
+      <div class="plan grit hot" data-reveal style="--d:.24s">
         <p class="tag">HOUSE FAVORITE</p>
         <div class="menuline"><h3>Shop</h3><span class="dots"></span><span class="p">$29<span class="u">/mo</span></span></div>
         <div class="per">or $199/yr, 30-day full trial</div>
         <ul><li>Synced across the shop's devices</li><li>Secret-link sharing for staff phones</li><li>Sign-off history and margin trends</li><li>One flat price per location</li></ul>
       </div>
-      <div class="plan" data-reveal style="--d:.32s">
+      <div class="plan grit" data-reveal style="--d:.32s">
         <div class="menuline"><h3>Roaster</h3><span class="dots"></span><span class="p">$149<span class="u">/mo</span></span></div>
         <div class="per">up to 50 wholesale accounts</div>
         <ul><li>White-label Crema as your onboarding gift to cafe accounts</li><li>Your beans and recommended dial-ins pre-seeded</li><li>Update a seasonal spec once, every account's board follows</li></ul>
@@ -208,8 +228,8 @@
   </div>
 </section>
 
-<!-- 8. FAQ: accordion. -->
-<section class="faq" id="faq">
+<!-- ============ 5. FAQ ============ -->
+<section class="faq seam" id="faq">
   <div class="wrap">
     <h2 data-reveal>Asked over the counter</h2>
     <details data-reveal><summary>Where does my data live?</summary><p>In your browser, on your machine. Nothing is uploaded unless you turn on Sync. Sync keeps a private cloud copy so staff phones share the same live data through a secret link. Export a JSON backup from the Data menu and keep it with your shop docs. Details in the <a href="/site/privacy.html">privacy policy</a>.</p></details>
@@ -221,10 +241,27 @@
   </div>
 </section>
 
-<!-- 9. CLOSE -->
-<section class="close">
+<!-- ============ 6. CLOSE ============ -->
+<section class="close topo seam">
+  <div class="branch bl" aria-hidden="true">
+    <svg viewBox="0 0 300 160" role="presentation" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+      <path d="M6 148C82 138 172 108 294 24"/>
+      <g stroke-width="2">
+        <g transform="translate(70,127) rotate(-38)"><path d="M0 0Q26-22 56-7Q26 14 0 0Z"/><path d="M4 -1 51 -6"/></g>
+        <g transform="translate(112,116) rotate(34)"><path d="M0 0Q24-20 50-6Q24 12 0 0Z"/><path d="M4 -1 45 -5"/></g>
+        <g transform="translate(158,101) rotate(-42)"><path d="M0 0Q28-24 60-8Q28 15 0 0Z"/><path d="M4 -1 55 -7"/></g>
+        <g transform="translate(202,84) rotate(30)"><path d="M0 0Q22-19 47-6Q22 11 0 0Z"/><path d="M4 -1 42 -5"/></g>
+        <g transform="translate(246,60) rotate(-34)"><path d="M0 0Q24-21 52-7Q24 13 0 0Z"/><path d="M4 -1 47 -6"/></g>
+      </g>
+      <g fill="currentColor" stroke="none">
+        <circle cx="132" cy="112" r="7"/><circle cx="146" cy="106" r="6"/>
+        <circle cx="220" cy="76" r="6.5"/><circle cx="234" cy="70" r="5.5"/>
+      </g>
+    </svg>
+  </div>
+
   <div class="wrap">
-    <h2 data-reveal>Fifteen drinks are already in there. Change the prices to yours.</h2>
+    <h2 data-reveal>Fifteen drinks are already in there.<br>Change the prices to yours.</h2>
     <p class="lead" data-reveal style="--d:.08s">No account, no card, nothing to install. It opens in the tab you already have.</p>
     <div class="heroctas" data-reveal style="--d:.16s">
       <a class="btn" href="/product/index.html">Open Crema, free</a>

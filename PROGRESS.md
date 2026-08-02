@@ -367,6 +367,26 @@ The one suite that noticed was `verify-site.js`, whose PT check asserted the fil
 
 ---
 
+## 2026-08-01 — The landing draft gets its one real photograph
+
+The second landing draft (`site/v2.*`, still unshipped) had a credibility problem it was easy not to see: every "elemental" thing on it was drawn. SVG peaks, CSS gradients, one fabric swatch. It matched the composition of the look I want and none of the texture, which is why it read as competent rather than as somewhere real coffee comes from.
+
+Fixed with one photograph — layered ridges at dusk, from Unsplash, cropped to a horizon band and compressed to 58 KB, committed as `site/assets/ridge.jpg`. It sits *behind* the drawn peaks so the mock recipe card, which is the actual product demo, still owns the page. A full-bleed photo hero would have looked better and sold worse. Zero external requests still holds because the file is local, and it can never bill me: Unsplash, Pexels and Pixabay all permit commercial use with no account and no attribution.
+
+Two things cost real time and are now written down. `~/bin/img` cannot generate textures at all — it has a hard centre-subject bias, and three tries produced a face, a bowl, and a photorealistic eyeball made of burlap; stock photography is the answer for anything that must look real. And my first attempt at blending the photo into the dark page used a gradient fading to the background colour, which paints an opaque rectangle over the hero's own background and leaves a hard line straight across the page — Ethan spotted it instantly. A `mask-image` fades the pixels themselves, and nothing has no edge. Both lessons went into `~/design-taste/TASTE.md` and auto-memory, along with the standing correction that the taste file gets read before frontend work without being asked.
+
+**Nothing committed, nothing pushed, the live site is untouched. Cost: $0.**
+
+---
+
+## 2026-08-02 — The second landing draft goes live
+
+`site/v2.html` + `site/v2.css` replace `site/index.html` as the real landing page: the ridge-line hero, the cost ticker, the bento "three jobs" grid. Checked before shipping, not assumed: local server, every asset (`ridge.jpg`, `weave.jpg`, the two product screenshots, `reveal.js`) returns 200, zero console errors, full-page and mobile (390px) screenshots both render every section — nothing stuck invisible behind the scroll-reveal gate. The only apparent horizontal overflow at mobile width (20px) is the ticker's own marquee track, clipped by `.ticker{overflow:hidden}` by design, not a real layout bug.
+
+Skipped `/still-works` at Ethan's explicit instruction for this deploy. `/pt` and the product app were untouched by this change — only `site/index.html`'s markup and its stylesheet (`v2.css`, kept under that name rather than overwriting the shared `site.css`, since `site.css` is still load-bearing for `/pt`) changed. Pushed to `main`, which is a live deploy.
+
+---
+
 ## Open threads
 
 - **Pricing and FAQ are reachable on a phone again** (fixed and live 2026-07-29). They had been `display:none` below 720px with nothing replacing them, flagged twice across two sessions and never fixed: two sections that existed and that no phone visitor could reach. The links wrap onto their own row now. No hamburger — three links do not earn a menu, and one would need JS the CSP would have to be opened up for. The fix surfaced a second thing nobody had noticed: with a sticky nav, an anchor jump lands the section's eyebrow *underneath* the bar, so every anchored section needed `scroll-margin-top`. Verified live: 24 anchor jumps across both languages at four widths all clear the nav.
