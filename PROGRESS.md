@@ -387,6 +387,22 @@ Skipped `/still-works` at Ethan's explicit instruction for this deploy. `/pt` an
 
 ---
 
+## 2026-08-05 — The pre-deploy gate had been dead for three days
+
+Started a design pass on the landing page and ran the regression suite first, out of habit. It didn't fail — it *crashed*, and it had been crashing since the pricing pull on 08-02. The assertions on the pricing cards waited the full 30-second Playwright timeout for elements I'd commented out, threw an uncaught rejection mid-run, and every check after that line silently never executed. No summary line, no red FAIL — just a Node stack trace that reads like a broken toolchain rather than a broken product.
+
+So every "run `/still-works` before you deploy" I did during the redesign week was checking nothing on the site side. The gate was reporting green by not reporting at all.
+
+It hid two real things. First: `/pt` never moved to the new stylesheet. The redesign put `/` on `v2.css` and left the Portuguese page on `site.css`, and the suite asserted one shared sheet — so it was testing a file the English page no longer loads. It would have passed with `v2.css` 404'd, which is the exact failure that check exists to catch. Proved it by renaming the file and watching the new check go red. Ethan's call: leave the two designs different for now, so it's a decision rather than drift, and the tokens now have to be edited in two places.
+
+Second, the smaller one: the "horizontal overflow" failures were phantoms. `scrollWidth` counts the ticker's `width:max-content` track, which the marquee clips — the page cannot actually be scrolled sideways. It now scrolls the page for real and reads `window.scrollX`. That trap was already written down from an earlier session and the test shipped with it anyway.
+
+41 checks, all green. `health_check.py` probes both stylesheets now. Cost: a session that was supposed to be about design, spent entirely on the thing that tells me whether design changes broke anything. Worth it — the alternative was shipping on a gate that answers every question with silence.
+
+Committed to `design-pass`, not `main`. Nothing deployed.
+
+---
+
 ## Open threads
 
 - **Pricing and FAQ are reachable on a phone again** (fixed and live 2026-07-29). They had been `display:none` below 720px with nothing replacing them, flagged twice across two sessions and never fixed: two sections that existed and that no phone visitor could reach. The links wrap onto their own row now. No hamburger — three links do not earn a menu, and one would need JS the CSP would have to be opened up for. The fix surfaced a second thing nobody had noticed: with a sticky nav, an anchor jump lands the section's eyebrow *underneath* the bar, so every anchored section needed `scroll-margin-top`. Verified live: 24 anchor jumps across both languages at four widths all clear the nav.
