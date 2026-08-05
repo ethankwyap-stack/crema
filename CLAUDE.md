@@ -8,7 +8,7 @@ Coffee-shop recipe-card + costing app (recipes with live cost/margin, dial-in bo
 - Secrets: ADMIN_KEY in Vercel prod env, local copy in gitignored `.admin-key`; Blob token in `.env.local`.
 
 ## Layout
-- `site/` — marketing landing (+ privacy/terms, `reveal.js` scroll animations, `assets/` screenshots); `site.css` is the shared stylesheet for both language versions; `site/pt/` is the European-Portuguese landing + legal pages, served at `/pt`
+- `site/` — marketing landing (+ privacy/terms, `reveal.js` scroll animations, `assets/` screenshots). **Two stylesheets, NOT one:** `/` is on `v2.css` (the 2026-08-01 ridge/ticker/bento redesign), `/pt` is still on `site.css` (the previous design). `site/pt/` is the European-Portuguese landing + legal pages, served at `/pt`
 - `product/` — the app (localStorage data, `verify-*.js` check suites); `i18n.js` holds the pt-PT dictionary and must load **before** `app.js`
 - `admin/` — founder dashboard, **intentionally not deployed** (no auth); served locally on :4322 by LaunchAgent
 - `api/` — Vercel functions (Blob sync, signups)
@@ -22,7 +22,7 @@ Coffee-shop recipe-card + costing app (recipes with live cost/margin, dial-in bo
 - `verify-api.mjs` — root-level checks that run the REAL API handlers against an in-memory blob stub (`node verify-api.mjs`); the only coverage `api/` has, since `verify-sync.js` mocks it
 - `verify-i18n.mjs` — root-level dictionary hygiene for `product/i18n.js` (`node verify-i18n.mjs`, no browser): duplicate keys, untranslated `t()` call sites, orphaned translations, `%s` count drift. Nothing else catches those — a missing translation is silent by design
 - `verify-pt.js` — root-level browser suite for the Portuguese app (`node verify-pt.js`, 61 checks): pt-PT locale gets PT + euros + the Lisbon seed, an en-US locale is unaffected, the live language switch, the demo auto-reseed and its four veto cases, metric units, print packs
-- `verify-site.js` — root-level browser suite for both landing pages (`node verify-site.js`, 39 checks). **Needs a local server first:** `python3 -m http.server 8899` from the repo root, since the pages load `/site/site.css` by absolute path
+- `verify-site.js` — root-level browser suite for both landing pages (`node verify-site.js`, 41 checks). **Needs a local server first:** `python3 -m http.server 8899` from the repo root, since the pages load their stylesheet by absolute path
 
 ## Local run
 `python3 -m http.server <port>` from repo root, open `/site/index.html`. Verify suites: `node product/verify*.js`.
@@ -45,7 +45,8 @@ Coffee-shop recipe-card + costing app (recipes with live cost/margin, dial-in bo
 - Signup role `<option value>`s stay English while the labels translate: the value is POSTed to `/api/lead` and counted in the founder metrics, so translating it would split "Owner"/"Proprietário" into two buckets.
 - `product/index.html` ships English markup; `applyChrome()` retranslates the tabs, title, tooltips and `<html lang>` on every render so the picker works without a reload. Adding a tab means adding it to the `TABS` map there.
 - Dial-in numbers render through `dec()`, which formats only genuinely finite values and passes anything else through untouched — dial-in values are user-entered and are NOT guaranteed numeric (see the `esc()` gotcha below). Always `esc(dec(x))`, never `dec(esc(x))`.
-- `site/site.css` is shared by `/` and `/pt`. The only English baked into it is the mock card's `content:"4×6 · PRINTS CLEAN"`, overridden by `html[lang="pt-PT"] .mockcard::after`. If it 404s, both pages render fully-worded but completely unstyled — which a body-text health check passes, so `health_check.py` probes the stylesheet directly.
+- **The landing pages diverged and no test noticed for days.** `site.css` USED to be shared by `/` and `/pt`; the 2026-08-01 redesign moved `/` to `v2.css` and left `/pt` behind, so the two languages now show different designs (deliberate as of 2026-08-05 — Ethan declined porting `/pt`). Both files duplicate the brand tokens, so a palette change must be made twice. The English string baked into each is the mock card's `content:"4×6 · PRINTS CLEAN"`, overridden by `html[lang="pt-PT"] .mockcard::after`. If either 404s its page renders fully-worded but completely unstyled — which a body-text health check passes, so `health_check.py` probes **both** stylesheets directly, and `verify-site.js` asserts each page's own `href` and its resulting background (`/`→`rgb(14,11,9)`, `/pt`→`rgb(23,19,15)`). The old single-sheet assertion passed while testing a file the English page no longer loaded.
+- **`verify-site.js` crashed silently for days and read as "not run".** Assertions on the pricing cards (`locator('.plan')`) hung for the full 30s timeout after pricing was commented out, throwing an uncaught rejection mid-suite — so every check after it never ran and the summary line never printed. A pulled section must be asserted **absent**, not left asserted present. Same for the `scrollWidth` overflow check: `.ticker .track` is `width:max-content` and inflated it by 64px, reporting an overflow bug that did not exist. It now scrolls the page for real and reads `window.scrollX`.
 - CSP (vercel.json) blocks ALL inline `<script>` — page JS must be external same-origin files. Inline `style=` attrs are allowed.
 - `.vercelignore` publishes ONLY site/product/video — adding a new top-level dir won't deploy without editing it.
 - Zero external requests by design: system fonts only, no CDNs; keep it that way.

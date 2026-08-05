@@ -7,6 +7,17 @@ const SHOTS = require('os').tmpdir() + '/portafile-shots';
 require('fs').mkdirSync(SHOTS, { recursive: true });
 
 const fails = []; let n = 0;
+
+// How far the page can ACTUALLY be scrolled sideways, in px. Returns 0 when it cannot,
+// however wide its content technically is. Restores the original scroll position.
+const realOverflow = p => p.evaluate(() => {
+  const was = window.scrollX;
+  window.scrollTo(9.9e6, window.scrollY);
+  const reached = window.scrollX;
+  window.scrollTo(was, window.scrollY);
+  return reached;
+});
+
 const ok = (name, cond, got) => { n++; console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}${got !== undefined ? `  (got: ${got})` : ''}`); if (!cond) fails.push(name); };
 
 (async () => {
@@ -16,15 +27,25 @@ const ok = (name, cond, got) => { n++; console.log(`${cond ? 'PASS' : 'FAIL'}  $
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
 
   const bad = [];
-  for (const [label, url] of [['en', `${BASE}/site/index.html`], ['pt', `${BASE}/site/pt/index.html`]]) {
+  // The two landing pages are on DIFFERENT stylesheets since the 2026-08-01 redesign:
+  // / is on v2.css (ridge hero, ticker, bento), /pt is still on site.css. Asserting one
+  // shared background silently tested the wrong file for en — it would have passed with
+  // v2.css 404'd, which is the exact failure this check exists to catch.
+  const PAGES = [
+    ['en', `${BASE}/site/index.html`,    '/site/v2.css',   'rgb(14, 11, 9)'],
+    ['pt', `${BASE}/site/pt/index.html`, '/site/site.css', 'rgb(23, 19, 15)'],
+  ];
+  for (const [label, url, sheet, expectBg] of PAGES) {
     const p = await ctx.newPage();
     p.on('pageerror', e => bad.push(`${label} jserror: ${e.message}`));
     p.on('response', r => { if (r.status() >= 400) bad.push(`${label} ${r.status()} ${r.url()}`); });
     await p.goto(url, { waitUntil: 'load' });
 
-    // The stylesheet actually applied — these values exist only in site.css.
+    // Name the sheet AND assert its computed effect — the link tag alone proves nothing.
+    ok(`${label}: links its own stylesheet (${sheet})`,
+       (await p.content()).includes(`href="${sheet}"`));
     const bg = await p.evaluate(() => getComputedStyle(document.body).backgroundColor);
-    ok(`${label}: site.css applied (Counter dark background)`, bg === 'rgb(23, 19, 15)', bg);
+    ok(`${label}: stylesheet applied (Counter dark background)`, bg === expectBg, bg);
     const h1size = await p.evaluate(() => parseFloat(getComputedStyle(document.querySelector('h1')).fontSize));
     ok(`${label}: display type scaled by css`, h1size > 50, h1size);
     // Ink navy is a FILL shade, so the label flips light. Assert both — a navy fill
@@ -41,9 +62,12 @@ const ok = (name, cond, got) => { n++; console.log(`${cond ? 'PASS' : 'FAIL'}  $
     const heroOpacity = await p.evaluate(() => getComputedStyle(document.querySelector('.sub')).opacity);
     ok(`${label}: revealed content is visible`, heroOpacity === '1', heroOpacity);
 
-    // no sideways scroll
-    const overflow = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-    ok(`${label}: no horizontal overflow`, overflow <= 1, overflow);
+    // no sideways scroll. Measured by REALLY SCROLLING, not by scrollWidth: the ticker's
+    // .track is width:max-content and inflates scrollWidth by ~64px while the page cannot
+    // actually be scrolled sideways (the .ticker clips it). scrollWidth reported a bug that
+    // does not exist; window.scrollX after a scroll attempt reports what a visitor can do.
+    const overflow = await realOverflow(p);
+    ok(`${label}: no horizontal overflow`, overflow === 0, overflow);
 
     const html = await p.content();
     if (label === 'pt') {
@@ -53,8 +77,11 @@ const ok = (name, cond, got) => { n++; console.log(`${cond ? 'PASS' : 'FAIL'}  $
       ok('pt: mockcard cost matches the seed (0,44 €)', (await p.textContent('.mockcard')).includes('0,44'));
       ok('pt: ticker in euros, no dollars', !(await p.textContent('.ticker')).includes('$'));
       ok('pt: switch links back to English', await p.getAttribute('.langlink', 'href') === '/');
-      ok('pt: free tier shown as 0 €', (await p.textContent('.plan')).includes('0 €'));
-      ok('pt: paid tiers flagged as USD', html.includes('em dólares (USD)'));
+      // Pricing was pulled from BOTH pages (2026-08-02, not charging yet). These used to
+      // assert the plan cards; locator('.plan') then hung for the full 30s timeout and
+      // CRASHED the suite mid-run, so every check after it silently stopped existing.
+      // Assert the absence instead — this flips the moment pricing is un-commented.
+      ok('pt: no pricing section while pricing is pulled', (await p.$$('.plan')).length === 0);
       ok('pt: privacy link is the PT one', html.includes('/site/pt/privacy.html'));
       ok('pt: app link is absolute', await p.getAttribute('.cta', 'href') === '/product/index.html');
       ok('pt: no film link while the video is pulled', !html.includes('portafile-launch.mp4'));
@@ -72,12 +99,13 @@ const ok = (name, cond, got) => { n++; console.log(`${cond ? 'PASS' : 'FAIL'}  $
       ok('en: no relative ../ links left', !html.includes('href="../'));
       ok('en: headline unchanged', (await p.textContent('h1')).includes('dialed'));
       ok('en: still 15 drinks in the faq', html.includes('15 editable drinks'));
+      ok('en: no pricing section while pricing is pulled', (await p.$$('.plan')).length === 0);
     }
     await p.screenshot({ path: `${SHOTS}/site-${label}.png` });
     // narrow width via a second context (old-headless width clamping makes direct resize unreliable)
     await p.setViewportSize({ width: 390, height: 780 });
-    const mOver = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-    ok(`${label}: no overflow at 390px`, mOver <= 1, mOver);
+    const mOver = await realOverflow(p);
+    ok(`${label}: no overflow at 390px`, mOver === 0, mOver);
     const langVisible = await p.evaluate(() => { const e = document.querySelector('.langlink'); return e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().width > 0; });
     ok(`${label}: language switch still reachable on a phone`, langVisible);
     await p.close();
