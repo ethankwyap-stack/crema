@@ -403,6 +403,20 @@ Committed to `design-pass`, not `main`. Nothing deployed.
 
 ---
 
+## 2026-08-05 — A full pre-demo check, and a dev tool that nearly rode along
+
+A coffee shop is close enough to a Zoom call that "it probably works" stopped being good enough. So I checked the whole thing end to end rather than trusting the last green run.
+
+Everything the tests cover is green: 41 site checks, 65 Portuguese app checks, all four product suites, and the three logic suites (metrics, i18n, api). The live site answers 200 on `/`, `/pt`, `/product/`, both stylesheets and the sync API's key canary, and still 404s the admin dashboard. 13/13 health checks pass against the real URL — the traceback at the end is only the missing local Gmail password, which lives in GitHub secrets.
+
+The one real find: a design tool had injected `<script src="http://localhost:8400/live.js">` into all six landing pages — English and Portuguese, including the legal ones. Uncommitted, so nothing was published, but a push to `main` deploys now, and every visitor's browser would have been asking their own machine for a script that isn't there. CSP would have blocked it anyway, which is the quiet part: it would have failed as a console error rather than a visible break, so I'd never have noticed from looking at the page. Stripped from all six; `site/` matches `main` again.
+
+Also confirmed the thing the demo actually rests on, because no test asserts what paper looks like: rendered the print pack under real print media and read it. Fifteen cards, ink on white, dollars, dial-in reference on every card. The dark palette does not reach paper.
+
+What the check can't fix is a sales answer rather than a code one: pricing is pulled from the site, but the FAQ still says the "synced Shop tier is where we make our living" and mentions a Group tier. So the page promises a paid tier and names no number, which is the first question an owner asks.
+
+---
+
 ## Open threads
 
 - **Pricing and FAQ are reachable on a phone again** (fixed and live 2026-07-29). They had been `display:none` below 720px with nothing replacing them, flagged twice across two sessions and never fixed: two sections that existed and that no phone visitor could reach. The links wrap onto their own row now. No hamburger — three links do not earn a menu, and one would need JS the CSP would have to be opened up for. The fix surfaced a second thing nobody had noticed: with a sticky nav, an anchor jump lands the section's eyebrow *underneath* the bar, so every anchored section needed `scroll-margin-top`. Verified live: 24 anchor jumps across both languages at four widths all clear the nav.
