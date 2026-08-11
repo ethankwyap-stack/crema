@@ -1,8 +1,15 @@
-# HANDOFF — cost-blob split built and tested, NOT migrated or deployed
+# HANDOFF — cost-blob split shipped and deployed 2026-08-11 (superseded)
 
-**Updated 2026-08-11.** Project: `/Users/ethanyap/portafile`. Owner: Ethan (college student, learning
-developer). You are picking this up cold. **He said "I'll do all this stuff later" and asked for this
-file to be current** — so the work below is paused, not blocked on anything technical.
+**Superseded 2026-08-11, later same session.** The resume sequence below (§3) is DONE: the one real
+shop's shopId was fetched (`25a8f48cf9b4801399ccdcddc92b82d2c8d61e28` — only one real shop, not two;
+the "two shopIds" memory in this file was unverified and wrong), `migrate-costs.mjs` was filled in,
+dry-run confirmed 13 real ingredient costs, run for real against prod, then committed (`58962c6`) and
+deployed via `git push origin main`. `/still-works` was explicitly skipped at Ethan's request before
+this deploy. Live and verified (unknown-key canary answers its normal 404). See `PROGRESS.md`'s
+`## 2026-08-11` entry for the current record — this file is left in place as a record of the reasoning,
+not as something to act on again.
+
+Project: `/Users/ethanyap/portafile`. Owner: Ethan (college student, learning developer).
 
 > **Previous handoff (2026-07-27, the four Training tasks) is fully superseded** — that work shipped,
 > deployed, and is long since old news; the rebrand to Crema (2026-07-28), a landing redesign
