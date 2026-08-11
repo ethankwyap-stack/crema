@@ -417,8 +417,37 @@ What the check can't fix is a sales answer rather than a code one: pricing is pu
 
 ---
 
+## 2026-08-06 — The deploy rule stops being a note and becomes a guard
+
+Spent the session vetting five Claude Code plugins a TikTok said were must-haves. Four failed. That part cost nothing but time; the part that matters for Crema is what I did with the one that passed.
+
+The official Anthropic plugin scanned this repo and its verdict was that it barely needs anything — the CLAUDE.md, the gitleaks pin, Dependabot, the health probe, six verify suites already cover most of what it would suggest. One real gap though, and it's the one that already bit me: **a push to `main` deploys to production, and until today that rule lived only as a sentence in CLAUDE.md.** On 2026-07-29 a push I meant as a checkpoint went live in seconds. A rule enforced by remembering to read it is not enforced.
+
+So it's a hook now — `.claude/hooks/block-main-push.sh`, wired through `.claude/settings.json`. It blocks any Claude-run `git push` that lands on main: explicit (`origin main`, `HEAD:main`), `--force` variants, and a bare `git push` while checked out on main. Feature branches pass through. It only constrains Claude; I can still push by hand.
+
+Worth recording that the first version was wrong in a way that would have been annoying rather than dangerous: it blocked `git push origin feature-x` too, because after the explicit-main check failed it fell through to "am I on main?" — which is only the right question for a *bare* push. Caught it because I tested ten cases instead of the three obvious ones. The fix is to only consult the checked-out branch when the command names no remote or refspec at all.
+
+The business point is small but real: the thing that can silently put untested markup in front of a Lisbon café is now a machine check rather than a habit. Cost nothing, and it's the cheapest insurance on the repo.
+
+**Plugin verdicts, so I don't re-derive them:** installed `claude-code-setup` (official, read-only). Rejected OmniRoute (installs a system-wide root CA and reaches free tiers by impersonating official clients — risks the Anthropic account), Headroom (its own open issue measures the proxy *raising* costs 2-7x by defeating prompt caching), and claude-mem (10x token amplification billed silently to my subscription, unresolved in the current release). Full reasoning is in auto-memory.
+
+---
+
+## 2026-08-11 — Ingredient costs stopped being an honesty system
+
+The privacy answer for staff-link devices has always been "the UI hides your costs, but the number is still sitting in their browser's storage if they open devtools." True since day one, wasn't a lie exactly, but wasn't a real guarantee either — the honest ceiling of a no-accounts product, and the code said so out loud in a comment.
+
+Closed it today. `api/state.js` now keeps ingredient costs in their own blob (`costs/<shopId>.json`), separate from the shop's synced data, and only ever hands them back to a request that proves it's the owner. A staff device's synced copy genuinely does not contain the real numbers anymore — there's nothing in devtools to find.
+
+The part that made this worth being careful about: the app always saves a barista's WHOLE local state on every edit, not just the field they touched. A staff phone checking off a sign-off pushes its entire local copy — including whatever it thinks the ingredient costs are, which after this change is zero (it never received the real ones). Get the server logic wrong and that autosave permanently erases the owner's real prices, no warning, the next time a barista taps anything. Wrote the fix so a staff save can never touch the costs blob at all, regardless of what it claims — only a request that hashes to the actual owner's token gets to write there. Have a test for the exact failure mode (staff device saves with zeroed local costs → owner's real numbers still there afterward), not just the happy path.
+
+Migrating the two real shops needs a one-time script (`migrate-costs.mjs`) — haven't run it against production yet, and it has to go **before** the new server code deploys, not after, or that same staff-autosave risk opens up for real during the gap. Nothing shipped live today; this is tested locally (30 new checks in `verify-api.mjs`, all four existing suites still green) and waiting on a deploy window.
+
+---
+
 ## Open threads
 
+- **Cost-blob split (server-side owner-only costs) is coded and tested locally, not deployed.** Before shipping: fill in the two real shopIds in `migrate-costs.mjs` (only have the truncated `187cdea…`/`82ebcd8e…` prefixes on hand), dry-run it against prod, run it for real, THEN deploy the new `api/state.js` — in that order, not reversed (see the migration script's header comment for why deploy-then-migrate has a real data-loss window and migrate-then-deploy doesn't).
 - **Pricing and FAQ are reachable on a phone again** (fixed and live 2026-07-29). They had been `display:none` below 720px with nothing replacing them, flagged twice across two sessions and never fixed: two sections that existed and that no phone visitor could reach. The links wrap onto their own row now. No hamburger — three links do not earn a menu, and one would need JS the CSP would have to be opened up for. The fix surfaced a second thing nobody had noticed: with a sticky nav, an anchor jump lands the section's eyebrow *underneath* the bar, so every anchored section needed `scroll-margin-top`. Verified live: 24 anchor jumps across both languages at four widths all clear the nav.
 - **A push to `main` deploys this project to production.** Discovered 2026-07-29 the hard way. The old note claiming otherwise is corrected in `CLAUDE.md`. Nothing about the current state is wrong, but the working assumption for every future session has changed: there is no such thing as a safe checkpoint push here.
 - **The redesigned landing is live** (2026-07-29). Verified against the real URL, not inferred: 39/39 site checks and 12/12 health checks pass, `/` and `/pt` both serve the new nine-section page, the stylesheet carries the new classes, and the private paths still 404.

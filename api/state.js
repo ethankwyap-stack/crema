@@ -5,6 +5,18 @@
      sha256 hash at rest in owners/<shopId>.json = {ownerHash,currentKey,created}.
      Required to create a shop or rotate its link.
 
+   COSTS ARE A SEPARATE BLOB, owner-only: shops/<shopId>.json never carries a real unitCost,
+   no matter who wrote it — costs/<shopId>.json = {unitCost:{ingredientId:number},ts} holds them,
+   read back only on a request that proves ownership (roleOf() === 'owner'). This closes the
+   devtools gap product/app.js documents (staff hid costs on SCREEN only; the synced copy held
+   them) and is the "server-side redaction" upgrade that same file's comment names.
+   The one real danger, also named there: the client PUTs its WHOLE local state on every save,
+   including staff devices. A staff device's local ingredients read unitCost:0 after any pull
+   (never having received real numbers), so a staff PUT's ingredients carry zeroed costs — those
+   must never reach costs/. stripCosts() keeps shops/ clean regardless of writer; only a proven
+   owner's PUT touches costs/, so a staff save can never null out real prices. Do not let a PUT
+   write costs/ from body.ingredients without checking role === 'owner' first.
+
    REVOCATION IS A VALUE COMPARISON, NEVER A MISSING BLOB. Blob reads are eventually consistent:
    two back-to-back reads of the same existing path can return found, then null (measured, not
    assumed). So pointers are NEVER deleted, and a link is dead when it isn't owners.currentKey —
@@ -67,6 +79,19 @@ async function readJsonSure(path, tries = 3) {
   return null;
 }
 const writeJson = (path, obj) => put(path, JSON.stringify(obj), { access: 'private', addRandomSuffix: false, contentType: 'application/json', allowOverwrite: true, cacheControlMaxAge: 0 });
+
+// shops/ never carries a real cost, no matter who wrote it — see the file header. costs/ is the
+// only place a unitCost is trusted; extractCosts() reads it from a PUT body, but the caller must
+// gate that on role === 'owner' before writing it anywhere.
+const stripCosts = state => ({ ...state, ingredients: (state.ingredients || []).map(i => ({ ...i, unitCost: 0 })) });
+const extractCosts = state => {
+  const unitCost = {};
+  for (const i of (state.ingredients || [])) if (i && i.id) unitCost[i.id] = Math.max(0, +i.unitCost || 0);
+  return unitCost;
+};
+const mergeCosts = (state, costs) => costs
+  ? { ...state, ingredients: (state.ingredients || []).map(i => ({ ...i, unitCost: costs.unitCost?.[i.id] ?? 0 })) }
+  : state;
 
 /* Usage stamping (founder metrics level 3): which DATES a shop was used. Dates only — never a
    time, a duration or a device — because per-device timing in a two-person shop is one barista's
@@ -157,9 +182,13 @@ export default async function handler(req, res) {
     const state = await readJson(`shops/${r.shopId}.json`);
     if (!state) return res.status(404).json({ error: 'not found' }); // pointer fine, data missing — client must NOT treat this as revocation
     await stamp(r.shopId); // GET = someone LOOKED; staff mostly read cards, so PUT-only would miss them
+    const role = roleOf(r.own, owner);
+    // costs/ is only ever read for a proven owner — a staff GET gets shops/ as stored, which never
+    // carries a real unitCost (see stripCosts()), so the real numbers never reach the wire for them.
+    const out = role === 'owner' ? mergeCosts(state, await readJson(`costs/${r.shopId}.json`)) : state;
     res.setHeader('Cache-Control', 'no-store');
-    res.setHeader('x-portafile-role', roleOf(r.own, owner));
-    return res.status(200).json(state);
+    res.setHeader('x-portafile-role', role);
+    return res.status(200).json(out);
   }
 
   if (req.method === 'PUT') {
@@ -204,10 +233,19 @@ export default async function handler(req, res) {
     // stale-write guard: a device holding an older copy must pull, not clobber newer cloud state
     const cur = await readJson(`shops/${shopId}.json`);
     if (cur && (+body.ts || 0) < (+cur.ts || 0)) return res.status(409).json({ error: 'stale' });
-    await writeJson(`shops/${shopId}.json`, body);
-    await stamp(shopId);
+    await writeJson(`shops/${shopId}.json`, stripCosts(body));
     // create path (state 'unknown') just proved ownership; existing shops answer from their record
-    res.setHeader('x-portafile-role', r.state === 'unknown' ? 'owner' : roleOf(r.own, owner));
+    const role = r.state === 'unknown' ? 'owner' : roleOf(r.own, owner);
+    // ONLY a proven owner's costs are trusted. A staff device's local ingredients read unitCost:0
+    // (it never received real numbers), so an unguarded write here would zero the owner's real
+    // prices on the next staff save — the exact risk product/app.js's comment names.
+    // ponytail: these are two separate blob writes, not one transaction — if this one throws after
+    // shops/ above already succeeded, costs/ lags until the owner's NEXT successful save (the client
+    // retries on any non-200; local state is untouched either way, so nothing is lost, just stale
+    // briefly). Blob has no multi-object transaction; accept the gap rather than build one.
+    if (role === 'owner') await writeJson(`costs/${shopId}.json`, { unitCost: extractCosts(body), ts: body.ts });
+    await stamp(shopId);
+    res.setHeader('x-portafile-role', role);
     return res.status(200).json({ ok: true });
   }
 
@@ -225,8 +263,10 @@ export default async function handler(req, res) {
     const own = await readJsonSure(`owners/${shop}.json`);
     await writeJson(`owners/${shop}.json`, { deleted: true, deletedAt: Date.now(), ...(own?.ownerHash ? { ownerHash: own.ownerHash } : {}) });
     await del(`shops/${shop}.json`).catch(() => {});
+    await del(`costs/${shop}.json`).catch(() => {});
     await sleep(1200); // a poll racing the tombstone's consistency window can re-write the data blob
     await del(`shops/${shop}.json`).catch(() => {});
+    await del(`costs/${shop}.json`).catch(() => {}); // real prices, not just usage — must not survive "erase my data"
     // the usage log goes too — an erased shop must stop appearing in the founder's per-cafe table,
     // or "delete my data" is a lie. The tombstone already blocks every path that would re-stamp it.
     await del(`activity/${shop}.json`).catch(() => {});

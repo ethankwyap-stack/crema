@@ -1,344 +1,193 @@
-# HANDOFF — the four queued Training tasks are built, verified and LIVE
+# HANDOFF — cost-blob split built and tested, NOT migrated or deployed
 
-**Updated 2026-07-27 (second session that day).** Project: `/Users/ethanyap/portafile`. Owner: Ethan
-(college student, learning developer). You are picking this up cold.
+**Updated 2026-08-11.** Project: `/Users/ethanyap/portafile`. Owner: Ethan (college student, learning
+developer). You are picking this up cold. **He said "I'll do all this stuff later" and asked for this
+file to be current** — so the work below is paused, not blocked on anything technical.
 
-> **All four approved follow-ups (old §5.1–5.4) are DONE, committed as `8b465f1` and deployed to
-> production.** Verified locally and again against `https://portafile.vercel.app/product/` after the
-> deploy. Do not rebuild them. §6 (gotchas), §9 (how to work with Ethan) and §10 (machine warnings)
-> below are unchanged and still load-bearing.
+> **Previous handoff (2026-07-27, the four Training tasks) is fully superseded** — that work shipped,
+> deployed, and is long since old news; the rebrand to Crema (2026-07-28), a landing redesign
+> (2026-08-01/02/05), a push-to-main deploy hook (2026-08-06), and now this cost-split all happened
+> since. Archived at `handoff-archive/2026-07-27.md`. Do not read it for current state — read this
+> file, and `CLAUDE.md` for anything durable (it is comprehensive and current as of this session).
 >
-> **Do not confuse this with `.handoff`** (the dotfile beside it) — a separate, already-resolved
-> 2026-07-25 security handoff marked ✅ RESOLVED. Leave it alone.
+> **Do not confuse this with `.handoff`** (dotfile) — a separate, already-resolved 2026-07-25 security
+> handoff. Leave it alone.
 
 ---
 
 ## 1. TL;DR
 
-**Shipped and live:** the training-step description now also renders in the Sign-offs column
-(read-only), a step's day is editable after it was added, the on-screen path is sorted by day so it
-matches the printed pack, and staff (`?k=`) devices get the path read-only.
+Built and locally tested a real security fix: ingredient costs used to be hidden from staff devices
+only in the UI — the actual numbers still synced down to their browser, readable in devtools. Now
+`api/state.js` keeps costs in a separate blob (`costs/<shopId>.json`) and only ever sends them to a
+request that proves it's the shop's owner. **[verified]** 30 new checks in `verify-api.mjs` all pass,
+including the one regression this design exists to prevent (a staff device's autosave can't erase the
+owner's real prices). **[verified]** all four other verify suites (`verify-sync.js` 64,
+`verify-gate.js`, `verify-killpass.js`, `verify.js`) still green, untouched — client needed zero
+changes.
 
-- Commit `8b465f1` on `main`. **Not pushed to origin** — `git push` is Ethan's to run, and it does
-  NOT deploy this project (`vercel deploy --prod --yes` does, and it has already run).
-- `guide/Portafile-Guide-EN.pdf` was missing from the working tree at session start; restored with
-  `git checkout --` (byte-identical, `guide-en.html` had not changed since it was built). **Ethan has
-  not yet said whether he deleted it on purpose — ask him.**
-- **Production still holds one shop and two lead records** — `Tester Shop`, his own email, created
-  2026-07-27 10:34 UTC, from his own hand-testing that morning. He has NOT answered whether to clear
-  it. Do not delete it on your own. Commands are in §4b.
-- Cost: **$0.** No new service, account, dependency or external request.
+**Nothing is deployed. Nothing is pushed.** Working tree has uncommitted edits; nothing committed this
+session. See §3 for the exact resume sequence — it has a specific ORDER that matters (migrate before
+deploy, not after) or real customer pricing data can be permanently destroyed. Do not skip reading why.
+
+**Cost: $0.** No new service, account, dependency, or external request.
 
 ---
 
-## 2. What was built and how it was proved
+## 2. What was built and why (the reasoning, not just the diff)
+
+Ethan asked "why does the data model dictate everything" (a `/watch` TikTok tip about ERDs led into
+this), which turned into "does Portafile's schema already handle this" — answer: mostly yes (the
+three-part shopId/shareKey/ownerToken split already existed and is good), but the app's own code had a
+comment admitting one honest gap: `product/app.js` staffView() hid costs from the SCREEN only, and
+explicitly said "a barista who opens devtools can read them... upgrade path if a shop ever needs a real
+guarantee is server-side redaction." Ethan said "split costs into a separate blob owner-only" — this is
+that upgrade, built for real.
+
+**The one real danger, and why it took care to get right:** the client PUTs its WHOLE local state on
+every save (`app.js` `syncPush()`: `{...S, ts: Date.now()}`), staff devices included. Once the server
+redacts costs on GET, a staff device's local `S.ingredients[].unitCost` reads `0` (it never received
+real numbers). If the server naively wrote whatever `unitCost` a PUT body carried into the new costs
+blob, the NEXT staff autosave (e.g. checking off a sign-off, editing a dial-in) would silently zero out
+the owner's real prices — no warning, no error, just gone. The code's own comment named this exact
+failure mode before I wrote a line.
+
+**The fix:** `shops/<shopId>.json` (the public blob) never stores a real `unitCost`, full stop,
+regardless of who wrote it (`stripCosts()` runs on every PUT). `costs/<shopId>.json` is written ONLY
+when the request's owner-token header hashes to match the shop's actual owner (`role === 'owner'`) — a
+staff PUT still writes cleanly to `shops/`, but touches `costs/` not at all, so it can never overwrite
+real data it doesn't have. Owner GETs merge the two blobs back together; staff GETs get `shops/` as-is,
+which never had real numbers in the first place.
 
 | Where | What changed |
 |---|---|
-| `product/app.js` `pathOrder()` | new: returns `S.path` INDICES sorted by day, then array position. Mutates nothing, so synced and legacy shops need no migration |
-| `viewTraining()` | both columns iterate `order`; day badge is an `<input type=number>` for owners and a `<span>` for staff; `↑↓×`, the add-step row and the editable fields are owner-only |
-| Sign-offs checklist | renders `p.note` as `.cknote` under the label, read-only |
-| the `input.note` handler | now hand-patches the Sign-offs cell (`textContent`) instead of leaving it stale |
-| the `.day input` handler | clamps 1–9, then `save(); render()` — the re-sort IS the point |
-| `product/styles.css` | `.pathlist .day input` (spinner-less, reads as part of the badge), `.checklist .cknote` |
-| `product/i18n.js` | one new string + its European-Portuguese translation |
-
-**The bug found and fixed mid-session** (it is now a `CLAUDE.md` gotcha and a `WORKS.md` trap): the
-description saves on blur *without* `render()` on purpose — a re-render drops focus when the owner
-tabs down the list. That was harmless while the field had one view. Adding a second view made it
-stale until an unrelated click refreshed the page. Caught by a test timing out on a node that never
-appeared, not by reading the diff.
-
-**Suites, all green this session:** `product/verify.js` (20, includes the new 4b block),
-`verify-gate.js` (16, includes the staff-lock checks), `verify-sync.js` (64), `verify-pt.js` (65,
-includes note-veto and day-veto), `verify-killpass.js`, `verify-api.mjs`, `verify-metrics.mjs`,
-`verify-i18n.mjs` (15 checks / 219 translations), `verify-site.js` (37). Plus a 20-check edge pass
-(empty path, single step, day 0 / 99 / empty, a step with no `day` at all, clearing a description)
-and a 6-check pass against live production after the deploy. **The `demoSig` veto test was proven to
-bite** by temporarily removing `p.note` from the fingerprint and watching it fail.
+| `api/state.js` | new `stripCosts()`/`extractCosts()`/`mergeCosts()` helpers; GET merges `costs/` in only for a proven owner; PUT strips costs from every write to `shops/` and only writes `costs/` for a proven owner; DELETE now also removes `costs/<shop>.json` (real prices must not survive "erase my data") |
+| `product/app.js` | one comment updated (staffView() block) — was future-tense ("upgrade path if..."), now describes the shipped mechanism. **No functional client change** — the client already reads its role from the server response header and already tolerates `unitCost: 0` everywhere it's used |
+| `verify-api.mjs` | +30 checks: owner sees real costs / staff never does / a staff autosave with zeroed local costs cannot erase the real costs / DELETE removes `costs/` too |
+| `migrate-costs.mjs` | **new file**, NOT run yet — see §3 |
+| `CLAUDE.md` | new gotcha paragraph documenting the split (search "Ingredient costs ARE now a real security boundary") |
+| `PROGRESS.md` | new entry under `## 2026-08-11`, plus a new Open Threads bullet at the top of that list |
 
 ---
 
-## 3. Verified state
+## 3. State — and the EXACT resume sequence (read the ordering reasoning, don't skip)
 
-Re-checked by command immediately before this file was written.
-
-| Fact | Value | How known |
+| Fact | Value | Confidence |
 |---|---|---|
-| Repo / branch | `/Users/ethanyap/portafile` / `main` | — |
-| Last commit | `8b465f1` | `git log` |
-| Unpushed | **1 commit** (`8b465f1`) — Ethan pushes | `git log origin/main..HEAD` |
-| Deployed this session? | **Yes** — `vercel deploy --prod --yes`, ready | deploy output |
-| `https://portafile.vercel.app/product/` | serves the new `pathOrder`/`cknote` code | `curl` + a driven browser |
-| `/admin/dashboard.html` | **404 — correct**, the no-auth dashboard must never deploy | HTTP probe |
-| Production Blob store | **1 shop, 2 lead records**, unchanged before and after the deploy | `GET /api/metrics` with the admin header |
-| Admin key | `.admin-key` in repo root, gitignored. **Never echo its contents** | read via `tr -d '\n'` only |
-| Cost of everything | **$0** | by construction |
+| Repo / branch | `/Users/ethanyap/portafile` / `main` | [verified] |
+| Last commit | `f92906b`, matches `origin/main` (nothing unpushed) | [verified `git log origin/main..HEAD` empty] |
+| Uncommitted changes | `CLAUDE.md`, `PROGRESS.md`, `api/state.js`, `product/app.js`, `verify-api.mjs` modified; `migrate-costs.mjs` new/untracked | [verified `git status`] |
+| Also untracked, not mine | `.claude/`, `.impeccable/`, `DESIGN.md`, `PRODUCT.md` — pre-existing tool config, did not touch or investigate | [unverified — check first if it matters] |
+| Live site | https://portafile.vercel.app — still running the OLD `api/state.js` (pre-split) | [inferred from "nothing deployed"] |
+| Real shop IDs | **UNKNOWN to this file.** Only truncated prefixes from memory: `187cdea…`, `82ebcd8e…` | [unverified — must fetch] |
+| Admin key | `.admin-key` in repo root, gitignored. Never echo its contents | — |
+
+**Resume sequence, in order — do not reorder:**
+
+1. **Get the two real 40-hex shopIds.** Attempted this session via
+   `curl -s -H "x-portafile-admin: $(tr -d '\n' < .admin-key)" "https://portafile.vercel.app/api/lead" | python3 -m json.tool`
+   — the auto-mode classifier blocked me from running it directly (a request to prod carrying the
+   admin key). **Ethan needs to run it himself with a `!` prefix** and paste the output; each lead
+   record has a `shopId` field once that browser has linked its shop. Do this before anything else.
+2. **Fill in `migrate-costs.mjs`** — replace the two `REPLACE_ME_...` placeholders in `SHOP_IDS` with
+   the real values from step 1.
+3. **Dry-run it against production**: `BLOB_READ_WRITE_TOKEN=<prod token> node migrate-costs.mjs --dry-run`
+   (token is in `.env.local`, gitignored — same one used for other Blob admin scripts in this repo's
+   history). Confirm it reports extracting a sane number of ingredient costs for each shop, not zero.
+4. **Run it for real** (drop `--dry-run`). This is a live production data write — Ethan should run it
+   himself or explicitly approve it in-session, same standing as any other prod curl in this repo.
+5. **Only THEN deploy** the new `api/state.js` (`vercel deploy --prod --yes`, or git push to `main`
+   which auto-deploys per the 2026-07-29 discovery — see `CLAUDE.md`).
+
+**Why this order and not the reverse** (deploy first, migrate second): if the new server code goes
+live before the migration runs, there's a real window where a staff device — one that's already
+holding real costs from a pre-migration pull, sitting in a café mid-shift — autosaves (checking off a
+sign-off, logging a dial-in, anything that calls `save()`). The new server strips costs from that PUT
+before writing `shops/`, and since the request isn't from a proven owner, it never gets a chance to
+write `costs/` either. Net result: the real costs vanish from `shops/` and were never captured into
+`costs/` — permanently gone, no copy anywhere. Migrating first avoids this because it captures the real
+numbers into `costs/` **while the OLD server (which doesn't know `costs/` exists) is still live** — the
+old server can't wipe what it doesn't know exists, and even if a stale client PUT briefly writes real
+costs back into `shops/` in the gap, that's just a harmless re-strip, not data loss, once the new code
+deploys. Full reasoning is also in the script's own header comment — reread it before running.
+
+Before or after the deploy, also run the full local suite pass once more (`node verify-api.mjs`,
+`node verify-metrics.mjs`, `node verify-i18n.mjs`, `node product/verify-sync.js`,
+`node product/verify-gate.js`, `node product/verify-killpass.js`, `node product/verify.js`) to catch
+any drift between this session and whenever it resumes.
 
 ---
 
-## 4. Decisions still open — ask him, do not act alone
+## 4. Gotchas specific to this unfinished task
 
-### 4a. The test data in production
-
-`Tester Shop` / `43a9a8e8099d2c9d119b0ce389a56975e90327c2` / `ethankw.yap@gmail.com`, created
-2026-07-27 10:34:35 UTC, lead `ts` values `1785148459345` and `1785148471418`. It reads as his own
-hand-testing, not a customer — but **he has not confirmed, so do not delete it.**
-
-Shop (also removes the usage-activity blob):
-
-```
-curl -s -X DELETE -H "x-portafile-admin: $(tr -d '\n' < .admin-key)" \
-  -H "x-portafile-shop: 43a9a8e8099d2c9d119b0ce389a56975e90327c2" \
-  "https://portafile.vercel.app/api/state"
-```
-
-Leads are separate — one DELETE per record, by `ts`:
-
-```
-curl -s -X DELETE -H "x-portafile-admin: $(tr -d '\n' < .admin-key)" \
-  "https://portafile.vercel.app/api/lead?ts=1785148459345"
-```
-
-Confirm with several reads (the blob index lags deletes). **`created` from `/api/metrics` is
-`owners.created`, NOT the lead `ts`.** If a DELETE curl gets blocked by a permission classifier, hand
-Ethan the exact one-line command to run himself with a `!` prefix rather than routing around it.
-
-### 4b. `guide/Portafile-Guide-EN.pdf`
-
-It had vanished from the working tree without any session deleting it; restored from git this
-session. **Tell him it was missing** — he may have deleted it deliberately. `node guide/render-pdf.js`
-re-renders every `guide/*.html` and re-checks 12 button labels if it ever needs rebuilding.
-
-### 4c. Push
-
-`8b465f1` is committed but not on `origin/main`. He runs pushes himself.
-
-**Three things are settled and must NOT be reopened:** paid tiers stay in US dollars on `/pt`, GDPR
-stays consciously deferred, and the Portuguese work stays as shipped.
+- **`migrate-costs.mjs` has placeholder shopIds right now** (`REPLACE_ME_187cdea`,
+  `REPLACE_ME_82ebcd8e`) — it will not run correctly until step 2 above is done. Don't try to guess or
+  reconstruct the real values from the truncated memory prefixes; fetch them for real.
+- **The classifier blocks Claude from making prod requests that carry the admin key**, even read-only
+  GETs. Every step in §3 that touches production (fetching leads, running the migration for real,
+  deploying) needs Ethan to run it himself with a `!` prefix, or explicit in-session approval. Don't
+  try to route around the block with a different tool — hand him the exact command instead.
+- **`api/lead.js` GET (admin-gated) is the source for shopIds**, not the founder dashboard UI directly
+  — the dashboard's JS has `l.shopId` in memory (`window._leads`) but doesn't render it as visible
+  text anywhere I found. Curling the API directly is simpler than walking through devtools.
+- **This is the second time this session an "obvious" order turned out to be backwards** — my first
+  draft of the migration script's header comment said "deploy first, migrate second," which is exactly
+  wrong (see §3's reasoning). If revisiting this logic, re-derive the ordering argument from scratch
+  rather than trusting a half-remembered version of it.
+- All the durable, already-verified gotchas for this whole file's blast radius (Blob eventual
+  consistency, revocation-is-a-value-comparison, the staff/owner role model, rate limits, etc.) are in
+  `CLAUDE.md` and were true and current as of this session — read it before touching `api/state.js`
+  again, don't re-derive.
 
 ---
 
-## 5. The next task
+## 5. Don't redo
 
-**UNSPECIFIED — ask him. Do not invent the next feature.** He likes being offered 2–3 concrete
-options rather than an open-ended "what do you think?"
-
-Known open threads live at the end of `PROGRESS.md`; the loudest is that the launch film still says
-**"No server"**, false since sync shipped 2026-07-17.
-
----
-
-## 6. Gotchas
-
-**From this session, first:**
-
-- **`demoSig()` decides whether a language switch may destroy the shop's data.** Any new
-  user-editable field must be added to it in the same commit, or a shop whose only work lives in that
-  field reads as pristine and gets erased. `product/app.js`. This is written into `CLAUDE.md` as a
-  corollary to the oat-milk bug, and `verify-pt.js` now proves both `p.note` and `p.day` veto the
-  swap — remove either from the fingerprint and those checks fail.
-- **The training path renders in `pathOrder()` order, not array order** — day ascending, then array
-  position within the day, so the screen matches the print pack (which groups by day). It returns
-  INDICES and mutates nothing. `↑↓` swap the DISPLAY neighbour and only inside one day; a step moved
-  to another day joins that day at its HEAD (the tiebreak is array position). **Both the path column
-  and the Sign-offs checklist must iterate `order`, never `S.path`**, or the two columns disagree.
-- **CORRECTED (this replaces the previous session's version of this note).** The previous handoff
-  said an inline field saving on `change` "must not call `render()`, and that is harmless because
-  nothing else on screen reads `p.note`." The second half stopped being true the moment the
-  description also appeared in the Sign-offs column — and it shipped stale for one session because of
-  it. The rule now: `input.note` still skips `render()` (a re-render drops focus when the owner tabs
-  down the list), so **the handler hand-patches the Sign-offs cell itself** with `textContent`, never
-  `innerHTML`. The `.day input` handler is the opposite case and DOES `render()`, because the re-sort
-  is the point. **Adding a second view of a field means revisiting every handler that writes it.**
-- **`class="note"` is used twice in the app** — the training-path description and the dial-in log's
-  note field. Both the CSS and the event wiring are scoped with `.pathlist` on purpose, and the
-  wiring is `.pathlist input.note` specifically, because staff render the description as a `<div>`.
-  Do not widen either selector to a bare `.note`.
-- **Staff (`?k=`) get the training path read-only** — same `staffView()` predicate as the Margin
-  Report. Say plainly what it is: **visibility, not a security boundary.** A staff device holds the
-  whole shop in `localStorage` either way, exactly like the price table.
-- **A print-pack change cannot be screenshotted from the normal screen.** The pack lives in a
-  print-only stylesheet, so a plain screenshot shows the app underneath and looks like nothing
-  happened. Use `page.emulateMedia({ media: 'print' })` before the screenshot, or assert on the DOM.
-
-**Carried forward — language, i18n, seeds:**
-
-- **The English string IS the dictionary key** (`product/i18n.js`, gettext-style). A missing
-  translation silently renders readable English. Editing an English string in `app.js` orphans its
-  translation with no error; one English word needing two Portuguese words collides on one key and a
-  duplicate JS key silently keeps only the last (this really happened with "Roaster"). Disambiguate
-  as `t('Roaster|role')`. **`node verify-i18n.mjs` is the only thing that catches any of it.**
-- **`product/i18n.js` must load before `app.js`.** `app.js` calls `t()` during first render, so a
-  missing `i18n.js` is a **blank app**, not a degraded translation. `health_check.py` probes it.
-- **Language lives in `S.shop.lang`, so it SYNCS** to staff devices. Default is browser detection,
-  which is why the en-US Playwright suites pass untouched.
-- **Currency follows language** (en→USD, pt→EUR) via one `Intl.NumberFormat`. `Intl` emits a
-  NON-BREAKING space in "1,22 €" — match `/\d,\d\d\s*€/`, never a literal space.
-- **`api/metrics.js`'s `matchesADemoSeed` is NOT safe to reuse for anything destructive.** It ignores
-  dial-ins, baristas and sign-offs. Same question as `demoSig()`, different consequence, different
-  threshold.
-- **Adding a language means editing `api/metrics.js`'s `DEMOS` array too**, or every shop in that
-  language reads as "customised" the moment it opens.
-- **Signup role `<option value>`s stay English** while labels translate; the value is POSTed and
-  counted, so translating it would split "Owner" and "Proprietário" into two buckets.
-- **Never pattern-match over `JSON.stringify(seed())`.** A selftest that regexed the serialised shop
-  for imperial units matched random base-36 `uid()`s (`yykz6oz` reads as "6 oz"): a measured **0.99%**
-  false-failure rate. If any suite fails once and passes on retry, **measure the rate** before
-  dismissing it.
-- **Both seeds are hand-written**, so the likeliest bug is a recipe naming an ingredient not in the
-  list — `I[name]` is `undefined`, the drink silently costs nothing, nothing throws. `?selftest=1`
-  asserts every item in BOTH seeds resolves.
-
-**Carried forward — testing and toolchain:**
-
-- **Never run bare `npx playwright ...`.** The suites `require()` Playwright from a pinned npx cache
-  path; any bare `npx playwright` command silently upgrades that cache and breaks every suite with
-  "Executable doesn't exist", which looks like broken tests rather than a broken toolchain. Fix:
-  `npx playwright install chromium`. To drive a browser ad hoc, launch with `{ channel: 'chrome' }`.
-- **Grep for `^FAIL`, never for "fail".** Several suites print "failed"/"failure" as part of
-  **passing** negative tests. `verify-sync.js` takes over a minute — do not kill it early and read
-  that as a failure.
-- **`timeout` does not exist on macOS.** `timeout 300 node verify-pt.js` fails with
-  `command not found` and looks like a broken suite. Use a background run instead.
-- **`verify-sync.js` does not test the real `api/state.js`** — it routes to a JS mirror inside the
-  test file. `verify-api.mjs` is the one that executes the real handlers.
-- **Playwright `addInitScript` re-runs on every navigation**, restoring a seed the test just wiped;
-  `verify-sync.js` guards this with `pf-test-stopseed`.
-- **Headless Chromium reports every tab as `visible`**, and `page.bringToFront()` doesn't change it.
-- **`#shopName` saves on `change`, not `input`.** A test that fires `input` quietly "passes".
-- **`verify-site.js` needs `python3 -m http.server 8899` running in the repo root first** — the pages
-  load `/site/site.css` by absolute path.
-- **Hand-testing in a real browser writes real records; a private window makes it worse.** `app.js`
-  skips the lead POST when `navigator.webdriver` is true, so the suites never pollute the store. A
-  human in a normal window meets the gate; a human in a *private* window has no saved lead record
-  suppressing it, so **every private-tab test is a fresh signup**. `api/lead.js` stores no IP and no
-  user-agent by design, so attribution is forensic only: fixture-looking strings and the record `ts`
-  against `git log`. Keep test values obviously fake. Adding `?k=` to the URL skips the gate and is
-  the safe way to hand-test.
-- **A screenshot of a wrong-looking screen is not a diagnosis.** The 2026-07-26 "missing Portuguese
-  translations" report turned out to be an English demo *shop* under a Portuguese *interface*.
-  Reproduce before believing a bug report — including Ethan's.
-- **The Data menu hides its entire sync section on `file://`** (`app.js:774`). A `file://` probe looks
-  like sync is missing. It is present over http/https.
-
-**Carried forward — the expensive ones, do not renegotiate:**
-
-- **`CLAUDE.md` in this repo is the real gotcha list — read it fully before editing `api/state.js`.**
-  The eventual-consistency rules ("never build an authorization check on a read", "revocation is a
-  value comparison, never a missing blob", "a 404 never means revoked") were expensive and are not
-  negotiable.
-- **Vercel Blob is eventually consistent.** `list()` lags writes and deletes by seconds — fine for
-  counting, never for resolving a known path or deciding authorization.
-- **Relative URLs on the landing pages 404 at `/`** because root is a rewrite, and `/pt` is a second
-  rewrite with the same hazard. Everything is absolute; do not reintroduce a relative one.
-- **CSP blocks all inline `<script>` on deployed pages.** `admin/dashboard.html` uses inline script
-  and `onclick=` and is safe only because it never deploys. Never move that pattern into `site/` or
-  `product/`.
-- **`.vercelignore` is an allowlist** (`/site`, `/product`, `/video`, `/api`, `vercel.json`,
-  `package.json`). A new top-level directory is invisible to Vercel unless added. **Do not add
-  `guide/` or `admin/`** — both are internal on purpose.
-- **`vercel.json` pins CORS to the prod origin except under `/api/`** — the localhost:4322 dashboard
-  depends on that exception, and the admin key is a **header** (`x-portafile-admin`), never a query
-  string, which makes those fetches preflighted.
-- **Dial-in values are not guaranteed to be numbers.** Always `esc(dec(x))`, never `dec(esc(x))` —
-  at every render site, not just the one a bug report names. `verify-killpass.js` covers the hostile
-  case; re-run it after touching any dial-in render site.
-- **Never gate a share link.** `gate()` skips `?k=` staff links deliberately; a form on top of a
-  loaded shop is what made baristas report sharing as broken.
-- **`health_check.py` runs daily at 15:00 UTC** and emails **every run, pass or fail** — a missing
-  email is itself the alarm. If you change page copy, update its expected marker strings or he gets a
-  false alarm. Running it locally raises on the *email* step because `GMAIL_ADDRESS` /
-  `GMAIL_APP_PASSWORD` live in GitHub secrets, not on his Mac — **that traceback is expected locally.**
-- **Do not load-test the GET rate limiter from his machine** — it makes `health_check.py` report a
-  false outage for up to 10 minutes.
-- **Do not link the launch film from anything Portuguese**, and do not treat it as current:
-  `video/portafile-launch.mp4` is English-only and still says **"No server"** out loud, false since
-  sync shipped 2026-07-17.
+- The server-side split itself (`stripCosts`/`extractCosts`/`mergeCosts`, the GET/PUT/DELETE changes
+  in `api/state.js`) — built, and covered by `verify-api.mjs`'s new 30 checks including the
+  staff-autosave-can't-erase-costs regression. Don't rewrite it; extend it if requirements change.
+  the client-side `app.js` comment update — done, no other client change needed.
+- Don't re-investigate whether the client needs changes. It doesn't — confirmed by tracing
+  `syncPush`/`syncPull`/`applyRole` in `app.js` this session; the client already treats role as
+  server-decided and already renders `unitCost: 0` correctly everywhere (`recipeCost`, `cogsPct`,
+  every `staffView()`-gated render site checked).
+- Don't re-run the full local verify pass unless code changed since — it was green at the end of this
+  session (see §1).
 
 ---
 
-## 7. Reboot / persistence
+## 6. The next task
 
-Nothing here depends on a running process; a reboot loses no work that is on disk in
-`/Users/ethanyap/portafile`.
-
-**The weak link:** this session's changes are **uncommitted working-tree files**. All commits through
-`047418e` are pushed to `origin/main`, so everything older is safe. The scratch verification script
-lives in `/private/tmp/...` and **will not survive a reboot** — that is why task 5.1 folds its checks
-into `product/verify.js` (the launch film's original ffmpeg command was lost exactly that way).
-
-The deployed site is independent and would survive anything local, but it does **not** contain this
-session's work.
+**UNSPECIFIED beyond finishing this feature — ask him.** He said "I'll do this later," not what comes
+after. When he resumes, the very next concrete action is step 1 in §3 (get him to run the lead-fetch
+curl), nothing else. Don't invent a new feature or reopen an old Open Thread from `PROGRESS.md` without
+asking which he wants first.
 
 ---
 
-## 8. Don't redo
+## 7. How to work with Ethan (durable — carried forward, still true)
 
-- The step-description feature itself. Built, verified in a real browser, documented.
-- The `demoSig()` fix for it. Both directions are proven — a note-only edit vetoes the reseed, an
-  untouched demo still reseeds.
-- `PROGRESS.md` for 2026-07-27 — the entry exists. Extend it; do not add a second heading for the date.
-- The `WORKS.md` line and the `CLAUDE.md` corollary — both written.
-- The Portuguese translation, seed, landing page, legal pages, auto-reseed and the Portuguese guide —
-  all done, committed, pushed and (except the guide) deployed.
-- Don't "fix" the English demo shop — it is intentionally 15 drinks, dollars, °F.
-- Don't convert the paid tiers to euros, and don't draft GDPR text. Both consciously deferred.
-- Don't touch `.handoff` (the resolved 2026-07-25 security handoff). `BUILD-LOG.md` is frozen.
-- Don't add a phone-home to reach browsers that never synced. That is a property of a no-accounts
-  product, not a bug. Ethan has repeatedly chosen dropping a metric over tracking a user.
-
----
-
-## 9. How to work with Ethan (durable)
-
-College student, learning developer. Not fluent in git, terminals or deployment, but learning —
-teach while doing. Typos are common; infer intent and proceed rather than asking about an obvious one.
-
-- **Zero cost, always.** Cost questions get certainty, never "probably free" — name every service and
-  whether it can ever bill him.
-- **Terminal steps: numbered, ONE command per step**, say what he should see, then wait for his
-  confirmation or screenshot before the next.
-- **He runs deploys, pushes and destructive curls himself**, typing the command with a `!` prefix.
-- **A question is not a work order.** This session opened with "what does D1 D2 mean?" — the
-  deliverable was an explanation, before any code. When he asks for a change, make it without asking
-  permission at each step.
-- **Verify before saying done** — exercise the real feature, not just the tests. He asks for this
-  explicitly and notices when it is skipped.
-- **Lead with the outcome.** Short replies ("yes", "proceed", "yes push") mean: do exactly the
-  pending step, nothing more.
-- **Deploys, deletes and anything outward-facing: confirm first.** Approval is scoped to that one
-  action, not to future ones.
-- **He likes concrete follow-up options** at the end of a feature (2–3, specific), not open-ended
-  "what do you think?" — this session's four queued tasks came from exactly that.
-- **Ponytail mode is on**: smallest solution that works; deliberate shortcuts marked with a
-  `ponytail:` comment naming the ceiling and the upgrade path.
-- **`PROGRESS.md` is required.** At the end of any session that changed something real, append or
-  extend that day's entry, unprompted, written for a founder (what shipped, why it mattered to the
-  business, what broke and what it taught). One `##` per date, newest at the bottom, "Open threads"
-  kept current.
-- **After a milestone**, also update the repo `CLAUDE.md` gotchas and the auto-memory at
-  `~/.claude/projects/-Users-ethanyap-portafile/memory/`.
+- **Zero cost, always.** Name every service and whether it can ever bill him — this task added none.
+- **Terminal steps: numbered, ONE command per step**, say what he should see, then wait for
+  confirmation before the next. This bit me mid-session already — he asked to unblock a curl, I should
+  have handed him one clean command immediately rather than a wall of skill-instruction text.
+- **He runs deploys, pushes, and prod-data curls himself**, typing the command with a `!` prefix — not
+  a preference, the classifier enforces it for the risky ones anyway.
+- **Short replies ("yes", "unblock") mean: do exactly the pending step, nothing more.**
+- **Ponytail mode is on**: smallest solution that works. This task's `migrate-costs.mjs` is
+  deliberately a plain one-off script, not a reusable migration framework.
+- **`PROGRESS.md` is required** at the end of any session that changed something real — done this
+  session, don't duplicate the entry, extend it if more happens under the same date.
+- **After a milestone, also update `CLAUDE.md` gotchas** (done) **and auto-memory** at
+  `~/.claude/projects/-Users-ethanyap/memory/project_portafile.md` — **NOT done this session**, that's
+  `/improve`'s job per his global CLAUDE.md, not this skill's. Flag it if wrapping up with `/improve`.
 
 ---
 
-## 10. Machine-level warnings (these outlive this task — do not drop them)
+## 8. Reboot / persistence
 
-1. **Never trust System Settings → Storage for free space** — it counts iCloud-purgeable files and has
-   been wrong by ~50 GB. Use `df -h /`. Currently **23 GB free of 228 GB**.
-2. **Do not touch the `flowise-main` or `open-webui` Docker containers.** Both verified running right
-   now (`flowise-main` up 3 weeks, `open-webui` up 6 days, healthy) — a **separate live project**.
-3. `Docker.raw` is ~13 GB and does not shrink on prune.
-4. **Do not touch `~/Library/Application Support/Claude/vm_bundles`** (~6.8 GB) — Claude Desktop's VM.
-5. **Never suggest "Keep Messages: 1 Year"** — it permanently deletes messages across all his devices.
-6. Claude Code dies when Wi-Fi drops (`ENOTFOUND`). For an offline test, hand him ONE self-contained
-   checklist he can run unattended.
-7. `~/Desktop/Claude Projects/` holds **stale 2026-06-27 backups** — never edit them (only
-   travel-planner there is live).
-8. Before any task touching Flowise, LaunchAgents, travel-planner deploys, or multi-project audits,
-   read `~/wargame_master.md` and follow it instead of improvising.
-9. **No `pdftotext`, `poppler`, `pypdf`, `PyMuPDF` or PyObjC/Quartz on this machine**, and Spotlight
-   returns null for PDF text. Rendering HTML *to* PDF works (headless Chromium via the pinned
-   Playwright); reading an existing PDF's text does not — which is why the original
-   `Portafile-Guide.pdf` (a Messages attachment, not in this repo) can never be corrected and
-   `Portafile-Guide-EN.pdf` supersedes it.
+Nothing here depends on a running process. A reboot loses no work — everything is on disk in
+`/Users/ethanyap/portafile`. **The weak link is the same as always: this session's edits are
+uncommitted working-tree files**, not yet a commit. If anything destructive touches this working tree
+before it's committed, the cost-split work is gone and would need rebuilding (though this handoff has
+enough detail to rebuild it quickly — the design reasoning in §2 is the expensive part to redo).

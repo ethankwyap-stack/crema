@@ -251,12 +251,10 @@ const SYNCED_KEY = 'portafile.v1.synced'; // the link this device actually pulle
 const ROLE_KEY = 'portafile.v1.role';     // 'staff' hides every cost/margin figure — set by the SERVER, not by us
 
 /* Staff view: a device that reached this shop through a staff link and has never proven ownership.
-   ponytail: this hides costs from the SCREEN, it does not encrypt them — the synced copy on the
-   device still contains them, so a barista who opens devtools can read them. That is the honest
-   ceiling of a shared-link product with no accounts; upgrade path if a shop ever needs a real
-   guarantee is server-side redaction (strip unitCost for tokenless GETs and restore it on their
-   PUTs), which needs a merge on write because staff push whole-state — do not bolt it on casually,
-   a stale read there would silently revert the owner's prices. */
+   Costs are redacted SERVER-SIDE (api/state.js splits costs/<shopId>.json from shops/<shopId>.json,
+   merged back only for a proven owner) — a staff device's synced copy never contains real unitCost
+   values, so opening devtools shows only zeros. This client-side hide is still needed to keep the
+   UI from rendering a wall of $0.00 cost figures and a fake 100% COGS at staff. */
 /* Fails CLOSED: on a synced device, costs stay hidden until the SERVER has answered 'owner' for
    the current link. A local owner token proves nothing by itself — it may belong to a different
    shop (the owner pasting another shop's staff link into their own phone hit exactly that: the

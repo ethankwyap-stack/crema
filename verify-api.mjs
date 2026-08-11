@@ -150,5 +150,76 @@ async function call(handler, { method = 'GET', query = {}, headers = {}, body: b
   check('lead DELETE: header key deletes the record', okDel.code === 200 && !globalThis.__BLOB.has('leads/1700000000000-x.json'));
 }
 
+/* ---- costs/<shopId>.json split: owner sees real costs, staff never does, staff saves can't erase them ---- */
+{
+  globalThis.__BLOB.clear();
+  const shop = hex('7'), owner = hex('8'), key = hex('9');
+  const ingId = 'ing1';
+  const bodyWithCost = ts => ({ ...body(ts), ingredients: [{ id: ingId, name: 'Beans', unit: 'g', unitCost: 2.5 }] });
+
+  const seed = await call(state, {
+    method: 'PUT', query: { k: key }, body: bodyWithCost(1000),
+    headers: { 'x-real-ip': '1.2.3.4', 'x-portafile-shop': shop, 'x-portafile-owner': owner },
+  });
+  check('owner seed with a real cost succeeds', seed.code === 200);
+  check('shops/ blob never stores the real cost, even from the owner', JSON.parse(globalThis.__BLOB.get(`shops/${shop}.json`)).ingredients[0].unitCost === 0);
+  check('costs/ blob captured the real cost', JSON.parse(globalThis.__BLOB.get(`costs/${shop}.json`)).unitCost[ingId] === 2.5);
+
+  const ownerGet = await call(state, { query: { k: key }, headers: { 'x-real-ip': '1.2.3.4', 'x-portafile-owner': owner } });
+  check('owner GET sees the real cost merged back in', ownerGet.payload.ingredients[0].unitCost === 2.5);
+  check('owner GET is labeled owner', ownerGet.headers['x-portafile-role'] === 'owner');
+
+  const staffGet = await call(state, { query: { k: key }, headers: { 'x-real-ip': '1.2.3.4' } });
+  check('staff GET (no owner header) never receives the real cost', staffGet.payload.ingredients[0].unitCost === 0);
+  check('staff GET is labeled staff', staffGet.headers['x-portafile-role'] === 'staff');
+
+  // THE regression this whole split exists to prevent: a staff device's local state holds
+  // unitCost:0 (it never got the real number), and it autosaves its whole state. That save must
+  // NOT be allowed to erase the real cost sitting in costs/.
+  const staffSave = await call(state, {
+    method: 'PUT', query: { k: key },
+    body: { ...body(2000), ingredients: [{ id: ingId, name: 'Beans', unit: 'g', unitCost: 0 }] },
+    headers: { 'x-real-ip': '1.2.3.4' }, // no owner header — this is a staff save
+  });
+  check('staff save (zeroed local cost) is accepted', staffSave.code === 200);
+  check('staff save did NOT touch costs/ — real cost survives', JSON.parse(globalThis.__BLOB.get(`costs/${shop}.json`)).unitCost[ingId] === 2.5);
+  const afterStaffSave = await call(state, { query: { k: key }, headers: { 'x-real-ip': '1.2.3.4', 'x-portafile-owner': owner } });
+  check('owner still sees the real cost after a staff save', afterStaffSave.payload.ingredients[0].unitCost === 2.5);
+
+  // shop deletion must remove costs/ too — "erase my data" would otherwise leave real prices behind
+  process.env.ADMIN_KEY = process.env.ADMIN_KEY || 'test-admin-key';
+  await call(state, { method: 'DELETE', headers: { 'x-portafile-admin': process.env.ADMIN_KEY, 'x-portafile-shop': shop } });
+  check('DELETE also removes the costs/ blob', !globalThis.__BLOB.has(`costs/${shop}.json`));
+}
+
+/* ---- legacy shop (data exists, NO owners/ record — the pre-owner-token shape) keeps working
+   under the costs split. roleOf() falls back to 'owner' for these (documented: "has no staff
+   links at all"), so every device should see real costs and every save should populate costs/. ---- */
+{
+  globalThis.__BLOB.clear();
+  const legacyShop = hex('d'), ingId = 'ing1';
+  // the legacy shape: shareKey === shopId, real cost inline, no owners/ record at all
+  globalThis.__BLOB.set(`keys/${legacyShop}.json`, JSON.stringify({ shopId: legacyShop, created: 1000 }));
+  globalThis.__BLOB.set(`shops/${legacyShop}.json`, JSON.stringify({
+    ...body(1000), ingredients: [{ id: ingId, name: 'Beans', unit: 'g', unitCost: 3.75 }],
+  }));
+
+  const anyoneGet = await call(state, { query: { k: legacyShop }, headers: { 'x-real-ip': '5.5.5.5' } });
+  check('legacy shop GET (no owner token at all) still resolves as owner role', anyoneGet.headers['x-portafile-role'] === 'owner');
+  check('legacy shop GET still shows its real inline cost (no costs/ blob exists yet, nothing to merge)', anyoneGet.payload.ingredients[0].unitCost === 3.75);
+
+  const anyoneSave = await call(state, {
+    method: 'PUT', query: { k: legacyShop },
+    body: { ...body(2000), ingredients: [{ id: ingId, name: 'Beans', unit: 'g', unitCost: 3.75 }] },
+    headers: { 'x-real-ip': '5.5.5.5' }, // no owner header — legacy shops have no such concept
+  });
+  check('legacy shop save (no owner token) is accepted', anyoneSave.code === 200);
+  check('legacy shop save is treated as owner and populates costs/', JSON.parse(globalThis.__BLOB.get(`costs/${legacyShop}.json`)).unitCost[ingId] === 3.75);
+  check('legacy shop shops/ blob is stripped like any other, going forward', JSON.parse(globalThis.__BLOB.get(`shops/${legacyShop}.json`)).ingredients[0].unitCost === 0);
+
+  const afterSplit = await call(state, { query: { k: legacyShop }, headers: { 'x-real-ip': '5.5.5.5' } });
+  check('legacy shop GET after its first post-split save still shows the real cost, now via costs/', afterSplit.payload.ingredients[0].unitCost === 3.75);
+}
+
 console.log(failures ? `\n${failures} FAILURES` : '\nall api checks passed');
 process.exit(failures ? 1 : 0);
