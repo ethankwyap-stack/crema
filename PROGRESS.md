@@ -445,6 +445,24 @@ Migrating needed a one-time script (`migrate-costs.mjs`) — went **before** the
 
 ---
 
+## 2026-08-12 — Pruning the context file, and what the retired gotchas taught
+
+`CLAUDE.md` had grown to ~5,900 words, and the Gotchas section was most of it. Every session on this project pays for that file up front, so the question was whether all of it is still load-bearing. Most of it is — this product genuinely has a lot of sharp edges, and the file is long because the constraints are real, not because it's padded. But five entries had outlived the thing they were warning about, and they're archived here rather than deleted, because the lessons are still good even though the warnings are spent.
+
+**The rebrand was a test-net change.** When Portafile became Crema on 2026-07-28, three suites correctly failed on brand copy and colours — `verify-site.js` on background/button RGB *and* button labels, `verify-pt.js` on the help-modal heading, `product/verify-killpass.js` on the import-rejection alert. `health_check.py` was matching `--espresso`, a token the rebrand deleted. The logic suites stayed green untouched, correctly: they assert behaviour, not copy. The demo shop names (`Demo Espresso Bar`, `Café da Esquina (demo)`) were deliberately *not* rebranded — they're café names, and changing one breaks `DEMOS` in `api/metrics.js`. The durable lesson: a rename is a code change, and the tests that fail are the ones doing their job.
+
+**Light→dark was a redesign, not a token swap.** Every element that was "a dark block on a light page" — selected tab, secondary button, dial-in readout, modal sheet, `kbd` style, selftest banner — went invisible when the palette inverted. Four recurring bugs: a hardcoded `background:#fff` input becomes the brightest thing on screen; a fill and its label are separate decisions (the old gold fill took a dark label, the Ink navy fill takes a light one, and a button left on `color:var(--bg)` through that flip reads at ~1.3:1); pale pastel chips become bright rectangles; and a handler that darkens on focus turns text the page colour. `<meta name="color-scheme" content="dark">` was required, not cosmetic.
+
+**`verify-site.js` crashed silently for days and read as "not run".** Assertions on the pricing cards hung for the full 30s timeout after pricing was commented out, throwing an uncaught rejection mid-suite — so every check after it never ran and the summary line never printed. The fix, still live at `verify-site.js:84,102`: a pulled section gets asserted **absent**, not left asserted present. Same for the `scrollWidth` overflow check, which `.ticker .track`'s `width:max-content` inflated by 64px, reporting a bug that did not exist. The general shape is worth keeping: a test that silently stops running looks exactly like a test that passed.
+
+**The revocation wipe had to spare `lead*`.** Clearing the signup record on revoke made the user re-fill the access gate and wrote a duplicate lead blob into the founder's store. Shipped once, caught, and there's a test for it now.
+
+**The cost-blob migration ordering.** `migrate-costs.mjs` had to run *before* the new server code deployed, not after — reversed, a staff autosave in the gap could permanently destroy a shop's real prices. Done 2026-08-11 and live; the ordering warning is spent, though the security boundary it protected is still very much active and stays documented in `CLAUDE.md`.
+
+What stayed: the identifier rules (never rename the lowercase `portafile.*` keys), the print protection, the Blob eventual-consistency rules, the delete/revoke contracts, and the launch film's still-false "No server" claim — that last one is an open bug, not history.
+
+---
+
 ## Open threads
 
 - **Cost-blob split shipped 2026-08-11** — migrated and deployed, live. Skipped `/still-works` before this deploy at Ethan's explicit call; worth a manual pass through the app soon to confirm nothing else regressed.
