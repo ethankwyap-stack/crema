@@ -2,6 +2,7 @@
 .vercel
 .env*
 .admin-key
+.handoff*
 graphify-out/
 node_modules
 __pycache__/

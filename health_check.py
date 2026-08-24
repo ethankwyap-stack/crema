@@ -24,12 +24,12 @@ RETRY_AFTER = 20  # seconds — a single blip is not an outage (learned on reg-d
 CHECKS = [
     ("Landing page",        "/",                        200, "Crema"),
     ("Privacy page",        "/site/privacy.html",       200, "Privacy"),
-    # The two landing pages are on SEPARATE stylesheets since the 2026-08-01 redesign, so both
-    # need probing. If either 404s its page still returns 200 with all its text, so only a direct
-    # check catches it — an unstyled site looks broken to a visitor but passes a body-text
-    # assertion. Probing only site.css passed happily while / was on an unchecked v2.css.
+    # Both landing pages run v2.css since /pt was ported (2026-08-23). If it 404s each page
+    # still returns 200 with all its text, so only a direct fetch catches it — an unstyled
+    # site looks broken to a visitor but passes a body-text assertion. The second row asserts
+    # /pt still LINKS that sheet: probing the file alone once passed while / had moved off it.
     ("Landing stylesheet",     "/site/v2.css",          200, "--crema:"),
-    ("Portuguese stylesheet",  "/site/site.css",        200, "--crema:"),
+    ("Portuguese stylesheet link", "/pt",               200, "/site/v2.css"),
     # Portuguese landing page, reached through a rewrite like "/" is. Guards both the rewrite and
     # .vercelignore: a new directory under site/ that fails to publish would 404 silently.
     ("Portuguese landing",  "/pt",                      200, "afinado"),

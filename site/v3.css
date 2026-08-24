@@ -1,0 +1,511 @@
+/* Crema landing v3 — chaptered editorial.
+   Grammar: the page is a printed feature. Chapters are the unit.
+   Grounds hard-cut between paper and press-black, the way a magazine
+   alternates coated and uncoated stock. Two-stop accent, keyed per ground.
+   Brand tokens are COPIED from brand/brand.css on purpose: /brand does not
+   deploy, so an @import would 404 in production. Edit brand.css first. */
+
+/* ---------- 1. the design floor, re-keyed to Crema ---------- */
+:root {
+  /* press-black is the default ground */
+  --sc-canvas:     #17130F;
+  --sc-surface:    #231C16;
+  --sc-ink:        #F3EBE0;
+  --sc-ink-soft:   #A89684;
+  --sc-accent:     #8195BE;   /* accent as INK on dark, 6.1:1 */
+  --sc-accent-ink: #17130F;
+  --sc-accent-fill:#22355C;   /* accent as a FILL */
+  --sc-on-fill:    #EFF1F7;
+  --sc-alert:      #E4674F;
+
+  /* zero external requests is a hard project rule: system faces only.
+     Serif display is earned here, not decorative: the work is a printed
+     feature and the product's output is paper. */
+  --sc-font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sc-font-text: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --sc-font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --sc-shadow-color: 28 30% 3%;
+  --sc-maxw: 78rem;
+  --sc-r-sm: 3px; --sc-r-md: 5px; --sc-r-lg: 8px;  /* print corners, not app corners */
+
+  --paper:      #E9E2D5;
+  --paper-ink:  #1A1208;
+  --paper-soft: #5A4A3A;
+  --paper-line: #CDC2B0;
+  --rule: color-mix(in oklab, var(--sc-ink) 16%, transparent);
+}
+
+html { background: var(--sc-canvas); }
+body { font-family: var(--sc-font-text); }
+
+/* ---------- 2. chapter grounds ---------- */
+.ch { position: relative; padding-block: var(--sc-section); }
+.ch--dark  { background: #241D16; }
+.ch--press { background: #1C1610; }
+
+/* Redefining the token does NOT re-ink inherited text: `color` resolved on
+   <body> already. Restate it on the same subtree. */
+.ch--paper {
+  background: var(--paper);
+  --sc-ink: var(--paper-ink);
+  --sc-ink-soft: var(--paper-soft);
+  --sc-accent: #22355C;          /* second stop: the same hue, readable on paper */
+  --sc-surface: #F4EFE6;
+  --rule: var(--paper-line);
+  color: var(--sc-ink);
+}
+.ch--paper ::selection { background: #22355C; color: #fff; }
+
+/* THE JOIN IS A CUT, NOT A FADE.
+   It was a 7rem gradient ramping paper into the neighbouring dark. On a real
+   screen that does not read as two stocks meeting, it reads as the page being
+   out of focus for a hand's width. Two sheets in a bound magazine meet on an
+   edge; the edge is the whole signal. So: a hard cut, one hairline of the
+   paper's own ink, and a 3px lip below it that reads as the thickness of the
+   sheet rather than as a glow. Nothing here is more than 4px deep. */
+.ch--paper::before,
+.ch--paper::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 1px;
+  pointer-events: none;
+  background: color-mix(in oklab, var(--paper-ink) 30%, transparent);
+}
+.ch--paper::before { top: 0; box-shadow: 0 3px 0 color-mix(in oklab, var(--paper-ink) 7%, transparent); }
+.ch--paper::after  { bottom: 0; box-shadow: 0 -3px 0 color-mix(in oklab, var(--paper-ink) 7%, transparent); }
+/* the title page has nothing above it, and the colophon nothing below */
+.ch--paper:first-of-type::before, .ch--paper:last-of-type::after { display: none; }
+
+/* ---------- 3. the spread ---------- */
+.spread {
+  width: 100%; max-width: var(--sc-maxw);
+  margin-inline: auto; padding-inline: var(--sc-gutter);
+}
+.spread--wide { max-width: 92rem; }
+
+/* asymmetric two-column: text column is deliberately narrower than the media
+   column, the way a feature sets a caption column against a plate */
+.cols {
+  display: grid; gap: var(--sc-7) var(--sc-8);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+@media (min-width: 62rem) {
+  .cols { grid-template-columns: minmax(0, 26rem) minmax(0, 1fr); gap: var(--sc-8) var(--sc-9); }
+  .cols--flip { grid-template-columns: minmax(0, 1fr) minmax(0, 26rem); }
+  .cols--flip > .col-text { order: 2; }
+}
+
+
+/* ---------- 4. type ---------- */
+.h-chapter {
+  font-family: var(--sc-font-display);
+  font-size: var(--sc-t-2xl);
+  line-height: var(--sc-leading-tight);
+  letter-spacing: var(--sc-track-snug);
+  font-weight: 400; margin: 0;
+  text-wrap: balance;
+  color: var(--sc-ink);
+}
+.h-title {
+  font-family: var(--sc-font-display);
+  font-size: var(--sc-t-4xl);
+  line-height: 0.98;
+  letter-spacing: var(--sc-track-tight);
+  font-weight: 400; margin: 0;
+  text-wrap: balance;
+}
+.h-title em { font-style: italic; }
+@media (max-width: 43.75rem) { .h-title { font-size: var(--sc-t-2xl); } }
+
+.deck {
+  font-family: var(--sc-font-display);
+  font-size: var(--sc-t-lg);
+  line-height: 1.42;
+  color: var(--sc-ink-soft);
+  max-width: 34ch; margin: 0;
+  text-wrap: pretty;
+}
+.prose { font-size: var(--sc-t-base); line-height: var(--sc-leading-body); color: var(--sc-ink-soft); max-width: 58ch; margin: 0; text-wrap: pretty; }
+.prose strong { color: var(--sc-ink); font-weight: 600; }
+.prose a { color: var(--sc-accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+/* drop cap — the cheapest, most unmistakable print signal there is */
+.prose--open::first-letter {
+  font-family: var(--sc-font-display);
+  float: left; font-size: 3.6em; line-height: 0.78;
+  padding-right: 0.09em; margin-top: 0.06em;
+  color: var(--sc-ink);
+}
+
+.srcline {
+  font-size: var(--sc-t-xs); line-height: 1.55;
+  color: color-mix(in oklab, var(--sc-ink-soft) 82%, transparent);
+  max-width: 52ch; margin: 0;
+}
+.srcline a { color: inherit; text-underline-offset: 2px; }
+
+/* ---------- 5. folio: the chapter marker in the margin, and the only chrome ---------- */
+.folio {
+  position: fixed; z-index: 60;
+  top: 50%; translate: 0 -50%;
+  left: max(0.75rem, calc((100vw - var(--sc-maxw)) / 2 - 4.25rem));
+  display: none;
+  writing-mode: vertical-rl;
+  font-size: var(--sc-t-xs);
+  letter-spacing: var(--sc-track-wide);
+  text-transform: uppercase;
+  color: var(--folio-ink, var(--sc-ink-soft));
+  transition: color var(--sc-d-base) var(--sc-ease-out);
+}
+@media (min-width: 78rem) { .folio { display: block; } }
+.folio ol { list-style: none; margin: 0; padding: 0; }
+/* only the chapter you are in is set. The rest are collapsed to nothing, which
+   is what a folio does on paper: it names the page you are on, not the book. */
+.folio li { display: none; }
+.folio li[aria-current="true"] { display: block; }
+.folio a {
+  color: inherit; text-decoration: none;
+  display: inline-flex; align-items: baseline; gap: 0.85em;
+}
+.folio a:hover, .folio a:focus-visible { text-decoration: underline; text-underline-offset: 5px; }
+/* 0.55 measured 3.3:1 against paper. Small text needs 4.5. */
+.folio .n { font-variant-numeric: tabular-nums; opacity: 0.78; }
+
+/* the running head: mark + the one CTA label, set as running text, never a bar */
+.runhead {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--sc-5); flex-wrap: wrap;
+  padding-block: var(--sc-5) 0;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: var(--sc-3);
+}
+.mark { display: inline-flex; align-items: center; gap: 0.55rem; font-family: var(--sc-font-display); font-size: var(--sc-t-lg); color: var(--sc-ink); text-decoration: none; letter-spacing: var(--sc-track-snug); }
+.mark svg { width: 1.15em; height: 1.15em; }
+.runhead nav { display: flex; gap: var(--sc-5); font-size: var(--sc-t-sm); }
+.runhead nav a { color: var(--sc-ink-soft); text-decoration: none; text-underline-offset: 4px; }
+.runhead nav a:hover { color: var(--sc-ink); text-decoration: underline; }
+
+/* ---------- 6. the CTA. One label, everywhere: "Open Crema, free" ---------- */
+.cta {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  font-family: var(--sc-font-text); font-size: var(--sc-t-base); font-weight: 600;
+  background: var(--sc-accent-fill); color: var(--sc-on-fill);
+  padding: 0.85rem 1.4rem; border-radius: var(--sc-r-md);
+  text-decoration: none; white-space: nowrap;
+  box-shadow: var(--sc-e2), var(--sc-edge);
+  transition: background var(--sc-d-fast) var(--sc-ease-out), transform var(--sc-d-fast) var(--sc-ease-out);
+}
+.cta:hover { background: #182747; }
+.cta:active { transform: translateY(1px); }
+/* the running-text CTA the grammar asks for at the close */
+.cta-line { font-family: var(--sc-font-display); font-size: var(--sc-t-xl); line-height: 1.4; color: var(--sc-ink); max-width: 30ch; }
+.cta-line a { color: var(--sc-accent); text-underline-offset: 5px; text-decoration-thickness: 2px; }
+.note { font-size: var(--sc-t-sm); color: var(--sc-ink-soft); }
+
+/* ---------- 7. plates: media in its own column, always captioned ---------- */
+.plate { margin: 0; }
+.plate img {
+  display: block; width: 100%; height: auto;
+  border-radius: var(--sc-r-sm);
+  box-shadow: var(--sc-e3);
+}
+.plate--graded img {
+  filter: saturate(0.72) contrast(1.05) brightness(0.78);
+  /* a 2:3 portrait beside a four-line paragraph leaves a screen of dead
+     column. Crop to the plate, the way a picture desk would. */
+  aspect-ratio: 3 / 2; object-fit: cover; max-height: 32rem;
+}
+.plate figcaption {
+  margin-top: var(--sc-3);
+  font-size: var(--sc-t-xs); line-height: 1.5;
+  color: color-mix(in oklab, var(--sc-ink-soft) 88%, transparent);
+  max-width: 44ch;
+  padding-left: var(--sc-3);
+  border-left: 1px solid var(--rule);
+}
+.plate--screen img { border: 1px solid var(--rule); box-shadow: var(--sc-e2); }
+
+/* ---------- 8. the pull quote ---------- */
+/* the rule is a pseudo, not a border, so the motion layer can draw it */
+.pull { margin: 0; position: relative; padding-top: var(--sc-4); }
+.pull::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--sc-accent);
+  transform: scaleX(var(--draw, 1)); transform-origin: left;
+}
+.pull blockquote {
+  margin: 0; font-family: var(--sc-font-display);
+  font-size: var(--sc-t-xl); line-height: 1.3; letter-spacing: var(--sc-track-snug);
+  color: var(--sc-ink); text-wrap: pretty;
+}
+.pull figcaption { margin-top: var(--sc-4); font-size: var(--sc-t-sm); color: var(--sc-ink-soft); }
+.pull figcaption a { color: inherit; }
+
+/* ---------- 9. the two figures ---------- */
+.figs { display: grid; gap: var(--sc-6); grid-template-columns: 1fr; }
+@media (min-width: 40rem) { .figs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sc-8); } }
+.fig { border-top: 1px solid var(--rule); padding-top: var(--sc-4); }
+.fig .n {
+  font-family: var(--sc-font-display);
+  font-size: var(--sc-t-3xl); line-height: 1; letter-spacing: var(--sc-track-tight);
+  font-variant-numeric: tabular-nums; color: var(--sc-ink);
+  display: block; padding-block: 0.06em;
+}
+.fig .n.is-alert { color: var(--sc-alert); }
+.fig .t { margin-top: var(--sc-3); font-size: var(--sc-t-sm); line-height: 1.5; color: var(--sc-ink-soft); max-width: 32ch; }
+
+/* on a phone the peak must not sit under three paragraphs of setup: the whole
+   argument is "drag this", and a visitor who never reaches it never gets it */
+/* Chapter 03 splits its text column in two so the phone reads
+   heading > desk > the rest, and the peak is never buried under three
+   paragraphs of setup. Source order IS the mobile order; desktop re-places. */
+.cols--desk > .rest { margin-top: var(--sc-6); }
+@media (min-width: 62rem) {
+  .cols--desk { grid-template-columns: minmax(0, 1fr) minmax(0, 26rem); align-items: start; }
+  .cols--desk > .lead      { grid-column: 2; grid-row: 1; }
+  .cols--desk > .desk-wrap { grid-column: 1; grid-row: 1 / span 2; }
+  .cols--desk > .rest      { grid-column: 2; grid-row: 2; margin-top: 0; }
+}
+
+/* ---------- 10. THE SIGNATURE MOVE: the live cost desk ---------- */
+/* Real markup running the product's real arithmetic on the demo shop's real
+   numbers. Not a picture of the app. The visitor's own hand moves the price. */
+.desk {
+  background: var(--sc-surface);
+  border: 1px solid var(--paper-line);
+  border-radius: var(--sc-r-md);
+  box-shadow: var(--sc-e3);
+  overflow: hidden;
+}
+.desk__bar {
+  display: flex; flex-wrap: wrap; gap: var(--sc-4) var(--sc-6);
+  align-items: flex-end;
+  padding: var(--sc-5) var(--sc-5) var(--sc-4);
+  border-bottom: 1px solid var(--paper-line);
+}
+.knob { flex: 1 1 15rem; min-width: 0; }
+.knob > label { display: block; font-size: var(--sc-t-xs); letter-spacing: var(--sc-track-wide); text-transform: uppercase; color: var(--sc-ink-soft); margin-bottom: 0.45rem; }
+.knob__row { display: flex; align-items: baseline; gap: 0.5rem; }
+.knob__val { font-family: var(--sc-font-mono); font-size: var(--sc-t-lg); font-variant-numeric: tabular-nums; color: var(--sc-ink); }
+.knob__unit { font-size: var(--sc-t-xs); color: var(--sc-ink-soft); }
+
+input[type="range"].slide {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; margin-top: 0.6rem; background: transparent; cursor: ew-resize;
+}
+input[type="range"].slide::-webkit-slider-runnable-track { height: 3px; background: var(--paper-line); border-radius: 999px; }
+input[type="range"].slide::-moz-range-track { height: 3px; background: var(--paper-line); border-radius: 999px; }
+input[type="range"].slide::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 20px; height: 20px; margin-top: -8.5px; border-radius: 999px;
+  background: #22355C; border: 2px solid #fff; box-shadow: var(--sc-e2);
+  transition: transform var(--sc-d-fast) var(--sc-ease-out);
+}
+input[type="range"].slide::-moz-range-thumb {
+  width: 20px; height: 20px; border: 2px solid #fff; border-radius: 999px;
+  background: #22355C; box-shadow: var(--sc-e2);
+}
+input[type="range"].slide:active::-webkit-slider-thumb { transform: scale(1.12); }
+input[type="range"].slide:focus-visible { outline: 2px solid #22355C; outline-offset: 6px; border-radius: 999px; }
+
+.desk__rows { list-style: none; margin: 0; padding: 0; }
+.desk__rows li {
+  display: grid; align-items: baseline;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  gap: 0 var(--sc-4);
+  padding: 0.7rem var(--sc-5);
+  border-top: 1px solid color-mix(in oklab, var(--paper-line) 60%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+.desk__rows li:first-child { border-top: 0; }
+.desk__rows .d { font-size: var(--sc-t-base); color: var(--sc-ink); }
+.desk__rows .cost, .desk__rows .keeps { font-family: var(--sc-font-mono); font-size: var(--sc-t-sm); color: var(--sc-ink-soft); }
+.desk__rows .keeps { color: var(--sc-ink); }
+.cogs {
+  font-family: var(--sc-font-mono); font-size: var(--sc-t-xs);
+  padding: 0.2rem 0.45rem; border-radius: var(--sc-r-sm);
+  background: color-mix(in oklab, #22355C 12%, transparent);
+  color: #22355C; min-width: 4.1rem; text-align: right;
+}
+.cogs.is-alert { background: color-mix(in oklab, #9B2418 12%, transparent); color: #9B2418; }
+.desk__foot {
+  padding: var(--sc-4) var(--sc-5);
+  border-top: 1px solid var(--paper-line);
+  font-size: var(--sc-t-sm); color: var(--sc-ink-soft);
+  display: flex; flex-wrap: wrap; gap: var(--sc-3) var(--sc-5); align-items: baseline;
+}
+.desk__foot b { color: var(--sc-ink); font-variant-numeric: tabular-nums; }
+@media (max-width: 34rem) {
+  /* two lines per drink: name + cost, then keeps + the COGS badge. Placement is
+     explicit because source order puts the badge third, which auto-flow drops
+     into the wrong cell and stretches full width. */
+  .desk__rows li { grid-template-columns: minmax(0, 1fr) auto; row-gap: 0.2rem; }
+  .desk__rows .d     { grid-area: 1 / 1; }
+  .desk__rows .cost  { grid-area: 1 / 2; justify-self: end; }
+  .desk__rows .keeps { grid-area: 2 / 1; color: var(--sc-ink-soft); }
+  .desk__rows .cogs  { grid-area: 2 / 2; justify-self: end; }
+}
+
+/* ---------- 12. FAQ ---------- */
+.qa { border-top: 1px solid var(--rule); }
+.qa details { border-bottom: 1px solid var(--rule); }
+.qa summary {
+  list-style: none; cursor: pointer;
+  padding: var(--sc-4) 0; padding-right: 2rem; position: relative;
+  font-family: var(--sc-font-display); font-size: var(--sc-t-lg); color: var(--sc-ink);
+}
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary::after {
+  content: "+"; position: absolute; right: 0; top: 50%; translate: 0 -50%;
+  font-family: var(--sc-font-mono); color: var(--sc-accent);
+  transition: transform var(--sc-d-fast) var(--sc-ease-out);
+}
+.qa details[open] summary::after { transform: rotate(45deg); }
+.qa summary:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 4px; }
+.qa details > .prose { padding-bottom: var(--sc-5); }
+
+/* ---------- 13. colophon ---------- */
+.colophon { display: grid; gap: var(--sc-6); grid-template-columns: 1fr; }
+@media (min-width: 52rem) { .colophon { grid-template-columns: minmax(0, 1fr) minmax(0, 20rem); gap: var(--sc-9); align-items: end; } }
+.colophon .small { font-size: var(--sc-t-xs); line-height: 1.7; color: var(--sc-ink-soft); }
+.colophon .small a { color: var(--sc-accent); }
+
+/* ---------- 14. chapter opener ---------- */
+.opener { display: flex; align-items: baseline; gap: var(--sc-4); margin-bottom: var(--sc-6); }
+.opener .num {
+  font-family: var(--sc-font-mono); font-size: var(--sc-t-xs);
+  letter-spacing: var(--sc-track-wide); color: var(--sc-accent);
+  font-variant-numeric: tabular-nums;
+}
+.opener .rule { flex: 1; height: 1px; background: var(--rule); }
+
+/* the intertitle: the full-stop between chapters the grammar asks for */
+.intertitle {
+  padding-block: clamp(3rem, 10vh, 8rem);
+  text-align: center;
+}
+.intertitle p {
+  font-family: var(--sc-font-display); font-style: italic;
+  font-size: var(--sc-t-xl); line-height: 1.35;
+  color: var(--sc-ink); margin: 0 auto; max-width: 24ch;
+  text-wrap: balance;
+}
+
+/* ---------- 15. THE MOTION LAYER ----------------------------------------
+   The page owns its motion instead of using the engine's reveal kit. Reason:
+   every kit device enters the same way, and forty elements sharing one fade
+   read as a slide deck however good the type is. Here each chapter enters
+   differently, and the continuous parts are driven by scroll position rather
+   than by a timer, so they cannot get out of step with the page.
+
+   THE FLOOR COMES FIRST AND IS ABSOLUTE. Nothing below hides anything unless
+   `html.mo` is present, and JS adds `mo` only when motion is safe. No JS, a
+   blocked script, or prefers-reduced-motion, and none of these rules is ever
+   selected: the page simply renders finished. */
+
+html.mo [data-rise] {
+  opacity: 0;
+  transform: translate3d(0, 1.75rem, 0);
+  /* expo-out: fast off the mark, long settle. This curve is the whole reason
+     it reads as smooth where a plain ease reads as a slide transition. */
+  transition:
+    opacity 780ms cubic-bezier(.16, 1, .3, 1) var(--d, 0ms),
+    transform 900ms cubic-bezier(.16, 1, .3, 1) var(--d, 0ms);
+}
+html.mo [data-rise].is-in { opacity: 1; transform: none; }
+
+/* headings set themselves line by line, out from behind a mask, the way type
+   comes off a press. The wrapper is the mask; the inner element moves. */
+.ln { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+.ln > i { display: block; font-style: inherit; }
+html.mo .ln > i {
+  transform: translate3d(0, 108%, 0);
+  transition: transform 1000ms cubic-bezier(.16, 1, .3, 1) var(--d, 0ms);
+}
+html.mo [data-split].is-in .ln > i { transform: none; }
+/* a split heading is its own entrance, so it must not also fade as a block */
+html.mo [data-split][data-rise] { opacity: 1; transform: none; transition: none; }
+
+/* plates. A photograph is not faded in, it is uncovered: the frame opens as a
+   wipe while the image inside settles back from a slow push-in. Different
+   durations on purpose, so the two do not land on the same beat. */
+/* The wipe lives on the inner wrapper, never on the observed element itself:
+   a clip-path clips the element out of its own IntersectionObserver rect, so
+   a figure wiped to zero height never reports as visible and never un-wipes.
+   Measured, not theorised: all five plates stayed shut through a full pass. */
+html.mo [data-plate] .ph {
+  display: block; overflow: hidden;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 1100ms cubic-bezier(.16, 1, .3, 1);
+}
+html.mo [data-plate="left"] .ph { clip-path: inset(0 100% 0 0); }
+html.mo [data-plate].is-in .ph { clip-path: inset(0 0 0 0); }
+html.mo [data-plate] .ph img {
+  transform: scale(1.09);
+  transition: transform 1700ms cubic-bezier(.16, 1, .3, 1);
+}
+html.mo [data-plate].is-in .ph img { transform: none; }
+/* the app screenshots are flat product shots. A push-in on a UI capture reads
+   as a rendering bug, so they take the wipe and the parallax, never the scale. */
+html.mo [data-plate="screen"] .ph img { transform: none; }
+html.mo [data-plate] figcaption {
+  opacity: 0; transform: translate3d(0, 0.6rem, 0);
+  transition: opacity 600ms ease-out 460ms, transform 700ms cubic-bezier(.16, 1, .3, 1) 460ms;
+}
+html.mo [data-plate].is-in figcaption { opacity: 1; transform: none; }
+
+/* ---- continuous. --p runs 0 (entering the viewport) to 1 (leaving it), set
+   by the single rAF loop in v3-boot.js. Timers drift; a scroll position
+   cannot. ---- */
+html.mo [data-par] { transform: translate3d(0, calc(var(--par, 0) * 1px), 0); }
+
+/* every chapter opens the same way a printed one does: the number is set,
+   then the rule runs out across the measure. It is the page's punctuation, so
+   it is the one motion that IS repeated, deliberately. */
+html.mo .opener .rule { transform: scaleX(0); transform-origin: left; }
+html.mo .opener.is-in .rule {
+  transform: scaleX(1);
+  transition: transform 1100ms cubic-bezier(.16, 1, .3, 1) 120ms;
+}
+
+/* the folio swaps chapters; it should hand over, not blink */
+.folio li[aria-current="true"] { animation: folioIn 520ms cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes folioIn { from { opacity: 0; transform: translateY(1.2rem); } }
+@media (prefers-reduced-motion: reduce) { .folio li[aria-current="true"] { animation: none; } }
+
+/* the intertitle drifts against the scroll. It is the authored silence before
+   the peak, so it holds the only motion on screen and nothing competes. */
+html.mo .intertitle[data-p] p {
+  transform: translate3d(0, calc((0.5 - var(--p, 0.5)) * 5rem), 0);
+}
+
+/* the pull quote's rule draws itself down as the quote crosses */
+html.mo .pull[data-p] { --draw: clamp(0, calc((var(--p, 0) - 0.2) * 2.6), 1); }
+
+/* each figure gets a hairline that draws under it on the way past */
+html.mo .figs[data-p] .fig { position: relative; }
+html.mo .figs[data-p] .fig::after {
+  content: ""; position: absolute; left: 0; bottom: -0.9rem; height: 1px; width: 100%;
+  background: var(--rule); transform-origin: left;
+  transform: scaleX(clamp(0, calc((var(--p, 0) - 0.2) * 3), 1));
+}
+
+/* the desk lifts a little as the peak arrives and settles as it centres */
+html.mo .desk-wrap[data-p] .desk {
+  transform: translate3d(0, calc((0.5 - clamp(0, var(--p, 0.5), 1)) * 1.4rem), 0);
+}
+
+/* ---------- 16. states ---------- */
+a:focus-visible, .cta:focus-visible, button:focus-visible {
+  outline: 2px solid var(--sc-accent); outline-offset: 3px; border-radius: var(--sc-r-sm);
+}
+::selection { background: #22355C; color: #EFF1F7; }
+
+/* ---------- 16. column flow ----------
+   LAST in the file on purpose: .prose sets `margin: 0` at equal specificity,
+   so an earlier flow rule loses the cascade and every paragraph collides.
+   That failure is invisible in the markup and obvious only in the render. */
+.col-text > * + * { margin-top: var(--sc-5); }
+.col-text > :is(h2, h3) { margin-top: var(--sc-8); }
+.col-text > :is(h2, h3) + * { margin-top: var(--sc-5); }
+.col-text > :is(h2, h3):first-child { margin-top: 0; }

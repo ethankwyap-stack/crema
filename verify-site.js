@@ -27,13 +27,12 @@ const ok = (name, cond, got) => { n++; console.log(`${cond ? 'PASS' : 'FAIL'}  $
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
 
   const bad = [];
-  // The two landing pages are on DIFFERENT stylesheets since the 2026-08-01 redesign:
-  // / is on v2.css (ridge hero, ticker, bento), /pt is still on site.css. Asserting one
-  // shared background silently tested the wrong file for en — it would have passed with
-  // v2.css 404'd, which is the exact failure this check exists to catch.
+  // Both landing pages are on v2.css since /pt was ported to the redesign (2026-08-23).
+  // Each page still asserts its OWN href plus the background that sheet produces: a
+  // shared assertion would pass with the sheet 404'd, which is the failure this catches.
   const PAGES = [
     ['en', `${BASE}/site/index.html`,    '/site/v2.css',   'rgb(14, 11, 9)'],
-    ['pt', `${BASE}/site/pt/index.html`, '/site/site.css', 'rgb(23, 19, 15)'],
+    ['pt', `${BASE}/site/pt/index.html`, '/site/v2.css',   'rgb(14, 11, 9)'],
   ];
   for (const [label, url, sheet, expectBg] of PAGES) {
     const p = await ctx.newPage();
@@ -83,7 +82,8 @@ const ok = (name, cond, got) => { n++; console.log(`${cond ? 'PASS' : 'FAIL'}  $
       // Assert the absence instead — this flips the moment pricing is un-commented.
       ok('pt: no pricing section while pricing is pulled', (await p.$$('.plan')).length === 0);
       ok('pt: privacy link is the PT one', html.includes('/site/pt/privacy.html'));
-      ok('pt: app link is absolute', await p.getAttribute('.cta', 'href') === '/product/index.html');
+      // The nav button lost its .cta class when /pt was ported to v2.css markup.
+      ok('pt: app link is absolute', await p.getAttribute('.nav .btn.sm', 'href') === '/product/index.html');
       ok('pt: no film link while the video is pulled', !html.includes('portafile-launch.mp4'));
       ok('pt: faq drink count matches the pt seed (19)', html.includes('19 bebidas'));
       const faqs = await p.$$('details');

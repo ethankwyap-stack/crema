@@ -463,7 +463,68 @@ What stayed: the identifier rules (never rename the lowercase `portafile.*` keys
 
 ---
 
+## 2026-08-22 — A landing page that argues instead of asserting
+
+Asked for a landing page that feels premium, earns trust and makes people sign
+up, and explicitly: don't let it look like a pile of AI-generated assets. Built
+as `site/v3.html` + `v3.css` + `v3-boot.js`, **not shipped** — `index.html` is
+untouched and nothing was deployed.
+
+**The structural call, and the money in it.** The scrollcraft skill's "one
+continuous world" grammar — the one Ethan picked — requires a rendered camera
+flight through a generated cafe, bought from a paid image service. That is a
+spend *and* the exact look he told me to avoid, so I put the conflict to him
+rather than quietly building it. He chose **chaptered editorial**: the page is
+a printed feature. Real photographs in their own captioned columns, sources
+printed under the claims, alternating paper and press-black grounds the way a
+magazine alternates stock. Total spend: **zero.** Photographs are free-licence
+Pexels files committed into the repo; type is Iowan Old Style, already on the
+machine, so the page still makes no external requests at all.
+
+**The thing that should convert: the cost desk.** Chapter 03 runs the app's
+own costing arithmetic in the landing page, on the app's own demo shop, driven
+by a slider the visitor drags. Move whole milk from $4.61 to $9.00 a gallon and
+all six drinks re-cost live; the espresso, having no milk in it, does not move
+at all — which is the entire argument for costing a drink instead of costing a
+menu, made without a sentence of marketing. It is not a video and not a picture
+of the product. `verify-landing.mjs` (15 checks) fails if the numbers stop
+matching `seedEN()`.
+
+**Trust is carried by admissions, not logos.** Chapter 05 says there is no
+company, names what is not built, and says outright that there are no customer
+logos because there are not enough customers to fill a row. That reads as more
+credible than a row of invented ones, and it costs nothing to be true.
+
+**What the build caught by accident.** The landing page's app screenshots were
+**stale by a whole rebrand** — gold theme, pre-rebrand prices — and had been
+live that way since 2026-07-28. Retaken from the running app. That is the
+second time a marketing asset has quietly outlived the thing it depicts (the
+launch film's "No server" being the first): the pattern is that screenshots and
+video age silently while code has tests.
+
+**A robustness bug worth naming.** The scroll engine's stylesheet hides every
+revealed element at `opacity: 0` and relies on JS to bring it back. On a page
+that is mostly prose, that is an entire article one blocked script away from
+blank — and a fast scroll already left one heading permanently invisible in
+testing. The page now floors that: text is never gated on motion.
+
+Cost: zero. Deployed: nothing.
+
+---
+
 ## Open threads
+
+- **The v3 landing page is built but not shipped** (2026-08-22). Lives at
+  `site/v3.html`, served but unlinked. To adopt it: replace `index.html`, run
+  `/still-works` and `node verify-landing.mjs`, then deploy. Two things are
+  outstanding first: **a photo of Ethan** for chapter 05 (a monogram sits there
+  now, and the whole chapter's warmth depends on the face), and a decision on
+  whether `/pt` gets the same treatment or stays on the older design.
+- **The live v2 landing quotes prices the app no longer produces.** Its ticker
+  says cappuccino $0.98 and cortado $0.87/$4.25; the real seed is $1.07 and
+  $0.98/$4.50. Nobody has been misled in any way that matters, but the page is
+  currently quoting its own product wrongly. Fixed for free by adopting v3,
+  which computes the numbers instead of typing them.
 
 - **Cost-blob split shipped 2026-08-11** — migrated and deployed, live. Skipped `/still-works` before this deploy at Ethan's explicit call; worth a manual pass through the app soon to confirm nothing else regressed.
 - **Pricing and FAQ are reachable on a phone again** (fixed and live 2026-07-29). They had been `display:none` below 720px with nothing replacing them, flagged twice across two sessions and never fixed: two sections that existed and that no phone visitor could reach. The links wrap onto their own row now. No hamburger — three links do not earn a menu, and one would need JS the CSP would have to be opened up for. The fix surfaced a second thing nobody had noticed: with a sticky nav, an anchor jump lands the section's eyebrow *underneath* the bar, so every anchored section needed `scroll-margin-top`. Verified live: 24 anchor jumps across both languages at four widths all clear the nav.
@@ -488,3 +549,128 @@ What stayed: the identifier rules (never rename the lowercase `portafile.*` keys
 - **Selling to EU customers has GDPR obligations my privacy policy doesn't address** (lawful basis, data-subject access and erasure requests, an EU representative). Reviewed on 2026-07-26 and consciously deferred: nobody is paying yet, and the Portuguese legal pages are marked as translations with the English governing — standard practice that buys time but is **not** compliance. Worth 20 minutes of reading before money changes hands, and it gets more urgent the moment a Lisbon café becomes a customer rather than a tester.
 - The launch film is English-only. The `/pt` page labels it "(em inglês)", which is honest but not a translation. If it's ever re-cut, `say -v Joana` is the pt-PT voice — and remember `say` silently uses the default for an unknown voice name, so md5 against a fake name before believing it.
 - Portuguese cost figures in the demo seed are my estimates of Lisbon wholesale prices, not quoted numbers. They're a starting point a real owner overwrites — but I shouldn't quote them back to anyone as market data.
+
+## 2026-08-23 — The landing page loses its founder chapter
+
+Ethan cut the "who made this" chapter and the portrait placeholder from the v3
+landing. Not his style, and the page does not need a face to be trusted: the
+honest claims it carried (data stays local unless Sync is on, no account, full
+export) moved into the colophon's small print, where they read as product facts
+rather than as a personal appeal. Seven chapters now, 8.2vh.
+
+He also called the paper ground too bright and the paper-to-dark cut too hard.
+Both were true. Paper went `#F6F1E8` → `#E9E2D5`, the dark grounds lifted
+(`#241D16` and `#1C1610` in place of `#17130F`/`#100D0A`), and the 1px "printed
+sheet lip" between grounds became a 7rem gradient band that ramps into the exact
+tone of the neighbouring chapter. That last part needs a per-neighbour variable
+(`--joint-top`) because chapter 03 sits under press-black, not under the
+standard dark, and a single blend colour leaves a visible step.
+
+Still not shipped. `index.html` is untouched. `node verify-landing.mjs` 15/15.
+
+Open threads unchanged, minus the founder photo — that one is closed by deletion.
+
+## 2026-08-23 (later) — The landing page stops reading as a slide deck
+
+Ethan's note was that it still felt like "a simple 6 slide thing". He was right,
+and the cause was structural: every element on the page entered through the same
+`data-sc-in` fade from the scroll engine's kit. Forty things doing one thing
+reads as a template no matter how good the type is.
+
+So the page took ownership of its own motion. The engine still mounts, but the
+reveal kit is gone and `v3.css` section 15 plus a new block in `v3-boot.js` do
+the work. What changed, and why each one earns its place:
+
+- **Headings set themselves line by line**, out from behind a mask, staggered
+  80ms. Lines are measured with a `Range` over the untouched markup. The first
+  attempt wrapped each word in an inline-block span and then measured — which
+  changed the layout it was trying to read, and `text-wrap: balance` re-broke
+  the h1 into three lines. Measure first, edit second.
+- **Photographs are uncovered, not faded**: a clip wipe on the frame with a
+  slow 1.09 push-in on the image inside, on two different durations so they do
+  not land on the same beat. The app screenshots take the wipe but never the
+  scale, because a push-in on a UI capture reads as a rendering bug.
+- **The peak now demos itself.** As chapter 03 comes up, the milk price sweeps
+  a half-sine out to about $7.50 and back, so the whole menu re-prices under
+  the reader before they touch anything. The instant they take the handle it
+  stops for good. A control that fights the hand holding it is worse than no
+  animation.
+- Chapter rules draw out across the measure, the intertitle drifts against the
+  scroll, the figure hairlines draw as they pass, and the folio hands over
+  instead of blinking.
+- One rAF loop drives every continuous part off scroll position, reading all
+  rects in a single batch. Timers drift out of step with a page; a scroll
+  position cannot.
+
+**The bug worth remembering:** the plate wipe put `clip-path: inset(0 0 100% 0)`
+on the same `<figure>` an IntersectionObserver was watching. An element clipped
+to zero reports no intersection, so it never got the class that would unclip it.
+All five plates stayed shut through a full pass, with no error anywhere. The
+clip belongs on an inner wrapper. Caught only because the audit asserts on what
+is STILL hidden after a full scroll, not on what appeared.
+
+Motion floor holds: `html.mo` gates every hiding rule and JS adds it last, so
+no-JS and reduced-motion render the page finished. Measured both: zero stuck
+elements, desktop and mobile. `verify-landing.mjs` 15/15. Still not shipped.
+
+**Same day, one more pass.** Ethan called the page blurry. There is no blur
+filter on it: what he was seeing was the 7rem gradient I had just added between
+grounds. It softened the step, but at a hand's width it reads as the page being
+out of focus, not as two stocks meeting. Replaced with what a bound magazine
+actually does: a hard cut, one hairline of the paper's own ink, and a 3px lip
+under it for the thickness of the sheet. Nothing deeper than 4px now. Lesson
+worth keeping: "too bright a transition" was fixed correctly the first time and
+then over-corrected in the same move.
+
+## 2026-08-23 — /pt gets the real design, because a real client is about to open it
+
+A Lisbon client is about to use Crema, so I audited every English change of the
+last three weeks against the Portuguese side. Almost everything was already
+there: the app dictionary is clean (219 translations, no orphans), the owner-only
+cost split is shared backend code so Portuguese got it for free, and the privacy
+and terms pages both carry the "Cost data and your staff" section the split made
+necessary. The one real gap was the one we'd knowingly parked on 2026-08-05 —
+`/pt` was still on the pre-redesign `site.css` while `/` had moved to `v2.css`.
+Ethan's call this time was to port it, so the client's first impression is the
+page we actually believe in.
+
+**What porting a design costs, in checks rather than CSS.** The stylesheet swap
+was the easy half. The rest was every guard that had been written to assert the
+divergence, and each one would have failed loudly or, worse, quietly:
+
+- `v2.css` had no `html[lang="pt-PT"]` override for the mock card's
+  `content:"4×6 · PRINTS CLEAN"`. `site.css` did. Without it the Portuguese page
+  would have shipped an English string burned into CSS, where no HTML grep and
+  no translation check can see it. Added.
+- `verify-site.js` asserted `/pt` → `site.css` → `rgb(23,19,15)`. Correct
+  yesterday, wrong today. Updated — but kept as two separate rows, one per page,
+  because a single shared assertion is exactly the bug that let the pages drift
+  unnoticed for days in the first place. One stylesheet is not one assertion.
+- The suite also looked up the nav button by `.cta`, a class the old PT markup
+  had and `v2.css`'s markup doesn't. It didn't fail — it hung for the full 30s
+  Playwright timeout and crashed the run mid-way, which is the same failure mode
+  as the dead pricing locator from three weeks ago. Same lesson, second time: a
+  selector that matches nothing is not a red check, it is a dead suite.
+- `health_check.py` was probing `/site/site.css` as "the Portuguese stylesheet".
+  That file still returns 200, so the check would have passed forever while
+  testing a sheet no page loads — the precise trap the comment above it warns
+  about. Replaced with a probe that `/pt` still *links* `v2.css`.
+
+**One deliberate content loss.** The old PT page carried three Reddit quotes; the
+English redesign had already cut to one plus the two figures. Porting the design
+means taking that edit too, so two quotes came off. Said out loud here rather
+than left for someone to notice as missing.
+
+All suites green: i18n 15, metrics, api, pt 65, site 41. Nothing deployed yet —
+this is sitting in the working tree waiting on Ethan.
+
+**Open thread:** the product screenshots inside both landing pages
+(`01-recipes.png`, `03-dialin.png`) show the English app. A Portuguese visitor
+now reads a fully Portuguese page and then sees English UI in the proof shots.
+Not a regression — it was true of the old page too — but it is more visible now
+that everything around it is right, and it matters more with a real Lisbon owner
+about to look at it. Re-shooting them against the PT seed is the fix.
+
+**Second open thread:** `site/site.css` is now linked by nothing. Kept for now,
+flagged as history in CLAUDE.md and WORKS.md, but it is dead weight that will
+quietly rot and mislead the next person who greps for a token.
