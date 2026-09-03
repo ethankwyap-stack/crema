@@ -93,3 +93,18 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+## Gotcha — the local dashboard server (added Sep 2 2026)
+**`python3 -m http.server --directory ~/portafile` served `.env.local`,
+`.admin-key`, `.git/config`, `.vercel/project.json` and `.DS_Store` over HTTP,
+all 200.** It has no dotfile rule; it serves whatever is on disk. That was
+localhost-only so nothing leaked, but it is one `--bind 0.0.0.0` away from
+handing out the Vercel Blob token.
+
+`serve_dashboard.py` replaced it (LaunchAgent `com.ethanyap.portafile-dashboard`,
+still `127.0.0.1:4322`). It refuses any path with a dot-prefixed part, the build
+and tooling dirs, and key/db/log extensions — checked BEFORE the file is opened,
+and the directory listing hides the same names so it does not advertise what it
+then refuses. Run `python3 test_serve_dashboard.py` after touching it.
+Reachable from the phone at `https://<mac>.tailb52252.ts.net:8443` — tailnet
+only, never `tailscale funnel`.
