@@ -1,5 +1,5 @@
 # WORKS.md — what Crema must do
-Updated 2026-07-28 (7th run) · Run: `/still-works` (add `live` after a deploy)
+Updated 2026-09-06 (8th run) · Run: `/still-works` (add `live` after a deploy)
 
 The feature checklist and the blast-radius map. `CLAUDE.md` holds the *gotchas* (why the
 code is shaped the way it is); this file holds *what must still be true for a user*.
@@ -70,20 +70,28 @@ code is shaped the way it is); this file holds *what must still be true for a us
 - [ ] Staff devices see no ingredient costs, margins or price table; owner devices do
       prove: both roles side by side · auto: `verify-sync.js`
 - [ ] Reset staff link kills old links; the old device locks and wipes, the owner's does not
-      auto: `verify-killpass.js` (10 checks)
+      auto: `verify-killpass.js` (16 checks)
 - [ ] A revoked device keeps its signup record (no duplicate lead on re-entry) · auto: `verify-killpass.js`
 - [ ] Founder delete: EVERY device (owner included) wipes back to the demo shop · auto: `verify-sync.js`
 - [ ] Founder delete sends the shop's OWN browser back to the signup gate — even a seeding
       owner whose device has no `synced` marker and whose tombstone lost its ownerHash
       auto: `verify-sync.js` (the five `delete:` cases; three fail on pre-fix code)
+- [ ] **A revoke or delete lands the moment someone looks at the tab**, not one poll later.
+      The `POLL_MS` timer is 5 minutes (a Blob-cost decision — every GET is 3 billed advanced
+      operations, against 2,000 a month), so the `visibilitychange`→visible and `online`
+      re-pulls are what actually make sync feel live, not the timer. Shortening the timer to
+      "make revocation fast" is the wrong lever and costs real money; fix the listeners instead
+      prove: tombstone a shop, wait past the debounce, confirm the idle tab is untouched, then
+      dispatch `visibilitychange` and watch it wipe
+      auto: `verify-sync.js` (the two `delete:` focus cases)
 
-### Server API — the real handlers (`node verify-api.mjs`, 27 checks)
+### Server API — the real handlers (`node verify-api.mjs`, 58 checks)
 Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *mirror* of
 `api/state.js` written inside the test, so it can pass while the real handler is broken.
 `verify-api.mjs` swaps `@vercel/blob` for an in-memory store and calls the real handlers.
 - [ ] A flood of anonymous `GET /api/state` is throttled — but on a read budget (600/10min),
       never the 120 write budget: a whole café shares one public IP and every device polls
-      every 30s, so reusing the write bucket would throttle a busy real shop
+      on the POLL_MS timer, so reusing the write bucket would throttle a busy real shop
       prove: 601 GETs from one IP → 429, and that same IP can still SAVE
 - [ ] A shopId that already has data but no `owners/` record **cannot be claimed** — that
       takeover would overwrite the café's data and hard-kill every staff device
@@ -95,7 +103,7 @@ Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *m
 
 ### App — access gate and feedback
 - [ ] First-time visitor (no `?k=`) gets the signup form; it unlocks and never returns
-      auto: `node product/verify-gate.js` (11 checks)
+      auto: `node product/verify-gate.js` (16 checks)
 - [ ] ? → Send feedback sends, validates "pick 👍 or 👎 first", and survives a server error
       prove: drive the modal with the network stubbed to fail
 
@@ -116,7 +124,7 @@ Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *m
       shop, an edited price, one logged dial-in, a renamed barista, a sign-off, or a swapped
       ingredient. A synced shop pushes the swapped seed so staff devices follow
       prove: pt demo → pick EN → 15 cards, "Demo Espresso Bar"; add one dial-in, switch → still 19
-      auto: `node verify-pt.js` (61 checks, the 7b block)
+      auto: `node verify-pt.js` (65 checks, the 7b block)
 - [ ] Currency follows language (en→USD, pt→EUR). Deliberate: one setting, not two
 - [ ] Ingredient cost inputs accept per-ml prices (`step="0.0001"`, e.g. €0.0009/ml milk) —
       at `step="0.001"` a metric milk price is `:invalid` and the spinner jumps
@@ -257,7 +265,7 @@ Nothing else in this repo executes the API code: `verify-sync.js` drives a JS *m
 - A shop that never turned on Sync makes zero requests after its signup POST: no cloud data to
   delete, no way to reach that browser. The missing "delete cloud data" button on those rows is
   the design, not a gap — don't "fix" it by adding a phone-home.
-- The 30s poll freezes in a background tab; the app re-pulls on `visibilitychange`→visible
+- The poll (`POLL_MS`, 5 min) freezes in a background tab; the app re-pulls on `visibilitychange`→visible
   and `online`. That focus-pull is guarded by `!syncPushT` so it can't overwrite an edit
   still inside its 800ms save debounce (`smoke.js` observes both sides).
 - **Never pattern-match over `JSON.stringify(seed())`.** The seed is full of random `uid()`s, and

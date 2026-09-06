@@ -348,7 +348,7 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
      shop deleted in its first 30 seconds (every test cycle) has neither proof. With both missing the
      device fell into the stale-bookmark branch: sync stopped, the app stayed open, the gate never
      came back. It must recognise its OWN shop from the shopId in the 410 body instead.
-     Same section covers the other half of "guaranteed": a hidden tab reacts on focus, not 30s later. */
+     Same section covers the other half of "guaranteed": a hidden tab reacts on focus, not one POLL_MS later. */
   const shop2 = keys[rebornK];
   // rename BEFORE the tombstone (and let the 800ms save debounce flush) so the wipe check below is
   // real — the reborn shop starts on the demo seed, so "name is the demo name" would pass vacuously
@@ -358,7 +358,7 @@ const DEADKEY = 'e'.repeat(40);    // a shareKey no pointer ever existed for
   ok('delete: seeding owner really has no synced marker', await pA.evaluate(() => !localStorage.getItem('portafile.v1.synced')));
   owners[shop2] = { deleted: true }; delete cloud[shop2]; // the admin DELETE, with the ownerHash lost
   await pA.waitForTimeout(2500);
-  ok('delete: nothing has happened yet (30s poll not due)', await pA.evaluate(() => !!localStorage.getItem('portafile.v1.lead')));
+  ok('delete: nothing has happened yet (poll not due)', await pA.evaluate(() => !!localStorage.getItem('portafile.v1.lead')));
   // headless Chromium reports every tab as visible, so the browser's own "you're back" signal is
   // dispatched here instead of by backgrounding the tab — the handler it wakes is the real one
   await pA.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
