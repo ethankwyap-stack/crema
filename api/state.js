@@ -40,9 +40,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const HITS = new Map();      // ip -> recent ms timestamps (writes)
 const GET_HITS = new Map();  // separate bucket for reads — see RATE_GET_N
 const RATE_N = 120, RATE_MS = 10 * 60 * 1000; // saves are debounced 800ms client-side — 120/10min never throttles a real editing session
-// Reads need a far bigger budget than writes: every device re-pulls every 30s (~20/10min each)
-// and a whole cafe's devices share ONE public IP behind the shop wifi. 600 still caps a flood at
-// 1 req/sec sustained, while leaving a 6-device shop (~120/10min) a 5x margin.
+// Reads need a far bigger budget than writes: every device re-pulls on a timer AND on every
+// focus, and a whole cafe's devices share ONE public IP behind the shop wifi. 600 still caps a
+// flood at 1 req/sec sustained. The timer went 30s -> 5min (POLL_MS in product/app.js) to stop
+// burning Blob operations, so the steady-state figure this was sized against (~20/10min per
+// device) is now ~2 plus however often staff pick their phones up; the margin only grew.
 const RATE_GET_N = 600;
 function rateLimited(ip, store = HITS, max = RATE_N) {
   if (!ip) return false;
@@ -101,8 +103,8 @@ const mergeCosts = (state, costs) => costs
    "did they use it that day"; if a shop ever disputes a count, store an offset per shop. */
 const utcDay = () => new Date().toISOString().slice(0, 10);
 export const addDay = (days, d) => [...(Array.isArray(days) ? days : []).filter(x => x !== d), d].slice(-60);
-// Same warm-instance trick as HITS: devices poll every 30s, so without this cache every poll would
-// cost a Blob read. A warm instance does one read + at most one write per shop per day; several
+// Same warm-instance trick as HITS and PTR: devices poll on a timer, so without this cache every
+// poll would cost a Blob read. A warm instance does one read + at most one write per shop per day; several
 // instances mean a few redundant writes a day, which is harmless.
 const STAMPED = new Map(); // shopId -> UTC date already written by this instance
 async function stamp(shopId) {
@@ -116,12 +118,34 @@ async function stamp(shopId) {
   } catch (e) { /* bookkeeping: never turn a good save into an error */ }
 }
 
+/* shareKey -> shopId, cached for the life of a warm instance. Same trick as STAMPED, for the same
+   reason: this is the polling path, and a Blob read here is a billed advanced operation.
+
+   Safe with NO TTL because a pointer is write-once. A rotate mints a brand new shareKey and writes
+   a NEW keys/<nk>.json (see the POST rotate branch); it never repoints an existing one, and
+   pointers are never deleted. The one path that rewrites keys/<k>.json is the 'unknown' repair
+   branch in PUT, which writes back the same shopId it just proved ownership of — and it is
+   unreachable for any key already in here, since a cache hit can never return state 'unknown'.
+
+   POSITIVES ONLY. Caching a miss would be a correctness bug, not just a stale read: a shop is
+   created moments after its key first 404s, and this file's whole model is that absence is never
+   evidence. It would also freeze a flaky null into a permanent one for that instance.
+
+   Revocation and deletion are NOT cached — owners/<shopId>.json is still read live on every
+   request below, so a rotated-away or erased link still dies on its next call. */
+const PTR = new Map();
+
 // 'unknown' → we have no record of this link. 'revoked' → this link was replaced by a newer one.
 // 'deleted' → the founder erased this shop's cloud copy; the tombstone in owners/ is permanent.
 async function resolveKey(k) {
-  const ptr = await readJsonSure(`keys/${k}.json`);
-  const shopId = String(ptr?.shopId || '');
-  if (!HEX40.test(shopId)) return { state: 'unknown' };
+  let shopId = PTR.get(k);
+  if (!shopId) {
+    const ptr = await readJsonSure(`keys/${k}.json`);
+    shopId = String(ptr?.shopId || '');
+    if (!HEX40.test(shopId)) return { state: 'unknown' };
+    if (PTR.size > 5000) PTR.clear(); // crude memory bound, same as HITS/STAMPED
+    PTR.set(k, shopId);
+  }
   // readJsonSure, not readJson: an existing record CAN read as absent under Blob's eventual
   // consistency, and absence here now decides two things — that the link is valid, and that the
   // caller may see costs. Real shops have the record, so the retry costs nothing on the hot path.

@@ -5,7 +5,14 @@
    Run: node verify-api.mjs   (no network, no keys, writes nothing)
    ponytail: the fake store models only what these paths use — get/put/del by exact pathname,
    allowOverwrite:false conflicts. It is NOT eventually consistent; add lag here if you ever test
-   the consistency-window behaviour rather than the authorization logic. */
+   the consistency-window behaviour rather than the authorization logic.
+
+   ponytail: __BLOB.clear() does NOT reset the handler. api/state.js keeps warm-instance Maps
+   (PTR shareKey->shopId, STAMPED, the rate-limit buckets) that live for the whole process, so a
+   new block reusing a shareKey an earlier block used will resolve to the EARLIER block's shopId
+   and fail in a confusing way — it costs a debugging round. Give every block its own ids; the
+   single-character hex('0')..hex('f') values are all spoken for. Production never hits this:
+   share keys are randomBytes(20) and are never reused. */
 import { registerHooks } from 'node:module';
 
 globalThis.__BLOB = new Map(); // pathname -> JSON string
@@ -219,6 +226,61 @@ async function call(handler, { method = 'GET', query = {}, headers = {}, body: b
 
   const afterSplit = await call(state, { query: { k: legacyShop }, headers: { 'x-real-ip': '5.5.5.5' } });
   check('legacy shop GET after its first post-split save still shows the real cost, now via costs/', afterSplit.payload.ingredients[0].unitCost === 3.75);
+}
+
+/* ---- resolveKey's warm-instance pointer cache must not outlive a revocation ----
+   api/state.js caches shareKey -> shopId in PTR for the life of the instance, to keep the polling
+   path off the Blob billing meter. The cache is safe only because revocation lives in owners/,
+   which is still read on every request. This runs the whole lifecycle IN ONE PROCESS, so the
+   pointer for the old key is definitely hot in PTR by the time it gets rotated away — the exact
+   condition under which a naively-cached resolveKey would keep answering 200. */
+{
+  globalThis.__BLOB.clear();
+  const ip = { 'x-real-ip': '7.7.7.7' };
+  const shop = '1a'.repeat(20), owner = '2b'.repeat(20), k1 = '3c'.repeat(20);
+  const creds = { ...ip, 'x-portafile-shop': shop, 'x-portafile-owner': owner };
+
+  const seed = await call(state, { method: 'PUT', query: { k: k1 }, headers: creds, body: body(1000) });
+  check('cache: shop seeds cleanly', seed.code === 200);
+
+  // warm PTR for k1, twice — the second read is the one that would come from cache
+  check('cache: first GET on the new link works', (await call(state, { query: { k: k1 }, headers: ip })).code === 200);
+  check('cache: second GET (pointer now cached) still works', (await call(state, { query: { k: k1 }, headers: ip })).code === 200);
+
+  // a cache hit must resolve to the SAME shop, not just to any 200
+  const beforeRotate = await call(state, { query: { k: k1 }, headers: { ...ip, 'x-portafile-owner': owner } });
+  check('cache: a cached pointer resolves to the right shop', beforeRotate.payload?.shop?.name === 'Test');
+
+  const rot = await call(state, { method: 'POST', query: { action: 'rotate' }, headers: creds });
+  check('cache: rotate mints a new key', rot.code === 200 && /^[a-f0-9]{40}$/.test(rot.payload.k || ''));
+  const k2 = rot.payload.k;
+
+  // THE regression this guards: k1's pointer is cached and still resolves, but owners/ says the
+  // current key is k2 — the live owner-record read must still turn that into a 410.
+  const dead = await call(state, { query: { k: k1 }, headers: ip });
+  check('cache: the rotated-away link is 410 revoked despite a hot pointer cache', dead.code === 410 && dead.payload.error === 'revoked');
+  const deadWrite = await call(state, { method: 'PUT', query: { k: k1 }, headers: ip, body: body(2000) });
+  check('cache: a WRITE on the rotated-away link is refused too', deadWrite.code === 410);
+  check('cache: the new link works', (await call(state, { query: { k: k2 }, headers: ip })).code === 200);
+
+  // same question for deletion: the tombstone must win over a cached pointer on BOTH keys
+  const adminHdr = { ...ip, 'x-portafile-admin': process.env.ADMIN_KEY, 'x-portafile-shop': shop };
+  check('cache: founder delete succeeds', (await call(state, { method: 'DELETE', headers: adminHdr })).code === 200);
+  const goneNew = await call(state, { query: { k: k2 }, headers: ip });
+  check('cache: deleted shop is 410 on the current link, cached pointer notwithstanding', goneNew.code === 410 && goneNew.payload.error === 'deleted');
+  const goneOld = await call(state, { query: { k: k1 }, headers: ip });
+  check('cache: deleted shop is 410 on the old link too', goneOld.code === 410);
+
+  // a miss must NEVER be cached: an unknown key 404s, then works the moment its shop is created
+  const fresh = '4d'.repeat(20), freshOwner = '5e'.repeat(20), freshShop = '6f'.repeat(20);
+  const miss = await call(state, { query: { k: fresh }, headers: ip });
+  check('cache: an unknown key 404s as unknown-key', miss.code === 404 && miss.payload.error === 'unknown-key');
+  const born = await call(state, {
+    method: 'PUT', query: { k: fresh },
+    headers: { ...ip, 'x-portafile-shop': freshShop, 'x-portafile-owner': freshOwner }, body: body(1000),
+  });
+  check('cache: that same key is created fine afterwards (a miss was not cached)', born.code === 200);
+  check('cache: and now reads back', (await call(state, { query: { k: fresh }, headers: ip })).code === 200);
 }
 
 console.log(failures ? `\n${failures} FAILURES` : '\nall api checks passed');

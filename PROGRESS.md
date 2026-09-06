@@ -674,3 +674,60 @@ about to look at it. Re-shooting them against the PT seed is the fix.
 **Second open thread:** `site/site.css` is now linked by nothing. Kept for now,
 flagged as history in CLAUDE.md and WORKS.md, but it is dead weight that will
 quietly rot and mislead the next person who greps for a token.
+
+## 2026-09-06 — A billing warning turns out to be a design bug
+
+Vercel emailed at 11:52: the account has used **75% of the free tier's 2,000
+Blob Advanced Requests**. Four projects write to Blob, so the first job was
+working out which one, and it wasn't close.
+
+Every `GET /api/state` costs **3-4 Blob reads** — the pointer, the owner record,
+the shop state, and `costs/` for an owner. The app polled that endpoint **every
+30 seconds**. One tab left open is eight billed operations a minute, 480 an
+hour: the entire month's free allowance in about four hours of nobody doing
+anything. The warning wasn't a usage spike. It was a tab.
+
+That the number is 3-4 and not 1 is the price of the security model, and I don't
+want it back: costs live in their own blob so a barista's device never receives
+them, and revocation is a value read out of a record rather than a missing file.
+Both are right. Polling them twice a minute was not.
+
+**Two changes.** `POLL_MS` is now five minutes instead of thirty seconds. The
+timer was never what made sync feel live — the `visibilitychange` and `online`
+re-pulls do that, and they fire exactly when a human is looking at the screen.
+What actually gets worse is that a revoked link takes up to five minutes to die
+in a tab nobody is touching, which the revocation model already tolerates: it
+runs on an eventually-consistent store and has never been a real-time promise.
+Second, `resolveKey()` now caches the shareKey → shopId pointer for the life of
+a warm instance, which takes the remaining reads from 4 to 3. Together: **10x
+fewer polls, 25% cheaper each.**
+
+The cache is the part that could have gone badly. Caching the *whole* key
+resolution would have been the obvious version and would have made revocation
+silently stop working — a fired barista's link would keep answering 200 for as
+long as the instance stayed warm. So the cache holds only the pointer, which is
+genuinely write-once (a rotate mints a new key and writes a new pointer; nothing
+ever repoints an existing one), and `owners/` is still read live on every
+request. I wrote the regression test first and then *checked that it bites*:
+built the naive version behind a flag, watched four checks go red, threw it
+away. A test for a caching bug that has never been run against the bug is not
+evidence.
+
+Two things fell out of it. `verify-api.mjs` had **no coverage of revocation
+after a rotate at all** — 44 checks and not one of them rotated a link and
+confirmed the old one died. It does now. And `__BLOB.clear()` no longer resets
+the handler, because the handler has warm-instance memory; my first draft of the
+test reused a shareKey an earlier block had used and failed in a way that took a
+round to read. That's written down in the file header for whoever writes the
+next block.
+
+**Cost:** an hour. **Saved:** the difference between a $0 product and a metered
+one. **Not done:** coffee-shelf spends 5 ops per save on a backup prune it could
+do with 3, pokemon-portfolio does a `list()` on every single read, and
+course-planner mirrors its whole database after every write. All real, all small
+next to this one, all still open.
+
+**Open thread:** the browser suites (`verify-sync.js`, `verify-pt.js`,
+`verify-site.js`) could not run in this environment — no Playwright. The app.js
+change is one constant, but nothing has driven the real app against the new
+interval yet. Run them before deploying.

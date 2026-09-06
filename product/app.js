@@ -292,6 +292,16 @@ function syncBadge() {
   const badge = { connecting: 'sync…', live: 'synced', offline: 'sync offline — working locally', revoked: 'this link no longer works — ask the owner for a new one', deleted: 'this shop was removed — sync is off' }[syncStatus];
   el.textContent = badge ? t(badge) : '';
 }
+/* Poll interval. Each GET /api/state costs the server 3-4 Blob reads (pointer, owner record,
+   shop state, and costs/ for an owner), and Vercel's free tier allows 2,000 advanced Blob
+   operations a MONTH — at the original 30s this burned the whole month's budget in about four
+   hours of one tab being left open. Five minutes is the timer; it is not what makes sync feel
+   live. The visibilitychange and online re-pulls below do that, and they fire exactly when
+   someone is actually looking. The cost is that a revoke or delete reaches a tab nobody is
+   touching in up to 5 minutes instead of 30s, which the revocation model already allows for
+   (it is a value comparison over an eventually-consistent store, never a real-time guarantee).
+   Raising this back to 30s means paying for Blob operations. */
+const POLL_MS = 300000;
 let syncPollT;
 function lockScreen() {
   document.title = t('Link turned off — Crema');
@@ -380,7 +390,7 @@ function syncRestart(delay) {
   setTimeout(() => {
     if (locked) return;
     syncStatus = 'connecting'; syncBadge(); syncPull();
-    syncPollT = setInterval(syncPull, 30000);
+    syncPollT = setInterval(syncPull, POLL_MS);
   }, delay);
 }
 function syncPush() {
@@ -1222,9 +1232,10 @@ else {
   if (lockedKey) localStorage.removeItem(LOCK_KEY);
   render();
   gate();
-  if (syncKey) { syncPull(); syncPollT = setInterval(syncPull, 30000); syncBadge(); }
-  /* Browsers throttle and eventually freeze timers in a background tab, so the 30s poll is not a
-     promise — a deleted shop or a dead link could sit unnoticed for minutes behind another tab.
+  if (syncKey) { syncPull(); syncPollT = setInterval(syncPull, POLL_MS); syncBadge(); }
+  /* Browsers throttle and eventually freeze timers in a background tab, so the POLL_MS timer is
+     not a promise — a deleted shop or a dead link could sit unnoticed for minutes behind another
+     tab. These two listeners, not the timer, are what makes sync feel live (see POLL_MS).
      Re-check whenever the tab is looked at again, and when the network comes back. syncPull()
      already no-ops without a key or on a locked device. Skipped while a save is still debounced:
      that PUT is about to run, it gets the same 410, and pulling first could apply older cloud
