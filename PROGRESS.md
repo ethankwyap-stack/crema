@@ -674,3 +674,35 @@ about to look at it. Re-shooting them against the PT seed is the fix.
 **Second open thread:** `site/site.css` is now linked by nothing. Kept for now,
 flagged as history in CLAUDE.md and WORKS.md, but it is dead weight that will
 quietly rot and mislead the next person who greps for a token.
+
+## 2026-09-08 — Broke up the god function in app.js
+
+Measured cyclomatic complexity across `product/app.js` and `api/`. The API is
+clean (8–9 everywhere). One function was not: `wireView`, at complexity 51 over
+113 lines, wired up all five tabs of the app in a single block — recipes,
+prices, dial-in, training and print, with nothing shared between them but the
+function boundary they lacked.
+
+Split it into six named functions, one per concern: `wireRecipes`,
+`wirePrices`, `wireDialIn`, `wireTrainingPath`, `wireSignoffs`, `wirePrint`.
+The training section got split twice, because editing the path and signing off a
+barista are two different jobs that happened to sit next to each other.
+
+Why it mattered: nothing was broken, so this bought no feature. It bought the
+next bug fix. Every training-path gotcha in CLAUDE.md — display order vs array
+order, the blur handler that must not re-render, the staff read-only rule — lives
+in that code, and finding the right handler meant scrolling a 113-line wall.
+Named functions make the blast radius of a change visible before you make it.
+
+Cost: no behaviour change, no new files, no dependency. Verified against all
+five suites — 185 checks, all green, same counts as before the change
+(`verify.js` 20, `verify-pt.js` 66, `verify-sync.js` 65, gate 17, killpass 17,
+i18n 15). Not deployed; this is a local refactor awaiting approval to push.
+
+**Left alone deliberately:** `dataMenu` still measures 37. Almost all of that is
+`? :` inside one long HTML template string, which the metric counts as branching
+and a human reads as fine. It also holds the sync, owner-code and rotate flows —
+the highest-risk code in the product. High measured complexity is not the same
+as tangled code, and refactoring the scariest file to improve a number is a bad
+trade. `viewTraining` (27) is the honest next candidate if this ever gets picked
+up again.

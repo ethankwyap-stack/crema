@@ -937,8 +937,18 @@ function feedbackModal() {
 }
 
 /* ---------------- wiring ---------------- */
+/* One wiring function per tab. Split out of a single 113-line wireView on 2026-09-08:
+   the five sections never shared a variable, only a function boundary was missing. */
 function wireView() {
-  // recipes
+  wireRecipes();
+  wirePrices();
+  wireDialIn();
+  wireTrainingPath();
+  wireSignoffs();
+  wirePrint();
+}
+
+function wireRecipes() {
   const add = $('#addRecipe'); if (add) add.onclick = () => recipeForm(null);
   const ct = $('#cogsTarget'); if (ct) ct.onchange = () => { S.shop.cogsTarget = Math.min(95, Math.max(5, parseFloat(ct.value) || 30)); save(); render(); };
   $$('.rcard [data-act]').forEach(b => b.onclick = () => {
@@ -951,7 +961,9 @@ function wireView() {
       save(); render();
     }
   });
-  // prices
+}
+
+function wirePrices() {
   const ai = $('#addIng'); if (ai) ai.onclick = () => { S.ingredients.push({ id: uid(), name: t('New ingredient'), unit: t('each'), unitCost: 0 }); save(); render(); };
   $$('table.grid tr[data-id]').forEach(tr => {
     const ing = S.ingredients.find(i => i.id === tr.dataset.id);
@@ -965,7 +977,9 @@ function wireView() {
       S.ingredients = S.ingredients.filter(i => i.id !== ing.id); save(); render();
     };
   });
-  // dial-in
+}
+
+function wireDialIn() {
   const ab = $('#addBean'); if (ab) ab.onclick = () => {
     openModal(`<h3>${t('New bean')}</h3><div class="frm">
       <div><label>${t('Bean name')}</label><input id="b_name" placeholder="${t('e.g. Colombia Huila decaf')}"></div>
@@ -987,7 +1001,10 @@ function wireView() {
       if (confirm(t('Remove bean and its dial-in history?'))) { S.beans = S.beans.filter(b => b.id !== beanId); S.dialins = S.dialins.filter(d => d.beanId !== beanId); save(); render(); }
     };
   });
-  // training
+}
+
+/* The path editor: what a new hire has to learn, and in what order. */
+function wireTrainingPath() {
   const pAdd = $('#pAdd'); if (pAdd) pAdd.onclick = () => {
     const day = Math.max(1, parseInt($('#pAddDay').value) || 1);
     const rid = $('#pAddRecipe').value, skill = $('#pAddSkill').value.trim();
@@ -1031,6 +1048,10 @@ function wireView() {
     p.day = Math.min(9, Math.max(1, parseInt(inp.value) || 1));
     save(); render();
   });
+}
+
+/* Who is being trained, and which steps they have signed off. */
+function wireSignoffs() {
   const ts = $('#traineeSel'); if (ts) ts.onchange = () => { S._trainee = ts.value; save(); render(); };
   const abar = $('#addBarista'); if (abar) abar.onclick = () => {
     const name = prompt(t('Barista name:')); if (!name) return;
@@ -1047,7 +1068,9 @@ function wireView() {
     else delete S.signoffs[bid][cb.dataset.id];
     save(); render();
   });
-  // print
+}
+
+function wirePrint() {
   $$('[data-pack]').forEach(b => b.onclick = () => buildPrint(b.dataset.pack));
 }
 
