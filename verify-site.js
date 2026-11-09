@@ -97,13 +97,37 @@ const ok = (name, cond, got) => { n++; console.log(`${cond ? 'PASS' : 'FAIL'}  $
       ok('en: switch links to /pt', await p.getAttribute('.langlink', 'href') === '/pt');
       ok('en: privacy link is absolute (was a root 404)', html.includes('href="/site/privacy.html"') && !html.includes('href="privacy.html"'));
       ok('en: no relative ../ links left', !html.includes('href="../'));
-      ok('en: headline unchanged', (await p.textContent('h1')).includes('dialed'));
+      // Ethan's pick 2026-11-09: the brand line stays as the h1; the SUBHEAD carries the outcome.
+      ok('en: headline is the chosen brand line', /^Your whole shop,\s*dialed\s+in\.$/.test((await p.textContent('h1')).trim()));
+      ok('en: subhead states the costing outcome', (await p.textContent('.hero .sub')).includes('what every drink costs you'));
+      ok('en: sample has three labelled decimal inputs', await p.$$eval('#latte-calc input', els => els.length === 3 && els.every(e => e.inputMode === 'decimal' && e.labels.length && parseFloat(getComputedStyle(e).fontSize) >= 16)));
+      ok('en: sample announces results politely', await p.getAttribute('.calc-result', 'aria-live') === 'polite');
+      ok('en: sample starts at demo cost', await p.textContent('[data-cost]') === '$1.22' && await p.textContent('[data-keeps]') === '$3.78');
+      await p.fill('#latte-beans', '33');
+      ok('en: typing updates cost and kept without submitting', await p.textContent('[data-cost]') === '$1.81' && await p.textContent('[data-keeps]') === '$3.19');
+      for (const value of ['', '0', '-5', 'coffee', '1e309']) {
+        await p.fill('#latte-menu', value);
+        await p.fill('#latte-beans', value);
+        await p.fill('#latte-milk', value);
+        const result = await p.textContent('.calc-result');
+        ok('en: sample safe for ' + JSON.stringify(value), !/NaN|Infinity/.test(result) && !/^-/.test(await p.textContent('[data-cost]')), result);
+      }
+      await p.fill('#latte-menu', '5.00');
+      await p.fill('#latte-beans', '16.50');
+      await p.fill('#latte-milk', '4.61');
       ok('en: still 15 drinks in the faq', html.includes('15 editable drinks'));
       ok('en: no pricing section while pricing is pulled', (await p.$$('.plan')).length === 0);
     }
     await p.screenshot({ path: `${SHOTS}/site-${label}.png` });
     // narrow width via a second context (old-headless width clamping makes direct resize unreliable)
     await p.setViewportSize({ width: 390, height: 780 });
+    if (label === 'en') {
+      const action = await p.locator('.heroctas .btn').first().boundingBox();
+      ok('en: primary action fits first phone screen', action && action.y + action.height <= 780, action && action.y + action.height);
+      await p.fill('#latte-milk', '8');
+      ok('en: sample updates on phone', await p.textContent('[data-cost]') === '$1.46');
+      await p.fill('#latte-milk', '4.61');
+    }
     const mOver = await realOverflow(p);
     ok(`${label}: no overflow at 390px`, mOver === 0, mOver);
     const langVisible = await p.evaluate(() => { const e = document.querySelector('.langlink'); return e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().width > 0; });

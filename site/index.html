@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>Crema — your whole shop, dialed in</title>
-<meta name="description" content="Recipe cards that know their cost. A dial-in board that answers the morning question. A new-hire pack ready before Monday. Free, works without wifi, built for independent coffee shops.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='26' fill='%2317130F'/%3E%3Ccircle cx='60' cy='60' r='36' fill='none' stroke='%23F3EBE0' stroke-width='6'/%3E%3Ccircle cx='60' cy='60' r='25' fill='%238195BE'/%3E%3Cpath d='M44.5 55A21 21 0 0 1 62.3 40.5' fill='none' stroke='%23F7E3BE' stroke-width='5.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta name="description" content="Recipe cards that know their cost. Try the free latte cost calculator, then cost your whole menu. A dial-in board, a new-hire pack ready before Monday. Free, built for independent coffee shops.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='26' fill='%2317130F'/%3E%3Ccircle cx='60' cy='60' r='36' fill='none' stroke='%23F3EBE0' stroke-width='6'/%3E%3Ccircle cx='60' cy='60' r='25' fill='%23C9B08C'/%3E%3Cpath d='M44.5 55A21 21 0 0 1 62.3 40.5' fill='none' stroke='%23F7E3BE' stroke-width='5.5' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="/site/v2.css">
 <script src="/site/reveal.js" defer></script>
+<script src="/site/calc.js" defer></script>
 </head>
 <body>
 
@@ -17,7 +18,7 @@
 <header class="nav">
   <div class="wrap">
     <a class="lockup" href="/">
-      <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="36" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="60" cy="60" r="25" fill="#8195BE"/><path d="M44.5 55A21 21 0 0 1 62.3 40.5" fill="none" stroke="#F7E3BE" stroke-width="5.5" stroke-linecap="round"/></svg>
+      <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="36" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="60" cy="60" r="25" fill="#C9B08C"/><path d="M44.5 55A21 21 0 0 1 62.3 40.5" fill="none" stroke="#F7E3BE" stroke-width="5.5" stroke-linecap="round"/></svg>
       crema
     </a>
     <nav class="navlinks" aria-label="Sections">
@@ -36,30 +37,36 @@
     <div class="hero">
       <div>
         <p class="eyebrow" data-reveal>For independent coffee shops</p>
-        <h1 data-reveal style="--d:.06s">Your whole shop,<br><em>dialed&nbsp;in.</em></h1>
+        <h1>Your whole shop,<br><em>dialed&nbsp;in.</em></h1>
         <p class="sub" data-reveal style="--d:.14s">Recipe cards that know what every drink costs you. Free, printable, and yours.</p>
         <div class="heroctas" data-reveal style="--d:.22s">
           <a class="btn" href="/product/index.html">Open Crema, free</a>
           <span class="note">No account · No card</span>
         </div>
       </div>
-      <div class="paperstack" data-reveal style="--d:.3s">
-        <div class="steam" aria-hidden="true"><i></i><i></i><i></i></div>
-        <div class="mockcard" aria-label="Example printed recipe card">
-          <h3><span>Latte</span><span class="price">$5.00</span></h3>
-          <div class="m"><span>costs you <b>$1.22</b></span><span class="badge">24% COGS</span><span class="keeps">keeps $3.78</span></div>
-          <ul>
-            <li><span>Espresso beans, 18 g</span><span class="c">$0.60</span></li>
-            <li><span>Whole milk, 9 fl oz</span><span class="c">$0.32</span></li>
-            <li><span>12oz cup + lid + sleeve</span><span class="c">$0.30</span></li>
-          </ul>
-          <ol>
-            <li>Pull double shot</li>
-            <li>Steam to 140°F, wet-paint texture</li>
-            <li>Pour from 3in, finish low</li>
-          </ol>
-          <div class="dial">House Blend: 18g in, 36g out, 28s (grind 12.2)</div>
-        </div>
+      <div class="paperstack">
+        <section class="mockcard latte-calc" id="latte-calc" aria-labelledby="calc-title">
+          <h2 id="calc-title">What does your latte cost you?</h2>
+          <p class="calc-intro">Try your own prices. No signup.</p>
+          <div class="calc-fields">
+            <label for="latte-menu">Menu price · $</label>
+            <input id="latte-menu" name="menuPrice" type="text" inputmode="decimal" value="5.00" aria-describedby="calc-defaults">
+            <label for="latte-beans">Beans · $ per 500 g bag</label>
+            <input id="latte-beans" name="bagPrice" type="text" inputmode="decimal" value="16.50" aria-describedby="calc-defaults">
+            <label for="latte-milk">Milk · $ per US gallon</label>
+            <input id="latte-milk" name="milkPrice" type="text" inputmode="decimal" value="4.61" aria-describedby="calc-defaults">
+          </div>
+          <p class="calc-defaults" id="calc-defaults">Per 12 oz latte: 18 g beans, 9 fl oz milk, $0.30 cup + lid + sleeve. US dollars.</p>
+          <div class="calc-result" aria-live="polite" aria-atomic="true">
+            <div><span>Cost per latte</span><strong data-cost>$1.22</strong></div>
+            <div><span>You keep</span><strong data-keeps>$3.78</strong></div>
+            <div><span>Cost / menu price</span><strong data-percent>24%</strong></div>
+            <p data-calc-note>Before labour, rent, tax and waste. Negative kept means a loss.</p>
+          </div>
+          <p class="calc-next">Now cost the rest of your menu.</p>
+          <a class="btn" href="/product/index.html">Open Crema, free</a>
+          <noscript><p>Enable JavaScript to update these demo results with your prices.</p></noscript>
+        </section>
       </div>
     </div>
   </div>
@@ -83,13 +90,11 @@
 
 <div class="ticker" aria-hidden="true">
   <div class="track">
-    <span>LATTE costs <b>$1.22</b> sells <b>$5.00</b> keeps <b>$3.78</b></span>
     <span>CAPPUCCINO costs <b>$0.98</b> sells <b>$4.75</b> keeps <b>$3.77</b></span>
     <span>HOUSE BLEND <b>18g → 36g · 28s</b> grind <b>12.2</b></span>
     <span>CORTADO costs <b>$0.87</b> sells <b>$4.25</b> keeps <b>$3.38</b></span>
     <span>OAT FLAT WHITE costs <b>$1.41</b> sells <b>$5.50</b> keeps <b>$4.09</b></span>
     <span>NEW-HIRE PACK <b>printed in 10 min</b></span>
-    <span>LATTE costs <b>$1.22</b> sells <b>$5.00</b> keeps <b>$3.78</b></span>
     <span>CAPPUCCINO costs <b>$0.98</b> sells <b>$4.75</b> keeps <b>$3.77</b></span>
     <span>HOUSE BLEND <b>18g → 36g · 28s</b> grind <b>12.2</b></span>
     <span>CORTADO costs <b>$0.87</b> sells <b>$4.25</b> keeps <b>$3.38</b></span>
@@ -275,7 +280,7 @@
 <footer>
   <div class="wrap">
     <div class="lockup">
-      <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="36" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="60" cy="60" r="25" fill="#8195BE"/><path d="M44.5 55A21 21 0 0 1 62.3 40.5" fill="none" stroke="#F7E3BE" stroke-width="5.5" stroke-linecap="round"/></svg>
+      <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="36" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="60" cy="60" r="25" fill="#C9B08C"/><path d="M44.5 55A21 21 0 0 1 62.3 40.5" fill="none" stroke="#F7E3BE" stroke-width="5.5" stroke-linecap="round"/></svg>
       crema
     </div>
     <div>© 2026 Crema · your whole shop, dialed in · Built from the complaints of r/barista, with respect.<br>

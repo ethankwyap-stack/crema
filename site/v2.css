@@ -39,7 +39,7 @@ h1{font-weight:700;font-size:clamp(52px,9vw,116px);line-height:.92}
 h2{font-weight:700;font-size:clamp(33px,5vw,62px);line-height:1.02}
 h3{font-weight:700;font-size:clamp(21px,2.4vw,27px);line-height:1.14}
 .lead{font-size:18.5px;color:var(--ink-soft);max-width:34em;margin:16px 0 0}
-.eyebrow{font-family:var(--fm);font-size:12px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--crema);display:flex;align-items:center;gap:14px;margin:0 0 20px}
+.eyebrow{font-family:var(--fm);font-size:12px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-soft);display:flex;align-items:center;gap:14px;margin:0 0 20px}
 .eyebrow::after{content:"";height:1px;flex:0 0 56px;background:currentColor;opacity:.45}
 
 /* ---------- the one light source: an aurora that sits BEHIND everything ----------
@@ -99,15 +99,16 @@ h3{font-weight:700;font-size:clamp(21px,2.4vw,27px);line-height:1.14}
 
 /* ---------------- buttons ---------------- */
 .btn{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;background:var(--crema-fill);color:var(--on-crema);text-decoration:none;font-weight:700;padding:16px 32px;border-radius:999px;font-size:17px;position:relative;
-  box-shadow:0 0 0 1px rgba(129,149,190,.45),0 10px 34px rgba(34,53,92,.55);transition:background .15s,transform .16s ease-out,box-shadow .3s}
-.btn:hover{background:var(--crema-dk);color:#0E0B09;transform:translateY(-2px);box-shadow:0 0 0 1px rgba(129,149,190,.8),0 14px 44px rgba(129,149,190,.4)}
+  border:1px solid var(--crema);transition:background .15s,transform .16s ease-out}
+.btn:hover{background:var(--crema-dk);color:#0E0B09;}
 .btn:active{transform:scale(.975)}
-.btn.sm{padding:10px 20px;font-size:15px;box-shadow:0 0 0 1px rgba(129,149,190,.4)}
+.btn.sm{padding:10px 20px;font-size:15px;border:1px solid var(--crema)}
 @media(max-width:520px){.nav .btn.sm{display:none}}
 
 /* ---------------- 1. HERO ---------------- */
 .hero{padding:clamp(52px,7vw,92px) 0 clamp(44px,5vw,66px);display:grid;grid-template-columns:1.08fr .92fr;gap:clamp(40px,5vw,76px);align-items:center}
 @media(max-width:900px){.hero{grid-template-columns:1fr;gap:56px;padding-top:48px}}
+/* The one key phrase allowed to carry the accent (gate check 2). Ethan's pick, 2026-11-09. */
 .hero h1 em{font-style:italic;color:var(--crema);text-shadow:0 0 44px rgba(129,149,190,.55)}
 .hero .sub{font-size:20.5px;color:var(--ink-soft);max-width:25em;margin:26px 0 34px;line-height:1.55}
 .heroctas{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
@@ -119,27 +120,27 @@ h3{font-weight:700;font-size:clamp(21px,2.4vw,27px);line-height:1.14}
 .paperstack::before,.paperstack::after{content:"";position:absolute;inset:0;border-radius:6px;background:#EFE6D6;border:1px solid #D8C9B4}
 .paperstack::before{transform:rotate(-3.4deg) translate(-10px,10px)}
 .paperstack::after{transform:rotate(-1.4deg) translate(-4px,5px);background:#F6EEE0}
-.mockcard{--ink:#2A1A12;--ink-soft:#6B5544;--line:#E7DACA;--crema:#22355C;--spruce:#3F6350;
+.mockcard{--ink:#2A1A12;--ink-soft:#6B5544;--line:#E7DACA;--crema:#22355C;
   /* z-index load-bearing: .paperstack::after paints after this element */
   position:relative;z-index:1;background:#FFFDF8;color:var(--ink);border:1px solid #E2D5C2;border-radius:6px;padding:26px 26px 22px;transform:rotate(1.6deg);
-  box-shadow:0 1px 2px rgba(0,0,0,.4),16px 20px 0 rgba(0,0,0,.34),0 0 90px rgba(129,149,190,.35);
+  box-shadow:0 1px 2px rgba(0,0,0,.4),16px 20px 0 rgba(0,0,0,.34),0 0 90px rgba(180,112,63,.18);
   background-image:linear-gradient(#F2E7D6 1px,transparent 1px);background-size:100% 29px;background-position:0 76px}
 @media(prefers-reduced-motion:no-preference){.mockcard{animation:float 9s ease-in-out infinite alternate}
   @keyframes float{to{transform:rotate(1.1deg) translateY(-10px)}}}
-.mockcard::before{content:"";position:absolute;top:-15px;left:50%;transform:translateX(-50%) rotate(-3deg);width:118px;height:30px;background:rgba(129,149,190,.55);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.mockcard::before{content:"";position:absolute;top:-15px;left:50%;transform:translateX(-50%) rotate(-3deg);width:118px;height:30px;background:rgba(201,176,140,.65)}
 .mockcard::after{content:"4×6 · PRINTS CLEAN";position:absolute;bottom:9px;right:13px;font-family:var(--fm);font-size:9.5px;letter-spacing:.14em;color:#B8A48F}
 html[lang="pt-PT"] .mockcard::after{content:"10×15 · IMPRIME LIMPO"}
-.mockcard h3{margin:0;display:flex;justify-content:space-between;align-items:baseline;font-size:26px;border-bottom:2px solid var(--crema);padding-bottom:8px;color:var(--ink)}
+.mockcard h3{margin:0;display:flex;justify-content:space-between;align-items:baseline;font-size:26px;border-bottom:2px solid var(--line);padding-bottom:8px;color:var(--ink)}
 .mockcard h3 .price{font-family:var(--fm);font-size:20px}
 .mockcard .m{font-family:var(--fm);font-size:14px;margin:13px 0;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .mockcard .m b{font-size:17px}
-.mockcard .badge{padding:2px 10px;border-radius:99px;font-weight:700;font-family:var(--fm);font-size:12px;background:#E4EDE7;color:var(--spruce)}
-.mockcard .keeps{color:var(--spruce)}
+.mockcard .badge{padding:2px 10px;border-radius:99px;font-weight:700;font-family:var(--fm);font-size:12px;background:#EFE6D6;color:var(--ink)}
+.mockcard .keeps{color:var(--ink-soft)}
 .mockcard ul{list-style:none;margin:0 0 12px;padding:0;font-size:14.5px}
 .mockcard li{display:flex;justify-content:space-between;border-bottom:1px dotted var(--line);padding:4px 0}
 .mockcard li .c{font-family:var(--fm);color:var(--ink-soft)}
 .mockcard ol{margin:0;padding-left:20px;font-size:14.5px;color:var(--ink-soft)}
-.mockcard .dial{margin-top:14px;border-top:1.5px solid var(--ink);padding-top:9px;font-family:var(--fm);font-size:12.5px;font-weight:700;color:var(--spruce)}
+.mockcard .dial{margin-top:14px;border-top:1.5px solid var(--ink);padding-top:9px;font-family:var(--fm);font-size:12.5px;font-weight:700;color:var(--ink-soft)}
 
 /* ---------------- the earth layer ----------------
    A ridge line closes the hero: coffee is grown on a mountain slope, so the page
@@ -258,7 +259,7 @@ html[lang="pt-PT"] .mockcard::after{content:"10×15 · IMPRIME LIMPO"}
 .ticker{position:relative;z-index:1;background:rgba(23,19,15,.6);overflow:hidden;padding:13px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
   mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent)}
 .ticker .track{display:flex;width:max-content;animation:tick 42s linear infinite}
-.ticker span{font-family:var(--fm);font-size:13.5px;letter-spacing:.06em;color:var(--crema);white-space:nowrap;padding-right:3.2em}
+.ticker span{font-family:var(--fm);font-size:13.5px;letter-spacing:.06em;color:var(--ink-soft);white-space:nowrap;padding-right:3.2em}
 .ticker span b{color:var(--ink)}
 @keyframes tick{to{transform:translateX(-50%)}}
 
@@ -268,13 +269,13 @@ html[lang="pt-PT"] .mockcard::after{content:"10×15 · IMPRIME LIMPO"}
 .qwrap{display:grid;grid-template-columns:1.15fr .85fr;gap:30px;margin-top:48px;align-items:stretch}
 @media(max-width:860px){.qwrap{grid-template-columns:1fr}}
 .q{position:relative;background:rgba(23,19,15,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:var(--r);padding:36px 30px 26px;display:flex;flex-direction:column;justify-content:center}
-.q::before{content:"\201C";position:absolute;top:2px;left:18px;font-family:var(--fd);font-size:68px;line-height:1;color:var(--crema);opacity:.5}
+.q::before{content:"\201C";position:absolute;top:2px;left:18px;font-family:var(--fd);font-size:68px;line-height:1;color:var(--ink-soft);opacity:.5}
 .q p{margin:0 0 16px;font-family:var(--fd);font-size:clamp(21px,2.5vw,28px);line-height:1.3}
 .q .who{margin-top:auto;padding-top:20px;font-size:13px;color:var(--ink-soft);line-height:1.5}
 .figs{display:grid;gap:22px;align-content:stretch}
 .fig{background:rgba(23,19,15,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;display:flex;flex-direction:column;justify-content:center}
 .fig .n{font-family:var(--fm);font-weight:700;font-size:clamp(46px,6.5vw,74px);line-height:.92;letter-spacing:-.045em;color:var(--ink)}
-.fig .n.warn{color:var(--alert)}
+.fig .n.warn{color:var(--ink)}
 .fig .t{margin-top:12px;color:var(--ink-soft);font-size:15.5px}
 .srcline{font-size:12.5px;color:var(--ink-soft);margin-top:30px;max-width:60em}
 
@@ -283,18 +284,18 @@ html[lang="pt-PT"] .mockcard::after{content:"10×15 · IMPRIME LIMPO"}
 .bento{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:48px}
 @media(max-width:860px){.bento{grid-template-columns:1fr}}
 .cell{border:1px solid var(--line);border-radius:var(--r);padding:34px 32px;background:rgba(23,19,15,.66);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);position:relative;overflow:hidden;transition:transform .5s var(--ease),border-color .3s,box-shadow .5s var(--ease)}
-.cell:hover{transform:translateY(-5px);border-color:var(--crema-dk);box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.cell:hover{border-color:var(--line)}
 .cell.wide{grid-column:1/-1;display:grid;grid-template-columns:.9fr 1.1fr;gap:36px;align-items:center;padding:38px 36px}
 @media(max-width:860px){.cell.wide{grid-template-columns:1fr;gap:26px}}
 .cell p{color:var(--ink-soft);margin:14px 0 0;font-size:16px}
-.cell .kicker{font-family:var(--fm);font-size:11.5px;letter-spacing:.2em;color:var(--crema);font-weight:700;margin:0 0 12px}
-.shot{border-radius:10px;border:1px solid var(--line);background:var(--surface-2);padding:7px;box-shadow:0 18px 44px rgba(0,0,0,.55)}
-.cell.tint{background:linear-gradient(150deg,rgba(34,53,92,.55),rgba(23,19,15,.7) 62%)}
+.cell .kicker{font-family:var(--fm);font-size:11.5px;letter-spacing:.2em;color:var(--ink-soft);font-weight:700;margin:0 0 12px}
+.shot{border-radius:10px;border:1px solid var(--line);background:var(--surface-2);padding:7px}
+.cell.tint{background:linear-gradient(150deg,rgba(180,112,63,.18),rgba(23,19,15,.7) 62%)}
 .cell.tint2{background:linear-gradient(150deg,rgba(224,138,74,.16),rgba(23,19,15,.7) 62%)}
 .readout{font-family:var(--fm);margin-top:24px;border-top:1px solid var(--line);padding-top:18px;display:grid;gap:9px;font-size:14px;color:var(--ink-soft)}
 .readout div{display:flex;justify-content:space-between;gap:12px}
 .readout b{color:var(--ink);font-weight:700}
-.bigfig{font-family:var(--fd);font-size:clamp(56px,8vw,88px);line-height:.9;color:var(--ember);margin-top:26px;letter-spacing:-.03em;text-shadow:0 0 40px rgba(224,138,74,.35)}
+.bigfig{font-family:var(--fd);font-size:clamp(56px,8vw,88px);line-height:.9;color:var(--ink);margin-top:26px;letter-spacing:-.03em}
 .bigfig small{display:block;font-family:var(--fm);font-size:12px;letter-spacing:.2em;color:var(--ink-soft);margin-top:12px;font-weight:700}
 .paperline{margin-top:44px;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:clamp(28px,4vw,54px);align-items:center}
 @media(max-width:900px){.paperline{grid-template-columns:1fr;gap:32px}}
@@ -303,7 +304,7 @@ html[lang="pt-PT"] .mockcard::after{content:"10×15 · IMPRIME LIMPO"}
 .pricing{padding:clamp(72px,9vw,120px) 0}
 .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:22px;margin-top:46px;align-items:start}
 .plan{background:rgba(23,19,15,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:var(--r);padding:30px 28px;transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
-.plan:not(.hot):hover{transform:translateY(-5px);box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.plan:not(.hot):hover{border-color:var(--line)}
 .menuline{display:flex;align-items:baseline;gap:10px}
 .menuline h3{margin:0;font-size:23px;white-space:nowrap}
 .menuline .dots{flex:1;border-bottom:2px dotted var(--line);transform:translateY(-5px)}
@@ -312,12 +313,12 @@ html[lang="pt-PT"] .mockcard::after{content:"10×15 · IMPRIME LIMPO"}
 .plan .per{font-size:13px;color:var(--ink-soft);margin-top:5px}
 .plan ul{padding:0;list-style:none;margin:20px 0 0;font-size:14.5px;color:var(--ink-soft)}
 .plan li{margin-bottom:10px;padding-left:18px;position:relative;line-height:1.5}
-.plan li::before{content:"";position:absolute;left:0;top:.62em;width:7px;height:1px;background:var(--crema)}
-.plan.hot{border-color:var(--crema);background:linear-gradient(150deg,rgba(34,53,92,.62),rgba(23,19,15,.8) 60%);box-shadow:0 24px 60px rgba(34,53,92,.45)}
-.plan.hot .menuline h3{color:var(--crema)}
+.plan li::before{content:"";position:absolute;left:0;top:.62em;width:7px;height:1px;background:var(--line)}
+.plan.hot{border-color:var(--line);background:linear-gradient(150deg,rgba(180,112,63,.18),rgba(23,19,15,.8) 60%)}
+.plan.hot .menuline h3{color:var(--ink)}
 .plan.hot ul{color:var(--ink)}
-.plan .tag{font-family:var(--fm);font-size:11px;letter-spacing:.18em;color:var(--crema);margin:0 0 12px;font-weight:700}
-.founding{border:1.5px dashed var(--ember);color:var(--ember);background:rgba(224,138,74,.08);border-radius:var(--r);padding:16px 22px;font-weight:700;margin-top:30px;font-size:15.5px}
+.plan .tag{font-family:var(--fm);font-size:11px;letter-spacing:.18em;color:var(--ink-soft);margin:0 0 12px;font-weight:700}
+.founding{border:1.5px dashed var(--line);color:var(--ink-soft);background:var(--surface);border-radius:var(--r);padding:16px 22px;font-weight:700;margin-top:30px;font-size:15.5px}
 .fineprint{font-size:12.5px;color:var(--ink-soft);margin-top:20px;max-width:52em}
 
 /* ---------------- 5. FAQ ---------------- */
@@ -356,6 +357,43 @@ footer a{color:var(--crema)}
   .cell:hover,.plan:hover,.btn:hover{transform:none}
 }
 @media not (hover:hover){.cell:hover,.plan:hover{transform:none}}
+
+/* English sell page: readable at first paint; the scene supplies depth without
+   perpetual movement. Keep :where() at zero specificity for reveal gating. */
+/* Gate check 4: first-screen words never wait for an animation. Only the hero is
+   exempt from the reveal; sections below still fade in as they enter view. Zero
+   specificity on purpose (see the :where() reveal gate above). */
+:where(.hero) :where([data-reveal]){opacity:1;--ty:0px;transition:none}
+/* A form must not drift while someone types in it. The ticker stays as the one mover. */
+.latte-calc{animation:none}
+/* The editable paper sample inherits the existing stack, with upright controls. */
+.latte-calc{transform:none;background-image:none;padding:24px}
+.latte-calc::after{content:""}
+.latte-calc h2{font-size:30px;line-height:1.08}
+.calc-intro{margin:10px 0 18px;color:var(--ink-soft);font-size:14px}
+.calc-fields{display:grid;grid-template-columns:minmax(0,1fr) 100px;align-items:center;gap:12px}
+.calc-fields label{font-size:14px;font-weight:600;line-height:1.35}
+.calc-fields input{min-width:0;width:100%;font-family:var(--fm);font-size:16px;color:var(--ink);background:#FFFDF8;border:1px solid #9B826A;border-radius:4px;padding:10px 8px}
+.calc-fields input:focus-visible{outline:2.5px solid var(--crema);outline-offset:3px}
+.calc-defaults{font-size:12px;line-height:1.5;color:var(--ink-soft);margin:16px 0}
+.calc-result{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0;font-size:14px}
+.calc-result div{display:flex;justify-content:space-between;gap:12px}
+.calc-result strong{font-family:var(--fm);overflow-wrap:anywhere;text-align:right}
+.calc-result p{font-size:12px;line-height:1.45;color:var(--ink-soft);margin:10px 0 0}
+.calc-next{font-size:14px;margin:16px 0 10px}
+.latte-calc .btn{font-size:15px;padding:12px 20px;width:100%}
+@media(max-width:900px){
+  html[lang="en"] .hero{gap:38px}
+  .latte-calc{max-width:430px}
+}
+@media(max-width:520px){
+  html[lang="en"] .hero{padding-top:34px}
+  html[lang="en"] .hero .eyebrow{font-size:10px;letter-spacing:.15em;gap:8px}
+  html[lang="en"] .hero .eyebrow::after{flex-basis:24px}
+  html[lang="en"] .hero .sub{font-size:18px;margin:20px 0 24px}
+  html[lang="en"] .paperstack{width:100%;min-width:0}
+  .latte-calc{padding:22px 18px}
+}
 
 @media print{
   :root{--bg:#fff;--surface:#fff;--ink:#1A1208;--ink-soft:#5A4A3A;--line:#CFC4B6;--crema:#22355C;--ember:#8A5A12;--grain:none}

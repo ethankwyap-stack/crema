@@ -706,3 +706,62 @@ the highest-risk code in the product. High measured complexity is not the same
 as tangled code, and refactoring the scariest file to improve a number is a bad
 trade. `viewTraining` (27) is the honest next candidate if this ever gets picked
 up again.
+
+## 2026-11-09 — Let an owner try the maths before opening Crema
+
+The English landing page now answers the question I need an owner to ask:
+what does this drink actually cost me? The headline says it plainly, and the
+paper latte card is now a working sample. Three prices — menu, a 500 g bag,
+a gallon of milk — change the cost, what is left, and the cost percentage as
+they type. Nothing to submit and no email to give. The demo still reads $1.22
+cost and $3.78 left at $5.00. Milk at $4.61 a gallon approximates the app seed's
+per-ounce price; the displayed results agree. Labour and overhead are explicitly
+excluded, so we are not pretending this is net profit.
+
+The ridge, real photograph, sun and lifted paper stack stay. Blue now belongs
+to actions and focus, rather than every label and statistic. The English page
+is still from first paint: no faded headline, scrolling ticker or drifting scene
+competing with the owner reading or typing. Shared colour changes also quiet
+the Portuguese page; its content has not been edited and no English CSS copy
+was added. The print block is byte-for-byte unchanged.
+
+Cost: no dependencies, services or build step. Wrote the six calculator tests
+first and watched all six fail because the function did not exist. Implemented
+it; six passed. Metrics: 33 passed, API: 44 passed, i18n: 15 passed. Syntax and
+diff checks passed. The site browser suite could not start: its pinned Chromium
+executable is missing, and the sandbox also refused a local server bind. Zero
+browser assertions ran. Added calculator interaction, invalid-input and phone
+button checks for the lead to run. This is NOT deployed: no commit, push or
+Vercel command.
+
+**Lead check, same day.** The builder could not open a browser, so the page was
+checked from outside before anyone believed it. System Chrome ran the site
+suite: 52 of 52 pass, and the six calculator tests pass. Real screenshots at
+390px and 1440px then caught two things the tests could not. On a desktop the
+new headline set in five lines and pushed the button off the first screen; it
+now sets in three. And the builder had switched off every animation on the
+English page to be safe, which is more than the rule asks: only the first
+screen must be readable at once. The hero words now show at first paint, the
+cost ticker runs again as the one moving thing, sections below still fade in
+as they arrive, and the calculator card no longer drifts while someone types
+in it. The page went from 1 of 5 to 5 of 5 on the results gate
+(`~/design-taste/GATE.md`). Lesson: a builder that cannot see the page will
+over-correct; the check has to be done by something that can look.
+
+**Headline decision, same day.** Ethan looked at the before and after and kept
+the original: "Your whole shop, dialed in.", blue italic and all. The outcome
+sentence tested better on paper and worse on him, and it is his shop's voice.
+So the gate reads 4 of 5 with one accepted fail: the headline does not state
+the outcome, the line under it does ("Recipe cards that know what every drink
+costs you."), and the calculator beside it shows the outcome in numbers. The
+blue on "dialed in." is the one key phrase the highlighter rule allows. Site
+suite: 53 of 53.
+
+**Open threads:** the outcome headlines stay on file if a shop owner ever reads
+the page and asks what it does ("Know what every drink costs you." / "See what
+each drink leaves you." / "Know your costs before you price your menu."). Not yet checked by hand: JS off, keyboard-only use of the calculator,
+and a timed run of the sample. Nothing is committed or deployed; run
+`/still-works` and get approval before any push to `main`. Port the outcome headline and calculator to Portuguese in a
+separate job, using local purchase units and the Portuguese demo rather than
+copying dollar arithmetic. The earlier Portuguese screenshot and launch-film
+threads remain open.

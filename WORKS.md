@@ -28,6 +28,8 @@ code is shaped the way it is); this file holds *what must still be true for a us
 
 ## Features
 
+- [ ] English landing calculator gives live latte cost, kept amount and COGS from three purchase prices without signup; demo $1.22 / $3.78, invalid inputs stay finite · auto: `node --test verify-calc.test.cjs`, `node verify-site.js`
+
 ### App — recipes and costing
 - [ ] Cost recalculates live when an ingredient price changes
       prove: /product/ → Prices → milk $0.036 → $0.080 → latte card reads $1.61, no reload
