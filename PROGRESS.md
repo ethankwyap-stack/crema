@@ -757,7 +757,29 @@ costs you."), and the calculator beside it shows the outcome in numbers. The
 blue on "dialed in." is the one key phrase the highlighter rule allows. Site
 suite: 53 of 53.
 
-**Open threads:** the outcome headlines stay on file if a shop owner ever reads
+**Deployed, same day.** Ethan pushed `8920bab` to `main` and the page was live
+within seconds. Checked on the live site, not just locally: all eleven health
+probes pass, the calculator file is served, and typing $6.50 into the live
+phone-size page moves "You keep" from $3.78 to $5.28 with no errors and no
+sideways scroll. One tool limit learned: the live site forbids being framed, so
+the phone screenshot trick that works locally fails there; a true 390px browser
+window is the check for production.
+
+**Dependency alerts cleared, same day.** The push surfaced a GitHub warning: six
+alerts (4 high, 2 moderate), none from today's page work. All six sat two
+levels under our only package, `@vercel/blob`: five in `undici` (fixed in
+6.29.1) and one in `zod`, pinned at an old version by a Vercel config package
+that has no fixed release in the range `@vercel/blob` allows. `undici` moved
+with a lockfile bump; `zod` needed an `overrides` entry in `package.json` to
+force 4.6.7. Real exposure was low (these run inside our own server functions,
+not on visitor input), but a red badge on the repo is the wrong thing for a
+café owner's nephew to find. `npm audit`: 0. The API suite stubs the blob
+library, so the true test of this change is the live health check's Blob
+canary after the next deploy.
+
+**Open threads:** remove the `zod` override once `@vercel/blob` ships a clean
+dependency chain (re-check with `npm audit` after any `@vercel/blob` update).
+The outcome headlines stay on file if a shop owner ever reads
 the page and asks what it does ("Know what every drink costs you." / "See what
 each drink leaves you." / "Know your costs before you price your menu."). Not yet checked by hand: JS off, keyboard-only use of the calculator,
 and a timed run of the sample. Nothing is committed or deployed; run
