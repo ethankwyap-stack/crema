@@ -1,49 +1,84 @@
 # Crema
 
-*Built as **Portafile**; renamed to **Crema** on 2026-07-28. The lowercase `portafile` you'll still see in localStorage keys, API headers, blob paths, the deploy URL and `video/portafile-launch.mp4` are identifiers, not the brand — renaming them would erase existing users' data.*
+**Recipe cards that know what every drink costs. A free tool for independent coffee shops: per-drink cost and margin, espresso dial-in per bean, new-barista training paths, and printable cards. No account. Works offline.**
 
-**The recipe card, upgraded.** A local-first operating system for independent coffee shops: recipe cards that carry live cost and margin, dial-in state per bean, printable training paths, and a barista sign-off sheet — all in one no-account web app that runs offline from a single folder.
+**Live:** [portafile.vercel.app](https://portafile.vercel.app) · **Try the app:** [/product](https://portafile.vercel.app/product/)
 
-Built autonomously in one mission (2026-07-15/16). Every step, decision, and adversarial review is documented in the numbered files below.
+![Crema landing page: "Your whole shop, dialed in", with a live latte-cost calculator](docs/landing.png)
 
-## Try the product (30 seconds)
+## Why I built it
 
-Open `product/index.html` in any browser — double-clicking the file works. No server, no install, no account. Data lives in your browser's localStorage; **Data → Export** produces a JSON backup you can re-import anywhere.
+I'm into specialty coffee, so I started with a question: what actually hurts small coffee shops? I didn't guess. I read real owner and barista threads on Reddit and saved every one I quoted ([`evidence/`](evidence/): 23 saved threads). The strongest pattern: recipes, costs and training live in people's heads. When a barista leaves, the knowledge leaves too, and many owners don't know what a latte costs them to make.
 
-## Layout
+## What it does
+
+| | |
+|---|---|
+| **Recipe cards with live cost** | Each drink shows menu price, what it costs you, and what you keep. Change the price of milk once and every card updates. |
+| **Margin alerts** | Flags any drink over your cost target, and drinks that lose money. |
+| **Dial-in per bean** | Grind, dose, yield and time are saved per bean and shown on every card that uses it. |
+| **Training path** | Turns the cards into a day-by-day plan for a new barista, with trainer sign-offs. |
+| **Print** | Clean recipe cards for the bar. |
+| **Two languages** | English and European Portuguese, with euro pricing. |
+
+<p align="center">
+  <img src="product/screenshots/01-recipes.png" alt="Recipe cards: each drink's price, cost and margin" width="49%">
+  <img src="product/screenshots/03-dialin.png" alt="Dial-in settings per bean" width="49%">
+</p>
+
+## How I built it
+
+**Week one: a two-day sprint from problem to product (July 15-16, 2026).** I wanted to see how far I could get by running [Claude Code](https://claude.com/claude-code) agents through a real startup process, with strict rules I set: every claim must cite a saved source, and nothing ships until it survives a "kill pass". Each step left a written checkpoint:
+
+| Step | File | What happened |
+|---|---|---|
+| 1 | [`01-hunt-for-pain.md`](01-hunt-for-pain.md) | Found and sourced the pain points |
+| 2 | [`02-pick-the-winner.md`](02-pick-the-winner.md) | Picked one, re-scoped it with an adversarial panel |
+| 3 | [`03-design-the-business.md`](03-design-the-business.md) | Business model and validation gates |
+| 4 | [`04-build-the-brand.md`](04-build-the-brand.md) | Name, palette, logo |
+| 5 | [`05-build-the-thing.md`](05-build-the-thing.md) | The app |
+| 6 | [`06-launch-video.md`](06-launch-video.md) | A 75-second launch film |
+| 7 | [`07-kill-pass.md`](07-kill-pass.md) | Three AI skeptics tried to kill it; every finding fixed and re-checked |
+
+Every decision and why: [`BUILD-LOG.md`](BUILD-LOG.md).
+
+**The next four months: making it real (July to November).** This is where most of my time went:
+
+- **Security.** I audited my own app. I closed a script-injection hole, locked down cloud storage, and built staff links that the owner can revoke for real. Strict security headers and a secret scan run on every push. See [`THREAT-MODEL.md`](THREAT-MODEL.md).
+- **Accessibility.** Fixed colour contrast and made the tabs work with the keyboard.
+- **Rebrand.** Renamed Portafile → Crema and rebuilt the landing page.
+- **Pitching.** I pitched it to café owners, including two in Lisbon, and translated it into European Portuguese with euro pricing for them. No shops use it today.
+- **Keeping it healthy.** A daily health check, Dependabot updates, and test suites for the app, the site and the API.
+
+## Tech
+
+Plain HTML, CSS and JavaScript. No framework, no build step. The app keeps data in the browser (localStorage). Optional cloud sync uses Vercel serverless functions + Vercel Blob. Hosted on Vercel. Tests run in Playwright (a tool that drives a real browser). $0 to run.
+
+## Run it
+
+Open `product/index.html` in a browser. That's it: no server, no install, no account. Add `?selftest=1` to the URL to run 27 checks inside the page.
+
+The hosted version asks for an email and shop name once, before first use, so I can see who tried it.
+
+The browser test suites (`verify-*.js`, `product/verify*.js`) use Playwright and are set up for my Mac (see `CLAUDE.md`).
+
+<details>
+<summary><b>Repo map</b></summary>
 
 | Path | What it is |
 |---|---|
-| `01-hunt-for-pain.md` … `07-kill-pass.md` | The mission log: evidence hunt → problem pick → business design → brand → build → launch video → adversarial kill pass. Each is a standalone checkpoint. |
-| `BUILD-LOG.md` | Every decision (D1–D30) with reasoning. |
-| `product/` | The app: `index.html` + `app.js` + `styles.css`, no dependencies, no build step. Plus screenshots and both verification suites. |
-| `site/index.html` | The marketing/landing page. |
-| `video/portafile-launch.mp4` | 75-second launch film (1280×720, voiced). |
-| `brand/` | Name rationale, palette, logo SVG/PNG, brand CSS. |
-| `extras/` | Investor teaser, launch-post drafts, onboarding email drip, printable dial-in pad. |
-| `evidence/` | 25 raw PullPush JSON archives — the fetched Reddit threads behind every quote used anywhere in the package. |
+| `product/` | The app: `index.html`, `app.js`, `styles.css`, `i18n.js`, screenshots, browser test suites |
+| `site/` | The landing page (`site/pt/` = Portuguese) |
+| `api/` | Serverless functions: cloud sync, sign-ups, founder metrics |
+| `brand/` | Name rationale, palette, logo |
+| `evidence/` | The saved Reddit threads behind every quote |
+| `extras/` | Launch-post drafts, onboarding emails, a printable dial-in pad |
+| `video/` | The launch film |
 
-## Verification
+The lowercase `portafile` in storage keys, API headers and the URL is the old name. It stays, because renaming it would erase existing data.
 
-Two Playwright suites live in `product/`:
+</details>
 
-- `verify.js` — original 12-check e2e (seeding, costing math, printing, export/import round-trip, selftest banner).
-- `verify-killpass.js` — 10-check proof of the kill-pass fixes (hostile import rejected without data loss, crafted-id XSS inert, price-0 drinks flagged underwater, clean demo reseed).
+---
 
-Both `require()` Playwright by absolute path (`/Users/ethanyap/.npm/_npx/e41f203b7505f1fb/node_modules/playwright` — the npx cache on the build machine). On another machine, `npm i playwright` somewhere and update that one line. Run with `node product/verify.js`.
-
-The app also self-tests: add `?selftest` to the product URL and a PASS/FAIL banner runs 10 live-state checks in-page.
-
-## Deploy note (important)
-
-The site's CTA links point at `../product/index.html` and `../video/portafile-launch.mp4`. **Deploy the repo root as the web root** (e.g. GitHub Pages on the whole repo, or `vercel .` from the root) and everything resolves; the landing page is then at `/site/`. Deploying `site/` alone breaks the demo and video links.
-
-## Status & what's still human
-
-The package is complete through the kill pass (see `07-kill-pass.md`). Deliberately **not** done, because they need a human: the Phase-0 validation gates in `03-design-the-business.md` §8, creating the Stripe payment link, the USPTO trademark knockout search on "Crema" (never run for "Portafile" either, and "crema" is a coffee term in common use — expect collisions), buying a domain, and posting any of the launch drafts. Nothing has been published anywhere.
-
-## Sync branch (not deployed yet)
-
-The `sync` branch adds the paid-tier feature: opt-in secret-link cloud sync (`api/state.js` + Vercel Blob). To ship it: merge `sync` into `main`, connect a Blob store to the Vercel project (Storage tab → Create Blob store — free tier; this sets `BLOB_READ_WRITE_TOKEN` automatically), and redeploy. Without a key in the URL the app is byte-identical to local-only v1; `product/verify-sync.js` (11 checks) proves both modes.
-
-The branch also adds the **access gate**: the app asks for email + shop name (role/city/phone optional) once per browser before use; leads land in Blob via `api/lead.js` and are viewable in the founder dashboard ("Site signups" → needs an `ADMIN_KEY` env var on Vercel). `product/verify-gate.js` (11 checks) covers it. Automated browsers skip the gate, so test suites and the `?selftest=1` banner are unaffected.
+Built by **Ethan Yap** · UC Davis · [LinkedIn](https://www.linkedin.com/in/ethan-yap-827a45346/)
