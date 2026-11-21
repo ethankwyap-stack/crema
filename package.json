@@ -2,7 +2,7 @@
   "name": "portafile",
   "private": true,
   "dependencies": {
-    "@vercel/blob": "^2.6.1"
+    "@vercel/blob": "^2.9.0"
   },
   "overrides": {
     "zod": "^4.6.6"
